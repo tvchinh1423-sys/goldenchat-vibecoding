@@ -22,6 +22,8 @@ import {
   CalendarCheck,
   Phone,
   MapPin,
+  Pencil,
+  X,
 } from "lucide-react";
 import { KnowledgeUploadModal } from "@/components/training/KnowledgeUploadModal";
 import {
@@ -81,6 +83,12 @@ export default function TrainingPage() {
   const [newFaqQ, setNewFaqQ] = useState("");
   const [newFaqA, setNewFaqA] = useState("");
   const [showAddFaqForm, setShowAddFaqForm] = useState(false);
+
+  // Edit FAQ states
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+  const [editQuestion, setEditQuestion] = useState("");
+  const [editAnswer, setEditAnswer] = useState("");
+  const [editCategory, setEditCategory] = useState("");
 
   // Scroll to bottom simulator
   useEffect(() => {
@@ -214,6 +222,37 @@ export default function TrainingPage() {
     setNewFaqQ("");
     setNewFaqA("");
     setShowAddFaqForm(false);
+  };
+
+  // Bắt đầu chỉnh sửa câu hỏi FAQ
+  const handleStartEditFaq = (item: KnowledgeItem) => {
+    setEditingFaqId(item.id);
+    setEditQuestion(item.question);
+    setEditAnswer(item.answer);
+    setEditCategory(item.category || "thuc_don");
+  };
+
+  // Lưu nội dung chỉnh sửa câu hỏi FAQ
+  const handleSaveEditFaq = () => {
+    if (!editingFaqId || !editQuestion.trim() || !editAnswer.trim()) return;
+    setKnowledgeList((prev) =>
+      prev.map((item) =>
+        item.id === editingFaqId
+          ? {
+              ...item,
+              question: editQuestion.trim(),
+              answer: editAnswer.trim(),
+              category: editCategory.trim() || item.category,
+            }
+          : item
+      )
+    );
+    setEditingFaqId(null);
+  };
+
+  // Hủy bỏ chỉnh sửa câu hỏi FAQ
+  const handleCancelEditFaq = () => {
+    setEditingFaqId(null);
   };
 
   // Thêm Guardrail mới
@@ -703,36 +742,120 @@ export default function TrainingPage() {
                 )}
 
                 {/* Danh sách FAQ */}
-                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
                   {knowledgeList.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 bg-slate-50/70 hover:bg-slate-50 border border-slate-200/80 rounded-xl text-xs space-y-1 relative group transition"
+                      className={`p-3 rounded-xl text-xs space-y-1.5 border transition ${
+                        editingFaqId === item.id
+                          ? "bg-blue-50/50 border-blue-300 ring-2 ring-blue-500/10"
+                          : "bg-slate-50/70 hover:bg-slate-50 border-slate-200/80"
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="font-semibold text-slate-800">
-                          {item.question}
-                        </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[10px] font-medium">
-                            {item.category}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setKnowledgeList((prev) =>
-                                prev.filter((k) => k.id !== item.id)
-                              )
-                            }
-                            className="text-slate-300 hover:text-red-500 transition p-0.5"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      {editingFaqId === item.id ? (
+                        /* Form Chỉnh sửa Inline */
+                        <div className="space-y-2.5 pt-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-blue-900 text-xs flex items-center gap-1.5">
+                              <Pencil className="w-3.5 h-3.5 text-blue-600" />
+                              Chỉnh sửa nội dung FAQ:
+                            </span>
+                            <span className="text-[10px] text-slate-400">ID: {item.id}</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">
+                              Câu hỏi của khách:
+                            </label>
+                            <input
+                              type="text"
+                              value={editQuestion}
+                              onChange={(e) => setEditQuestion(e.target.value)}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-500 mb-0.5">
+                              Câu trả lời chuẩn của Bot:
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={editAnswer}
+                              onChange={(e) => setEditAnswer(e.target.value)}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-blue-100">
+                            <div className="w-40">
+                              <input
+                                type="text"
+                                placeholder="Danh mục (vd: thuc_don)"
+                                value={editCategory}
+                                onChange={(e) => setEditCategory(e.target.value)}
+                                className="w-full px-2 py-1 text-[11px] bg-white border border-slate-200 rounded text-slate-600"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={handleCancelEditFaq}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition"
+                              >
+                                <X className="w-3 h-3" />
+                                Hủy
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSaveEditFaq}
+                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs transition"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                Lưu thay đổi
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-slate-600 text-[11px] leading-relaxed">
-                        {item.answer}
-                      </p>
+                      ) : (
+                        /* Chế độ hiển thị bình thường có nút Sửa và Xóa */
+                        <>
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="font-semibold text-slate-800">
+                              {item.question}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[10px] font-medium">
+                                {item.category}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditFaq(item)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:text-blue-700 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-md transition shadow-xs"
+                                title="Chỉnh sửa câu hỏi & câu trả lời"
+                              >
+                                <Pencil className="w-3 h-3 text-blue-600" />
+                                Sửa
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setKnowledgeList((prev) =>
+                                    prev.filter((k) => k.id !== item.id)
+                                  )
+                                }
+                                className="text-slate-300 hover:text-red-500 transition p-1 rounded-md hover:bg-red-50"
+                                title="Xóa câu hỏi này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 text-[11px] leading-relaxed">
+                            {item.answer}
+                          </p>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
