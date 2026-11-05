@@ -30,17 +30,20 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. BẢNG KHÁCH TIỀM NĂNG (LEADS)
+-- 3. BẢNG KHÁCH TIỀM NĂNG / PHỄU TUYỂN SINH (LEADS)
 CREATE TABLE IF NOT EXISTS leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
     full_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(100),
-    demand_notes TEXT, -- Nhu cầu quan tâm: khóa học, mục tiêu, hình thức học, ngân sách
+    course_interest VARCHAR(100), -- Khóa học quan tâm (ENTD01, v.v.)
+    stage VARCHAR(10) NOT NULL DEFAULT 'N1' CHECK (stage IN ('N1', 'N2', 'N3', 'N4', 'N5', 'N0')),
+    -- N1: Lead thô, N2: Tiềm năng, N3: Học thử, N4: Chính thức, N5: Nuôi dưỡng, N0: Đã mất
     source VARCHAR(20) DEFAULT 'web' CHECK (source IN ('facebook', 'zalo', 'web', 'manual')),
-    status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'contacting', 'booked', 'won', 'lost')),
-    assigned_sales VARCHAR(50),
+    assigned_to VARCHAR(50) DEFAULT 'Trần Diệu Thúy',
+    last_touched_at TIMESTAMPTZ DEFAULT NOW(),
+    notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
