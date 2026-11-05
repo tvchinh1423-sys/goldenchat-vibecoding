@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Search, Sparkles } from "lucide-react";
+import { MessageSquare, Bot, Users, Search, Sparkles, Settings } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +28,11 @@ export default function DashboardLayout({
       name: "Quản lý Lead & Phễu",
       href: "/leads",
       icon: Users,
+    },
+    {
+      name: "Cấu hình kênh & Botcake",
+      href: "/settings",
+      icon: Settings,
     },
   ];
 

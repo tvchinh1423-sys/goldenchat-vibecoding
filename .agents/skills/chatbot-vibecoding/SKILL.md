@@ -33,6 +33,8 @@ description: >-
 | **Upload Excel FAQ** | `/api/training/upload` parse & mẫu Excel Golden Palace | ✅ Hoàn thành (Chinh) |
 | **Webhook Botcake đa kênh** | `/api/webhook/botcake` (Facebook + Zalo cá nhân) | ✅ Hoàn thành (Chinh) |
 | **Khung Simulator Thử bot** | Test thực đơn, xem sảnh, guardrail, bóc tách SĐT | ✅ Hoàn thành (Chinh) |
+| **Trang Cấu hình Kênh & SLA** | `/settings` quản lý Botcake, Telegram, Web Widget, SLA | ✅ Hoàn thành (Chinh) |
+| **Web Chat Widget nhúng** | `/widget` Khung chat nhúng cho website doanh nghiệp | ✅ Hoàn thành (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
