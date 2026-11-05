@@ -51,7 +51,8 @@ export function createDemoConversations(): Conversation[] {
         ["customer", "Thực đơn tiệc cưới bao nhiêu một bàn?", "09:10"],
         [
           "bot",
-          knowledgeBase.find((faq) => faq.category === "thuc_don")!.answer,
+          knowledgeBase.find((faq) => faq.category === "thuc_don")?.answer ||
+            "Dạ Quý khách vui lòng tham khảo chi tiết menu tại: https://goldenpalacenamdinh.com/thuc-don ạ!",
           "09:10",
         ],
         [
@@ -61,7 +62,8 @@ export function createDemoConversations(): Conversation[] {
         ],
         [
           "agent",
-          knowledgeBase.find((faq) => faq.category === "uu_dai")!.answer,
+          knowledgeBase.find((faq) => faq.category === "uu_dai")?.answer ||
+            "Dạ Golden Palace luôn có chính sách ưu đãi dành riêng cho tiệc cưới theo mùa và số lượng bàn. Quý khách liên hệ Hotline 0228 659 5959 để nhận thông tin ưu đãi mới nhất nhé!",
           "09:14",
         ],
         [

@@ -102,8 +102,218 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Kiểm tra các câu hỏi thực tế về Địa chỉ, Hình ảnh, Website, Hotline, Giờ đón khách
-    // 5.1. Hình ảnh không gian sảnh tiệc
+    // 5. Kiểm tra các câu hỏi thực tế theo BỘ TRI THỨC GOLDEN PALACE (Phiên bản v1.2)
+    // 5.1. Dịch vụ Photobooth (máy chụp ảnh in lấy ngay - BÁO GIÁ TRỰC TIẾP)
+    if (
+      lower.includes("photobooth") ||
+      lower.includes("photo booth") ||
+      lower.includes("chụp ảnh lấy ngay") ||
+      lower.includes("in ảnh lấy ngay") ||
+      lower.includes("máy chụp ảnh")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Golden Palace có cung cấp dịch vụ máy chụp ảnh Photobooth in lấy ngay tại sảnh tiệc với 3 gói lựa chọn tiện lợi:\n📸 Gói 1 (1.5 giờ): 3.400.000 VNĐ (In 200 ảnh nhỏ hoặc 100 ảnh to).\n📸 Gói 2 (2 giờ): 4.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n📸 Gói 3 (3 giờ): 5.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n🎁 Tất cả các gói đều đã bao gồm 01 kỹ thuật viên trực máy, bàn giao toàn bộ file mềm gốc, phụ kiện check-in vui nhộn và sổ ký tên lưu giữ lời chúc cho dâu rể ạ!`,
+        suggestedQuestions: [
+          "Thuê MC, ca sĩ và ban nhạc giá bao nhiêu?",
+          "Nghi thức rót gạo, laser và flycam trao nhẫn giá bao nhiêu?",
+          "Lập dự toán chi phí tiệc cưới trọn gói",
+        ],
+      });
+    }
+
+    // 5.2. Nhân sự biểu diễn & Ban nhạc (MC, Ca sĩ, Keyboard, Saxophone, Tứ tấu - BÁO GIÁ TRỰC TIẾP)
+    if (
+      lower.includes("mc") ||
+      lower.includes("người dẫn chương trình") ||
+      lower.includes("ca sĩ") ||
+      lower.includes("ca si") ||
+      lower.includes("ban nhạc") ||
+      lower.includes("ban nhac") ||
+      lower.includes("saxophone") ||
+      lower.includes("tứ tấu") ||
+      lower.includes("tu tau") ||
+      lower.includes("keyboard") ||
+      lower.includes("organ") ||
+      lower.includes("thiên thần")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Golden Palace cung cấp đội ngũ nhân sự biểu diễn chuyên nghiệp với bảng giá niêm yết:\n🎤 MC tiệc cưới chuyên nghiệp: 800.000 VNĐ / người\n🎶 Ca sĩ biểu diễn (hát 3 bài): 800.000 VNĐ / ca sĩ\n🎹 Nhạc công Keyboard: 800.000 VNĐ / người\n👼 Thiên thần dẫn lối cô dâu (1 cặp): 1.000.000 VNĐ / cặp\n🎷 Ban nhạc Saxophone đón khách: 5.000.000 VNĐ / ban\n🎻 Ban nhạc Tứ tấu cổ điển hoàng gia: 14.000.000 VNĐ / ban\nQuý khách có thể tích chọn khi tính Dự toán Chi phí tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+        suggestedQuestions: [
+          "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
+          "Nghi thức rót gạo, laser và flycam trao nhẫn giá bao nhiêu?",
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+        ],
+      });
+    }
+
+    // 5.3. Nghi thức cưới & Hiệu ứng đặc biệt (Rót gạo, Vòng laser, Flycam, Bướm bay, Tưới cây, Bóng bay)
+    if (
+      lower.includes("rót gạo") ||
+      lower.includes("rot gao") ||
+      lower.includes("tranh cát") ||
+      lower.includes("tranh cat") ||
+      lower.includes("laser") ||
+      lower.includes("vòng laser") ||
+      lower.includes("flycam") ||
+      lower.includes("bướm bay") ||
+      lower.includes("buom bay") ||
+      lower.includes("tưới cây") ||
+      lower.includes("tuoi cay") ||
+      lower.includes("bóng bay kích nổ") ||
+      lower.includes("bong bay kich no")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ nhà hàng có các gói nghi thức và hiệu ứng trao nhẫn cưới độc đáo với giá niêm yết:\n🌾 Rót gạo / Tranh cát thiêng liêng: 800.000 VNĐ / Hộp\n💍 Vòng laser trao nhẫn: 700.000 VNĐ / lần (🎁 TẶNG MIỄN PHÍ cho tiệc từ 400 khách trở lên)\n🛸 Flycam trao nhẫn cưới: 1.000.000 VNĐ / lần\n🦋 Bướm bay dẫn đường: 3.000.000 VNĐ / con\n🌳 Tưới cây hạnh phúc: 500.000 VNĐ / lần\n🎈 Bóng bay kích nổ: 900.000 VNĐ / quả (từ 4 quả)\nChi tiết tại: https://goldenpalacenamdinh.com/dich-vu ạ!`,
+        suggestedQuestions: [
+          "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
+          "Thuê MC, ca sĩ và ban nhạc giá bao nhiêu?",
+          "Tiệc 500 khách nên chọn sảnh hội trường nào?",
+        ],
+      });
+    }
+
+    // 5.4. Chính sách Thuế VAT & Nguyên tắc tính Bill
+    if (
+      lower.includes("vat") ||
+      lower.includes("thuế") ||
+      lower.includes("thue") ||
+      lower.includes("hóa đơn") ||
+      lower.includes("hoa don") ||
+      lower.includes("xuất hóa đơn")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ các báo giá thực đơn và dịch vụ hiện tại của Golden Palace là GIÁ CHƯA BAO GỒM VAT ạ.\nKhi tính tổng bill hoặc xuất hóa đơn, thuế VAT được bóc tách theo quy định:\n• Thuế 8% VAT: Áp dụng cho Đồ ăn + Phí Hội trường (phí HT) + Nước lọc.\n• Thuế 10% VAT: Áp dụng cho Đồ uống (Nước ngọt + Bia + Rượu).\nQuý khách có thể tự tính dự toán tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Có được mang rượu bia từ ngoài vào không?",
+          "Quy trình đặt cọc tiệc cưới như thế nào?",
+        ],
+      });
+    }
+
+    // 5.5. Ăn thử mâm cỗ / Thử món
+    if (
+      lower.includes("thử món") ||
+      lower.includes("thu mon") ||
+      lower.includes("ăn thử") ||
+      lower.includes("an thu") ||
+      lower.includes("mâm thử") ||
+      lower.includes("mam thu")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ để đảm bảo tính đồng bộ và chất lượng phục vụ tiêu chuẩn yến tiệc số lượng lớn, hiện tại Golden Palace không áp dụng dịch vụ mâm thử món ạ.\nToàn bộ các món ăn đều do các đầu bếp chuyên nghiệp nhiều năm kinh nghiệm chế biến chuẩn vị tiệc cưới truyền thống và hiện đại, đã được hàng ngàn cặp đôi tại Nam Định tin chọn và đánh giá rất cao. Quý khách xem danh sách món ăn tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC ạ!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng và chỗ đỗ xe ô tô?",
+        ],
+      });
+    }
+
+    // 5.6. Bãi đỗ xe ô tô / xe máy
+    if (
+      lower.includes("đỗ xe") ||
+      lower.includes("do xe") ||
+      lower.includes("gửi xe") ||
+      lower.includes("gui xe") ||
+      lower.includes("bãi xe") ||
+      lower.includes("bai xe") ||
+      lower.includes("ô tô") ||
+      lower.includes("o to")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Golden Palace có bãi đỗ xe ô tô và xe máy vô cùng rộng rãi ngay trước khuôn viên nhà hàng, có nhân viên bảo vệ điều phối chu đáo và HOÀN TOÀN MIỄN PHÍ 100% cho toàn bộ khách tham dự tiệc ạ! Quý khách xem thêm khuôn viên tại: https://goldenpalacenamdinh.com/khong-gian`,
+        suggestedQuestions: [
+          "Địa chỉ nhà hàng ở đâu?",
+          "Nhà hàng đón khách tham quan sảnh lúc mấy giờ?",
+          "Sảnh tiệc bên mình chứa được bao nhiêu khách?",
+        ],
+      });
+    }
+
+    // 5.7. Chính sách đồ uống mang vào / Phí nút chai
+    if (
+      lower.includes("mang rượu") ||
+      lower.includes("mang bia") ||
+      lower.includes("phí nút chai") ||
+      lower.includes("phi nut chai") ||
+      lower.includes("rượu ngoài") ||
+      lower.includes("đồ uống mang vào")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ chính sách đồ uống tại Golden Palace rất minh bạch và linh hoạt:\n1. Đồ uống nhà hàng: Kiểm đếm số lượng thực tế sử dụng sau tiệc (uống bao nhiêu tính tiền bấy nhiêu).\n2. Đồ uống mang từ ngoài vào: Quý khách ĐƯỢC PHÉP mang rượu, bia từ ngoài vào, nhà hàng áp dụng mức phí phục vụ (phí nút chai, đá lạnh, ly cốc niêm yết theo quy định). Quý khách xem chi tiết tại: https://goldenpalacenamdinh.com/thuc-don?tab=DO_UONG ạ!`,
+        suggestedQuestions: [
+          "Báo giá đã gồm thuế VAT chưa?",
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Quy trình đặt cọc tiệc cưới như thế nào?",
+        ],
+      });
+    }
+
+    // 5.8. Đề xuất sảnh theo quy mô khách
+    if (
+      lower.includes("500 khách") ||
+      lower.includes("600 khách") ||
+      lower.includes("400 khách") ||
+      lower.includes("50 mâm") ||
+      lower.includes("60 mâm")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ với quy mô từ 300 – 650 khách (hoặc 40 – 60 mâm), em trân trọng gợi ý Quý khách:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Phong cách hoàng gia lộng lẫy, giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m²: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 2 (350 – 750 khách) — Đại cung điện trần cao 7m hoàn toàn không có cột chắn, đèn pha lê hoàng gia hoành tráng: https://goldenpalacenamdinh.com/khong-gian/tang-2\nQuý khách muốn ghé xem trực tiếp sảnh nào ạ?`,
+        suggestedQuestions: [
+          "Hội trường Tầng 2 có gì đặc biệt?",
+          "Hội trường Tầng 3 có gì đặc biệt?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    if (
+      lower.includes("700 khách") ||
+      lower.includes("750 khách") ||
+      lower.includes("800 khách") ||
+      lower.includes("70 mâm") ||
+      lower.includes("80 mâm")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ với quy mô đại lễ trên 700 khách, Hội trường Tầng 2 là sự lựa chọn duy nhất và hoàn hảo nhất tại Nam Định:\n• Sức chứa tối đa lên tới 750 khách (75 mâm).\n• Không gian trần cao 7m hoàn toàn không có cột, màn hình LED cỡ lớn 30m² đảm bảo tầm nhìn tuyệt đối.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-2\n📞 Liên hệ Hotline 0228 659 5959 để kiểm tra lịch sảnh trống ngày đẹp ạ!`,
+        suggestedQuestions: [
+          "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
+          "Địa chỉ nhà hàng ở đâu?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    if (
+      lower.includes("200 khách") ||
+      lower.includes("150 khách") ||
+      lower.includes("250 khách") ||
+      lower.includes("100 khách") ||
+      lower.includes("20 mâm") ||
+      lower.includes("25 mâm")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ với quy mô 100 – 300 khách (10 – 30 mâm), lựa chọn hoàn hảo nhất là Hội trường Tầng 4 ạ:\n• Không gian ấm cúng, sang trọng, riêng tư.\n• Trang bị sẵn màn hình LED 10m², âm thanh biểu diễn chuẩn và hoa lụa sân khấu lãng mạn.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-4\n📝 Tính dự toán: https://goldenpalacenamdinh.com/du-toan-chi-phi`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Báo giá đã gồm thuế VAT chưa?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    // 5.9. Hình ảnh không gian sảnh tiệc
     if (
       lower.includes("không gian") ||
       lower.includes("khong gian") ||
@@ -115,16 +325,16 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ kính mời Quý khách tham khảo toàn bộ hình ảnh thực tế không gian các đại sảnh tiệc cưới tráng lệ tại đây: https://goldenpalacenamdinh.com/khong-gian . Anh/chị đang dự kiến tiệc bao nhiêu bàn để em tư vấn sảnh phù hợp nhất ạ?`,
+        reply: `Dạ kính mời Quý khách tham khảo toàn bộ hình ảnh thực tế không gian 5 sảnh hội trường tráng lệ của Golden Palace tại đây: https://goldenpalacenamdinh.com/khong-gian . Anh/chị đang dự kiến tiệc bao nhiêu bàn để em tư vấn sảnh phù hợp nhất ạ?`,
         suggestedQuestions: [
-          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Tiệc 500 khách nên chọn sảnh hội trường nào?",
           "Địa chỉ nhà hàng ở đâu?",
-          "Nhà hàng đón khách lúc mấy giờ?",
         ],
       });
     }
 
-    // 5.2. Địa chỉ, vị trí, Google Maps, chỉ đường
+    // 5.10. Địa chỉ, vị trí, Google Maps
     if (
       lower.includes("địa chỉ") ||
       lower.includes("dia chi") ||
@@ -137,36 +347,16 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ địa chỉ của Golden Palace tại: 98 Đông A, KĐT Hòa Vượng, TP. Nam Định. Quý khách có thể xem vị trí và đường đi thuận tiện trên Google Maps tại đây: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic ạ! Nhà hàng đón khách từ 8:00 - 10:30 sáng, Quý khách dự kiến ghé qua hôm nào ạ?`,
+        reply: `Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định. Giờ đón tiếp Quý khách tham quan trực tiếp các sảnh tiệc từ 8h00 – 21h00 tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ) ạ! Quý khách xem chỉ đường Google Maps tại: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`,
         suggestedQuestions: [
-          "Nhà hàng đón khách lúc mấy giờ?",
+          "Nhà hàng có chỗ đỗ xe ô tô không?",
           "Hotline liên hệ trực tiếp",
-          "Xem thông tin tiệc và brochure ở đâu?",
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
         ],
       });
     }
 
-    // 5.3. Thông tin tiệc, Brochure, Website
-    if (
-      lower.includes("thông tin tiệc") ||
-      lower.includes("thong tin tiec") ||
-      lower.includes("website") ||
-      lower.includes("brochure") ||
-      lower.includes("tài liệu") ||
-      lower.includes("link")
-    ) {
-      return NextResponse.json({
-        success: true,
-        reply: `Dạ Quý khách có thể tham khảo trọn bộ thông tin tiệc cưới tại Website: https://goldenpalacenamdinh.com hoặc xem nhanh tài liệu tổng quan tại: https://tinyurl.com/thongtintieccuoi ạ! Anh/Chị cần em tư vấn thêm phần nào không ạ?`,
-        suggestedQuestions: [
-          "Thực đơn tiệc cưới bao nhiêu một bàn?",
-          "Ưu đãi mùa cưới hiện nay có gì?",
-          "Cho tôi xem ảnh không gian sảnh tiệc",
-        ],
-      });
-    }
-
-    // 5.4. Hotline, Số điện thoại liên hệ
+    // 5.11. Hotline
     if (
       lower.includes("hotline") ||
       lower.includes("số điện thoại") ||
@@ -179,32 +369,11 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ Quý khách có thể liên hệ trực tiếp qua Hotline: 0228 6595 959 hoặc truy cập website https://goldenpalacenamdinh.com. Đội ngũ quản lý tiệc Golden Palace luôn sẵn sàng giải đáp 24/7 ạ!`,
+        reply: `Dạ Quý khách có thể liên hệ trực tiếp qua Hotline: 0228 659 5959 hoặc truy cập website https://goldenpalacenamdinh.com. Đội ngũ quản lý tiệc Golden Palace luôn sẵn sàng hỗ trợ chu đáo 24/7 ạ!`,
         suggestedQuestions: [
           "Địa chỉ nhà hàng ở đâu?",
-          "Nhà hàng đón khách lúc mấy giờ?",
+          "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
           "Cho tôi hẹn xem sảnh vào cuối tuần",
-        ],
-      });
-    }
-
-    // 5.5. Giờ đón khách, giờ mở cửa
-    if (
-      lower.includes("đón khách") ||
-      lower.includes("don khach") ||
-      lower.includes("mấy giờ") ||
-      lower.includes("may gio") ||
-      lower.includes("giờ mở cửa") ||
-      lower.includes("gio mo cua") ||
-      lower.includes("khung giờ")
-    ) {
-      return NextResponse.json({
-        success: true,
-        reply: `Dạ Golden Palace đón khách tham quan, tư vấn và thử món từ 8:00 đến 10:30 sáng hằng ngày. Quý khách muốn đặt lịch vào ngày nào để bên em chuẩn bị bàn trà tiếp đón riêng chu đáo nhất ạ?`,
-        suggestedQuestions: [
-          "Cho tôi hẹn xem sảnh vào cuối tuần",
-          "Địa chỉ nhà hàng ở đâu?",
-          "Cho tôi xem ảnh không gian sảnh tiệc",
         ],
       });
     }
