@@ -164,3 +164,16 @@ app-root/
 - lib/leads/demo-data.ts là fixture riêng; chưa nối lead mới từ Inbox, Supabase hay booking/contract thật. Đây là bước chuẩn bị Module 3, chưa có CRUD CRM, biểu đồ funnel chuyển đổi lịch sử hoặc danh sách CRM. Giữ nguyên schema cục bộ chưa commit của người dùng.
 - Shared dashboard header hỗ trợ cuộn menu trên mobile để /leads không tràn trang.
 - Kiểm tra cuối sau Module 3: production build + lint/TypeScript đạt, 14 unit/API test đạt, 7 Playwright scenario đạt (Inbox desktop/mobile, lỗi/soạn nháp chậm, Kanban kéo thả/menu, lưu lại, tìm kiếm, không tràn trang mobile). Đã xem ảnh Inbox và Kanban desktop/mobile. Các mốc hoàn thành nằm trên hien/frontend-ai; chưa tự merge lên main.
+
+### Mốc Tích hợp Toàn diện & Xuất bản Production Vercel — 05/11/2026 (Chinh)
+
+- **Hợp nhất Main:** Đã kéo và tích hợp toàn bộ các mốc mới nhất từ `origin/hien/frontend-ai` (Module 2 AI Engine Gemini/9Router, Module 3 Kanban Phễu Lead 6 cột N1-N5/N0 chuẩn Golden Palace F&B).
+- **Vercel Production Deploy:** Đã xuất bản thành công hệ thống lên tên miền toàn cầu: `https://goldenchat-vibecoding.vercel.app`.
+- **Cấu hình Mobile PWA & Trung tâm Tải App:**
+  - Hoàn thiện PWA Standalone, icon app vector, theme color, safe-area-inset cho iPhone/Android.
+  - Bổ sung trang `/download` hướng dẫn cài đặt 1-chạm cho 4 hệ điều hành (iOS, Android, Windows, Mac) kèm trigger `beforeinstallprompt` và hướng dẫn đóng gói `.apk` / `.exe` qua PWABuilder.
+  - Bổ sung nút "Tải App" vào Top Navigation và Bottom Navigation di động.
+- **Cập nhật Cấu hình Settings:**
+  - Webhook URL chính thức: `https://goldenchat-vibecoding.vercel.app/api/webhook/botcake` (tự động nhận diện origin).
+  - Embed script URL: `https://goldenchat-vibecoding.vercel.app/embed.js`.
+- **Kiểm thử:** Production build 15/15 static pages đạt, 14/14 unit tests pass, không có lỗi TypeScript hay ESLint.

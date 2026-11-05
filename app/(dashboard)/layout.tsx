@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Search, Sparkles, Settings } from "lucide-react";
+import { MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function DashboardLayout({
@@ -35,9 +35,14 @@ export default function DashboardLayout({
       icon: Users,
     },
     {
-      name: "Cấu hình kênh & Botcake",
+      name: "Cài đặt kênh",
       href: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Tải App",
+      href: "/download",
+      icon: Smartphone,
     },
   ];
 

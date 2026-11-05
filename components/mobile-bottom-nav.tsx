@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Settings } from "lucide-react";
+import { MessageSquare, Bot, Users, Settings, Download } from "lucide-react";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -29,6 +29,11 @@ export function MobileBottomNav() {
       name: "Cài đặt",
       href: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Tải App",
+      href: "/download",
+      icon: Download,
     },
   ];
 

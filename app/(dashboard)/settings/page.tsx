@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Settings,
@@ -27,10 +27,16 @@ export default function SettingsPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Botcake Config state
-  const [webhookUrl, setWebhookUrl] = useState("http://localhost:3000/api/webhook/botcake");
+  const [webhookUrl, setWebhookUrl] = useState("https://goldenchat-vibecoding.vercel.app/api/webhook/botcake");
   const [verifyToken, setVerifyToken] = useState("omnichat_kstudy_vibecoding_2026");
   const [pingStatus, setPingStatus] = useState<string | null>(null);
   const [pingLoading, setPingLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setWebhookUrl(`${window.location.origin}/api/webhook/botcake`);
+    }
+  }, []);
 
   // Widget Config state
   const [widgetTitle, setWidgetTitle] = useState("Golden Palace - Hỗ trợ tiệc cưới & sự kiện");
@@ -104,7 +110,7 @@ export default function SettingsPage() {
   // Embed script snippet
   const embedCodeSnippet = `<!-- Mã nhúng OmniChat AI Widget -->
 <script
-  src="${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/widget/embed.js"
+  src="${typeof window !== "undefined" ? window.location.origin : "https://goldenchat-vibecoding.vercel.app"}/embed.js"
   data-theme-color="${widgetColor}"
   data-position="${widgetPosition}"
   data-title="${widgetTitle}"
