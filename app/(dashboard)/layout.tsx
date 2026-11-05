@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MessageSquare, Bot, Users, Search, Sparkles, Settings } from "lucide-react";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function DashboardLayout({
   children,
@@ -110,9 +111,12 @@ export default function DashboardLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-6 max-w-[1700px] w-full mx-auto">
+      <main className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 max-w-[1700px] w-full mx-auto">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Chuẩn Zalo App) */}
+      <MobileBottomNav />
     </div>
   );
 }

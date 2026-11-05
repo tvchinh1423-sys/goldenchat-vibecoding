@@ -18,6 +18,7 @@ import type { Attachment, Conversation, InboxFilters } from "@/lib/inbox/types";
 import { ConversationList } from "./conversation-list";
 import { ChatPane } from "./chat-pane";
 import { InfoPanel, type LeadFields } from "./info-panel";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -539,6 +540,9 @@ export function InboxWorkspace() {
           </div>
         )}
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Chuẩn Zalo) */}
+      <MobileBottomNav />
     </main>
   );
 }

@@ -1,0 +1,21 @@
+{
+  "name": "OmniChat AI — Quản Trị Khách Hàng & Bot Đa Kênh",
+  "short_name": "OmniChat",
+  "description": "Hệ thống Chatbot FAQ & Đặt Lịch Tư Vấn Đa Kênh (Facebook, Zalo, Web) - VibeCoding 2026",
+  "start_url": "/inbox",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "vi",
+  "categories": ["business", "productivity", "communication"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
