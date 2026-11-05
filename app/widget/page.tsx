@@ -12,6 +12,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { FormattedMessage } from "@/components/chat/formatted-message";
 
 interface Message {
   id: string;
@@ -95,6 +96,7 @@ export default function WebWidgetPage() {
           message: userText,
           channel: "web",
           isWorkingHours: true,
+          messageCount: messages.length,
           businessProfile: {
             name: "Trung tâm Tiệc cưới & Sự kiện Golden Palace",
             serviceTypeName: "Gói tiệc & Sảnh cưới",
@@ -221,7 +223,10 @@ export default function WebWidgetPage() {
                         : "bg-white text-slate-800 border border-slate-200/70 rounded-bl-xs"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.text}</p>
+                    <FormattedMessage
+                      text={m.text}
+                      isUser={m.sender === "user"}
+                    />
 
                     {/* Nút Điểm WOW: Thêm vào Google Calendar nếu có ý định đặt hẹn */}
                     {m.appointmentIntent && (

@@ -224,3 +224,23 @@ app-root/
   - Điểm WOW 2: **Âm thanh thông báo tin nhắn "Ting"** (Web Audio API không cần file ngoài, có toggle bật/tắt âm lượng).
   - Thanh Quick chips ở footer widget bổ sung nút xem ảnh không gian, địa chỉ maps và hotline.
 - **Kiểm thử:** Next.js build 17/17 static pages đạt, 22/22 unit tests đạt. Đã commit `81b463d` và chuẩn bị push đồng bộ cho Chị Hiền.
+
+### Mốc Tối ưu Trải nghiệm Link 1-Chạm & Chuẩn hóa Phong cách Trả lời — 05/11/2026 (Chinh)
+
+- **Biến toàn bộ URL và SĐT thành Hyperlink & Nút hành động 1-chạm (`components/chat/formatted-message.tsx`):**
+  - Khách hàng không còn phải bôi đen hay copy link thủ công.
+  - Tự động parse URL, Markdown link và số điện thoại thành thẻ `<a>` có style nổi bật, mở trực tiếp bằng tab mới (`target="_blank" rel="noopener noreferrer"`).
+  - Tự động sinh hệ thống **Nút bấm 1-chạm mở ngay (Quick Action Buttons)** bên dưới bong bóng chat:
+    - 🍽️ Xem Menu Thực Đơn (`https://goldenpalacenamdinh.com/thuc-don`)
+    - 📍 Mở Google Maps Chỉ Đường (`https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`)
+    - 🏛️ Xem Ảnh Không Gian Sảnh (`https://goldenpalacenamdinh.com/khong-gian`)
+    - 🧮 Tính Dự Toán Chi Phí (`https://goldenpalacenamdinh.com/du-toan-chi-phi`)
+    - 🎁 Bảng Giá Dịch Vụ Cưới (`https://goldenpalacenamdinh.com/dich-vu`)
+    - 📄 Xem Brochure Tiệc Cưới (`https://tinyurl.com/thongtintieccuoi`)
+    - 📞 Gọi Hotline `0228 6595 959` (link `tel:02286595959` chạm là gọi ngay trên smartphone).
+  - Tích hợp đồng bộ trên cả **Web Chat Widget** (`app/widget/page.tsx`), **Hộp thư đa kênh** (`components/inbox/chat-pane.tsx`) và **Khung Thử bot** (`app/(dashboard)/training/page.tsx`).
+- **Chuẩn hóa phong cách phản hồi của Bot (Brevity & No Repetitive Fluff):**
+  - Theo yêu cầu của Chinh: Chỉ câu chào đầu tiên mới có lời giới thiệu; toàn bộ các câu trả lời sau TUYỆT ĐỐI KHÔNG lặp lại câu giới thiệu "Em là trợ lý tư vấn...".
+  - Câu trả lời luôn ngắn gọn, súc tích, đi thẳng vào đúng trọng tâm câu hỏi.
+  - Đã chuẩn hóa prompt trong `lib/ai-engine.ts`, bộ quy tắc `lib/mock-service.ts`, và API `/api/simulator/chat/route.ts`.
+- **Kiểm thử:** 24/24 unit test đạt (bổ sung test case kiểm tra link clickable và không lặp giới thiệu trợ lý), Next.js build 17/17 trang tĩnh thành công 100%.

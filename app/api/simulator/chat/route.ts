@@ -31,6 +31,30 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 2.2. Chào hỏi thân thiện (Ngắn gọn, không lặp lại câu giới thiệu 'em là trợ lý tư vấn')
+    if (
+      lower === "chào" ||
+      lower === "chao" ||
+      lower === "hi" ||
+      lower === "hello" ||
+      lower === "alo" ||
+      lower === "ad" ||
+      lower === "ad ơi" ||
+      lower.startsWith("chào") ||
+      lower.startsWith("chao") ||
+      lower.startsWith("xin chào")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ chào Quý khách! Quý khách cần thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng ở đâu?",
+        ],
+      });
+    }
+
     // 2. Guardrails (Bộ quy tắc an toàn)
     // - Khách đòi giảm giá quá mức (giảm 20%, 30%, 50%)
     if (
@@ -479,10 +503,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Trả lời mặc định theo Persona
+    // 7. Trả lời mặc định (Ngắn gọn, không lặp lại giới thiệu trợ lý tư vấn)
     return NextResponse.json({
       success: true,
-      reply: `Dạ em là trợ lý tư vấn tại ${brandName}! Quý khách đang quan tâm đến tiệc cưới, hội nghị công ty hay cần tư vấn thực đơn và xem sảnh trực tiếp ạ?`,
+      reply: `Dạ Quý khách cần hỗ trợ thêm thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
       suggestedQuestions: [
         "Thực đơn tiệc cưới bao nhiêu một bàn?",
         "Cho tôi xem ảnh không gian sảnh tiệc",

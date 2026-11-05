@@ -37,6 +37,7 @@ import {
 } from "@/lib/inbox/helpers";
 import { knowledgeBase } from "@/lib/inbox/demo-data";
 import type { Attachment, Conversation } from "@/lib/inbox/types";
+import { FormattedMessage } from "@/components/chat/formatted-message";
 import { Avatar } from "./shared";
 
 interface Props {
@@ -315,9 +316,10 @@ export function ChatPane({
                         : "rounded-br-md bg-primary text-white",
                     )}
                   >
-                    <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                      {message.content}
-                    </p>
+                    <FormattedMessage
+                      text={message.content}
+                      isUser={!isCustomer}
+                    />
                     {message.attachments?.map((attachment) => (
                       <a
                         href={attachment.dataUrl}

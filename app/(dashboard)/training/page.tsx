@@ -27,6 +27,7 @@ import {
   Link2,
 } from "lucide-react";
 import { KnowledgeUploadModal } from "@/components/training/KnowledgeUploadModal";
+import { FormattedMessage } from "@/components/chat/formatted-message";
 import {
   DEFAULT_BOT_CONFIG,
   DEFAULT_KNOWLEDGE_BASE,
@@ -183,6 +184,7 @@ export default function TrainingPage() {
           guardrails: config.guardrails,
           knowledgeBase: knowledgeList,
           businessProfile: config.businessProfile,
+          messageCount: simMessages.length,
         }),
       });
 
@@ -1197,7 +1199,10 @@ export default function TrainingPage() {
                       : "bg-white text-slate-800 border border-slate-200/80 rounded-bl-xs"
                   }`}
                 >
-                  {msg.text}
+                  <FormattedMessage
+                    text={msg.text}
+                    isUser={msg.sender === "user"}
+                  />
 
                   {/* Cảnh báo Guardrail nếu có */}
                   {msg.guardrailWarning && (
