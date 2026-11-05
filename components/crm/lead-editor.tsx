@@ -296,6 +296,24 @@ export function LeadEditor({
                       ))}
                     </select>
                   </label>
+                  {(b.status === "pending" || b.status === "confirmed") && (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                      onClick={async () => {
+                        if (!window.confirm("Bạn có chắc muốn hủy lịch hẹn này?")) return;
+                        setError("");
+                        try {
+                          await onStatus(b, "cancelled");
+                        } catch (error) {
+                          setError(error instanceof Error ? error.message : "Chưa hủy được lịch.");
+                        }
+                      }}
+                    >
+                      Hủy lịch
+                    </button>
+                  )}
                   {onDeleteBooking && (
                     <button
                       type="button"

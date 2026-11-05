@@ -1,4 +1,5 @@
 import type { Conversation } from "./types";
+import { BOOKING_TYPES } from "@/lib/crm/model";
 
 export const STORAGE_KEY = "omnichat.inbox.golden-palace.v1";
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -48,6 +49,24 @@ export function parseSnapshot(raw: string): Conversation[] {
         (message.liked !== undefined && typeof message.liked !== "boolean")
       )
         throw new Error("Invalid message");
+      const confirmation = message.bookingConfirmation;
+      if (
+        confirmation !== undefined &&
+        (!isRecord(confirmation) ||
+          !isDate(confirmation.appointment_time) ||
+          typeof confirmation.event_type !== "string" ||
+          !Object.hasOwn(BOOKING_TYPES, confirmation.event_type))
+      )
+        throw new Error("Invalid booking confirmation");
+      if (
+        message.suggestedQuestions !== undefined &&
+        (!Array.isArray(message.suggestedQuestions) ||
+          message.suggestedQuestions.length !== 3 ||
+          message.suggestedQuestions.some(
+            (question) => typeof question !== "string",
+          ))
+      )
+        throw new Error("Invalid follow-up questions");
       if (
         message.attachments !== undefined &&
         (!Array.isArray(message.attachments) ||

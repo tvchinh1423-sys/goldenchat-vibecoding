@@ -90,6 +90,9 @@ export function CRMDashboard() {
       setBusy(false);
     }
   }
+  function reportBookingError(error: unknown) {
+    setError(error instanceof Error ? error.message : "Chưa cập nhật được lịch hẹn.");
+  }
   const leads = data?.leads ?? [];
   const bookings = data?.bookings ?? [];
   const filtered = leads.filter(
@@ -512,7 +515,7 @@ export function CRMDashboard() {
                               mutate(
                                 () => setCRMBookingStatus(b, "confirmed"),
                                 "Đã xác nhận lịch hẹn.",
-                              )
+                              ).catch(reportBookingError)
                             }
                             className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-md font-medium transition"
                           >
@@ -521,7 +524,7 @@ export function CRMDashboard() {
                           </button>
                         )}
 
-                        {b.status !== "cancelled" && (
+                        {(b.status === "pending" || b.status === "confirmed") && (
                           <button
                             type="button"
                             title="Hủy lịch hẹn"
@@ -531,13 +534,13 @@ export function CRMDashboard() {
                                 mutate(
                                   () => setCRMBookingStatus(b, "cancelled"),
                                   "Đã hủy lịch hẹn.",
-                                );
+                                ).catch(reportBookingError);
                               }
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-md font-medium transition"
+                            className="inline-flex items-center gap-1 text-[11px] text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md font-medium transition"
                           >
-                            <XCircle className="w-3 h-3 text-amber-600" />
-                            Hủy
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            Hủy lịch
                           </button>
                         )}
 
@@ -550,13 +553,13 @@ export function CRMDashboard() {
                               mutate(
                                 () => deleteCRMBooking(b.id),
                                 "Đã xóa vĩnh viễn lịch hẹn khỏi hệ thống.",
-                              );
+                              ).catch(reportBookingError);
                             }
                           }}
                           className="inline-flex items-center gap-1 text-[11px] text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md font-medium transition"
                         >
                           <Trash2 className="w-3 h-3 text-rose-600" />
-                          Xóa
+                          Xóa lịch
                         </button>
                       </div>
                     </div>

@@ -1,3 +1,4 @@
+export { suggestedQuestions } from "./chat/follow-ups";
 // Server module. API credentials must never be imported into client components.
 import { loadAIContext, type AIContext } from "./ai-context";
 export { extractLeadInfo } from "./lead-extractor";

@@ -236,6 +236,9 @@ test("draft API validates input and labels offline FAQ demo without sending mess
   assert.equal(response.status, 200);
   assert.equal(result.mode, "demo");
   assert.match(result.reply, /5\.000\.000/);
+  assert.equal(result.suggestedQuestions.length, 3);
+  assert.equal(new Set(result.suggestedQuestions).size, 3);
+  assert.ok(result.suggestedQuestions.some((q: string) => q.includes("xem sảnh")));
 });
 
 test("configured database uses its own persona and empty FAQs, and fails explicitly on read errors", async (t) => {

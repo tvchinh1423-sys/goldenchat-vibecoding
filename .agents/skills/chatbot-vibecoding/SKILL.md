@@ -293,3 +293,11 @@ app-root/
 - **5. Kiểm thử & Đóng gói:**
   - Bổ sung unit test suite `tests/channel-booking.test.ts`, nâng tổng số test từ 26 lên **32/32 tests pass 100%**.
   - Production build Next.js 17/17 trang tĩnh đạt 100%, server local cổng 3000 đang hoạt động ổn định.
+
+### Mốc gợi ý, đặt lịch trong chat và WOW Đề 4 — 05/11/2026 (Hiền)
+
+- Nhận `e199944` từ Chinh. Giữ kho tri thức, webhook, Widget và API xóa lịch của Chinh. Triển khai phần UI/AI bổ sung trên `hien/frontend-ai`.
+- `POST /api/ai/draft` và `POST /api/simulator/chat` trả đúng 3 `suggestedQuestions` khi trả lời thành công. Gợi ý dùng ngữ cảnh câu hỏi gần nhất và câu gợi ý theo nhánh tri thức, loại câu lặp. Inbox và Widget bấm chip để gửi câu kế tiếp. Inbox chạy hội thoại minh họa qua Simulator, chưa gửi ra Facebook/Zalo.
+- Chat phát hiện ý định xem sảnh hoặc thử món và mở form tương ứng. Mặc định 09:00 giờ Việt Nam hôm nay nếu giờ đó còn ở tương lai, nếu không thì 09:00 ngày mai. Demo lưu khách và lịch cùng lần ghi, tái sử dụng hồ sơ theo SĐT và dùng quy tắc chống trùng lịch hiện có.
+- Thẻ sau khi lưu xác nhận đã nhận lịch. Trạng thái nghiệp vụ vẫn chờ tư vấn viên xác nhận. Calendar dùng thời điểm đã lưu, UTC và thời lượng 60 phút. Âm báo dùng Web Audio chung cho Inbox và Widget. Widget giữ cảnh báo Telegram cho quản lý khi lưu Supabase thành công. Chưa có nhà cung cấp gửi Zalo/SMS tới khách hoặc xác minh dịch vụ cloud, nên thẻ không báo đã gửi qua hai kênh này.
+- Hai màn hình quản trị có nút đỏ hủy và xóa lịch, xác nhận trước khi thao tác. Build/TypeScript, lint, 33 kiểm thử logic/API/SQL và 14 kịch bản trình duyệt đạt. Kiểm thử đã chạy tạo lịch từ Inbox và Widget, kiểm tra giờ Calendar, giữ lịch khi từ chối xóa và xóa lịch khi xác nhận.

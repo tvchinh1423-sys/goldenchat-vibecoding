@@ -3,6 +3,7 @@ import {
   configuredProvider,
   generateDraftReply,
   extractLeadInfo,
+  suggestedQuestions,
   type AIMessage,
 } from "@/lib/ai-engine";
 import { loadAIContext } from "@/lib/ai-context";
@@ -58,6 +59,12 @@ export async function POST(req: NextRequest) {
       reply,
       mode: demo ? "demo" : "ai",
       contextSource: context.source,
+      suggestedQuestions: suggestedQuestions(
+        messages.findLast(
+          (message) => message.sender === "customer" && message.content.trim(),
+        )?.content ?? "",
+        /golden palace/i.test(context.businessName),
+      ),
       leadInfo: extractLeadInfo(
         messages
           .filter((message) => message.sender === "customer")

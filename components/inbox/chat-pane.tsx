@@ -6,6 +6,7 @@ import {
   Archive,
   ArrowLeft,
   Bot,
+  CalendarDays,
   CheckCheck,
   CheckCircle2,
   Expand,
@@ -39,6 +40,8 @@ import { knowledgeBase } from "@/lib/inbox/demo-data";
 import type { Attachment, Conversation } from "@/lib/inbox/types";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { Avatar } from "./shared";
+import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
+import { googleCalendarUrl } from "@/lib/crm/appointment";
 
 interface Props {
   conversation: Conversation;
@@ -48,6 +51,9 @@ interface Props {
   onDraft: (text: string) => void;
   onAttachments: (attachments: Attachment[]) => void;
   onSend: () => void;
+  onAsk: (question: string) => void;
+  asking: boolean;
+  onBook: (type: NonNullable<ReturnType<typeof visitIntent>>) => void;
   onGenerateDraft: () => void;
   onAiToggle: (enabled: boolean) => void;
   onResolve: () => void;
@@ -68,6 +74,9 @@ export function ChatPane({
   onDraft,
   onAttachments,
   onSend,
+  onAsk,
+  asking,
+  onBook,
   onGenerateDraft,
   onAiToggle,
   onResolve,
@@ -274,6 +283,21 @@ export function ChatPane({
         aria-relevant="additions text"
       >
         {conversation.messages.map((message, index) => {
+          const previousQuestion =
+            message.sender === "bot"
+              ? conversation.messages
+                  .slice(0, index)
+                  .findLast((item) => item.sender === "customer")?.content
+              : undefined;
+          const visit =
+            !message.bookingConfirmation && previousQuestion
+              ? visitIntent(previousQuestion)
+              : undefined;
+          const questions =
+            message.sender === "bot"
+              ? (message.suggestedQuestions ??
+                suggestedQuestions(previousQuestion ?? ""))
+              : [];
           const isCustomer = message.sender === "customer";
           const previous = conversation.messages[index - 1];
           const showDate =
@@ -320,6 +344,17 @@ export function ChatPane({
                       text={message.content}
                       isUser={!isCustomer}
                     />
+                    {message.bookingConfirmation && (
+                      <a
+                        href={googleCalendarUrl(message.bookingConfirmation)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-xs font-medium text-primary"
+                      >
+                        <CalendarDays className="h-4 w-4" /> Thêm vào Google
+                        Calendar
+                      </a>
+                    )}
                     {message.attachments?.map((attachment) => (
                       <a
                         href={attachment.dataUrl}
@@ -356,6 +391,35 @@ export function ChatPane({
                       />
                     </button>
                   </div>
+                  {!isArchived && (questions.length > 0 || visit) && (
+                    <div
+                      className="mt-2 flex flex-wrap justify-end gap-1.5"
+                      aria-label="Gợi ý tiếp theo"
+                    >
+                      {visit && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onBook(visit)}
+                        >
+                          <CalendarDays /> Đặt lịch{" "}
+                          {visit === "thu_mon" ? "thử món" : "xem sảnh"}
+                        </Button>
+                      )}
+                      {questions.map((question) => (
+                        <button
+                          key={question}
+                          type="button"
+                          disabled={asking}
+                          onClick={() => onAsk(question)}
+                          className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div
                     className={cn(
                       "mt-2 flex items-center gap-1 px-1 text-[9px] text-muted-foreground",

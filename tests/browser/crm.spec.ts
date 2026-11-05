@@ -146,9 +146,10 @@ test("CRM prevents duplicate customers and overlapping appointments; mobile form
       .click();
   }
   await page.getByRole("button", { name: "Lịch hẹn", exact: true }).click();
-  await expect(
-    page.getByText("Chị Hiền · 2 người · Chờ xác nhận", { exact: true }),
-  ).toBeVisible();
+  const booking = page.locator("article").filter({ hasText: "Khách kiểm thử B" });
+  await expect(booking).toContainText("Chị Hiền");
+  await expect(booking).toContainText("2 khách");
+  await expect(booking).toContainText("Chờ xác nhận");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

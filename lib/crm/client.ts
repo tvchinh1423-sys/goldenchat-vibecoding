@@ -2,6 +2,11 @@ import {
   CRMError,
   assertBookingAvailable,
   isActiveBooking,
+  normalizePhone,
+  validateLead,
+  validateBooking,
+  type LeadInput,
+  type BookingInput,
   type CRMBooking,
   type CRMLead,
   type CRMSnapshot,
@@ -92,6 +97,48 @@ export async function saveCRMBooking(input: unknown, id?: string) {
     input,
     (data) => saveDemoBooking(data, input, id),
   );
+}
+
+export async function saveChatBooking(
+  leadInput: LeadInput,
+  visit: Omit<BookingInput, "lead_id">,
+) {
+  const fields = validateLead(leadInput);
+  const booking = validateBooking({ ...visit, lead_id: "new-visit" });
+  const crm = await loadCRM();
+  const linked = crm.leads.find(
+    (lead) =>
+      fields.inbox_reference && lead.inbox_reference === fields.inbox_reference,
+  );
+  if (linked?.phone && normalizePhone(linked.phone) !== fields.phone)
+    throw new CRMError("Hội thoại đã gắn với một số điện thoại khác.");
+  const existing = linked?.phone
+    ? linked
+    : crm.leads.find((lead) => normalizePhone(lead.phone) === fields.phone);
+  const contact = linked
+    ? {
+        ...linked,
+        full_name: fields.full_name,
+        phone: fields.phone,
+        email: fields.email || linked.email,
+      }
+    : fields;
+  if (crm.mode === "demo") {
+    const withLead = existing ? crm : saveDemoLead(crm, contact, linked?.id);
+    const lead =
+      existing ?? withLead.leads.find((item) => item.phone === fields.phone);
+    if (!lead) throw new CRMError("Chưa xác nhận được hồ sơ khách hàng.");
+    const saved = saveDemoBooking(withLead, { ...booking, lead_id: lead.id });
+    writeDemoCRM(localStorage, saved);
+    window.dispatchEvent(new Event("omnichat-crm-change"));
+    return { mode: "demo" as const, ...saved };
+  }
+  const withLead = existing ? crm : await saveCRMLead(contact, linked?.id);
+  const lead =
+    existing ??
+    withLead.leads.find((item) => normalizePhone(item.phone) === fields.phone);
+  if (!lead) throw new CRMError("Chưa xác nhận được hồ sơ khách hàng.");
+  return saveCRMBooking({ ...booking, lead_id: lead.id });
 }
 export async function setCRMBookingStatus(
   booking: CRMBooking,

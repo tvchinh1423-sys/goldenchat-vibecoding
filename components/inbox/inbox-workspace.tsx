@@ -12,14 +12,22 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { createDemoConversations } from "@/lib/inbox/demo-data";
-import { filterConversations } from "@/lib/inbox/helpers";
+import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
 import type { Attachment, Conversation, InboxFilters } from "@/lib/inbox/types";
 import { ConversationList } from "./conversation-list";
 import { ChatPane } from "./chat-pane";
 import { InfoPanel, type LeadFields } from "./info-panel";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { loadCRM, saveCRMLead } from "@/lib/crm/client";
+import { loadCRM, saveChatBooking, saveCRMLead } from "@/lib/crm/client";
+import {
+  BOOKING_TYPES,
+  formatAppointment,
+  type BookingInput,
+} from "@/lib/crm/model";
+import { BookingEditor } from "@/components/crm/booking-editor";
+import { suggestedQuestions, type visitIntent } from "@/lib/chat/follow-ups";
+import { playChatTone } from "@/lib/chat/sound";
 import { extractLeadInfo } from "@/lib/lead-extractor";
 import { applyCRMToInbox } from "@/lib/crm/inbox-adapter";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -38,6 +46,12 @@ export function InboxWorkspace() {
     createDemoConversations,
   );
   const [ready, setReady] = useState(false);
+  const [askingId, setAskingId] = useState<string | null>(null);
+  const pendingQuestion = useRef(false);
+  const [chatVisit, setChatVisit] = useState<{
+    conversation: Conversation;
+    type: NonNullable<ReturnType<typeof visitIntent>>;
+  } | null>(null);
   const [selectedId, setSelectedId] = useState("trang");
   const [filters, setFilters] = useState<InboxFilters>(DEFAULT_FILTERS);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -246,6 +260,7 @@ export function InboxWorkspace() {
     const content = (drafts[active.id] ?? "").trim();
     const files = attachments[active.id] ?? [];
     if (!content && !files.length) return;
+    playChatTone();
     cancelDraft();
     updateConversation(active.id, (conversation) => ({
       ...conversation,
@@ -266,6 +281,110 @@ export function InboxWorkspace() {
     setDrafts((current) => ({ ...current, [active.id]: "" }));
     setAttachments((current) => ({ ...current, [active.id]: [] }));
     notify("Đã thêm tin nhắn demo. AI tự tắt khi tư vấn viên tiếp quản.");
+  }
+
+  async function askFollowUp(question: string) {
+    if (!active || active.status === "archived" || pendingQuestion.current)
+      return;
+    const conversationId = active.id;
+    pendingQuestion.current = true;
+    setAskingId(conversationId);
+    cancelDraft();
+    playChatTone();
+    updateConversation(conversationId, (conversation) => ({
+      ...conversation,
+      messages: [
+        ...conversation.messages,
+        {
+          id: crypto.randomUUID(),
+          sender: "customer",
+          content: question,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+    try {
+      const response = await fetch("/api/simulator/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: question,
+          channel: active.channel,
+          messageCount: active.messages.length,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success || typeof data.reply !== "string")
+        throw new Error("Không nhận được phản hồi.");
+      const preferred = Array.isArray(data.suggestedQuestions)
+        ? data.suggestedQuestions.filter(
+            (item: unknown): item is string => typeof item === "string",
+          )
+        : [];
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        messages: [
+          ...conversation.messages,
+          {
+            id: crypto.randomUUID(),
+            sender: "bot",
+            content: data.reply,
+            suggestedQuestions: suggestedQuestions(question, true, preferred),
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }));
+      playChatTone();
+    } catch {
+      notify("Chưa nhận được phản hồi của bot. Hãy bấm lại câu hỏi gợi ý.");
+    } finally {
+      pendingQuestion.current = false;
+      setAskingId(null);
+    }
+  }
+
+  async function bookInChat(
+    input: BookingInput,
+    contact?: { name: string; phone: string },
+  ) {
+    if (!chatVisit) return;
+    const conversation = chatVisit.conversation;
+    const saved = await saveChatBooking(
+      {
+        full_name:
+          contact?.name ?? conversation.lead?.full_name ?? conversation.name,
+        phone: contact?.phone ?? conversation.lead?.phone ?? "",
+        email: conversation.lead?.email ?? "",
+        notes: conversation.lead?.demand_notes ?? "Đặt lịch trong Inbox",
+        inbox_reference: conversation.id,
+        source: conversation.channel,
+        stage: "N1",
+        assigned_to: input.assigned_staff,
+        event_date: "",
+        table_count: null,
+      },
+      input,
+    );
+    ++crmRevision.current;
+    setConversations((current) => applyCRMToInbox(current, saved));
+    updateConversation(conversation.id, (item) => ({
+      ...item,
+      messages: [
+        ...item.messages,
+        {
+          id: crypto.randomUUID(),
+          sender: "bot",
+          content: `✅ **XÁC NHẬN ĐÃ NHẬN LỊCH HẸN**\n\n${BOOKING_TYPES[input.event_type]} · ${formatAppointment(input.appointment_time)}\n${saved.mode === "demo" ? "Lịch demo đã lưu trên trình duyệt." : "Lịch đang chờ tư vấn viên xác nhận."}`,
+          bookingConfirmation: {
+            appointment_time: input.appointment_time,
+            event_type: input.event_type,
+          },
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+    playChatTone();
   }
   async function createLead(fields: LeadFields) {
     if (!active) return false;
@@ -497,6 +616,9 @@ export function InboxWorkspace() {
                   }))
                 }
                 onSend={sendMessage}
+                asking={askingId !== null}
+                onAsk={(question) => void askFollowUp(question)}
+                onBook={(type) => setChatVisit({ conversation: active, type })}
                 onGenerateDraft={() => void generateDraft()}
                 onAiToggle={(aiEnabled) => {
                   updateConversation(active.id, (conversation) => ({
@@ -615,6 +737,26 @@ export function InboxWorkspace() {
 
       {/* Mobile Bottom Navigation Bar (Chuẩn Zalo) */}
       <MobileBottomNav />
+      {chatVisit && (
+        <BookingEditor
+          lead={{
+            id: chatVisit.conversation.lead?.id ?? chatVisit.conversation.id,
+            full_name:
+              chatVisit.conversation.lead?.full_name ||
+              detectContact(chatVisit.conversation.messages).fullName ||
+              chatVisit.conversation.name,
+            assigned_to: "Ngọc Khánh",
+          }}
+          initialType={chatVisit.type}
+          collectContact={
+            chatVisit.conversation.lead
+              ? undefined
+              : (detectContact(chatVisit.conversation.messages).phones[0] ?? "")
+          }
+          onSave={(input, _id, contact) => bookInChat(input, contact)}
+          onClose={() => setChatVisit(null)}
+        />
+      )}
     </main>
   );
 }

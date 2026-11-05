@@ -1,3 +1,5 @@
+import type { BookingInput } from "@/lib/crm/model";
+
 export type Channel = "facebook" | "web" | "zalo";
 export type ConversationStatus = "active" | "pending" | "resolved" | "archived";
 export type InboxTab = "all" | "pending" | "mine";
@@ -14,6 +16,8 @@ export interface Message {
   createdAt: string;
   liked?: boolean;
   attachments?: Attachment[];
+  suggestedQuestions?: string[];
+  bookingConfirmation?: Pick<BookingInput, "appointment_time" | "event_type">;
 }
 export interface Lead {
   id: string;

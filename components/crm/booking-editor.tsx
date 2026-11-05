@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { getSmartBookingDefault } from "@/lib/crm/appointment";
 import {
   BOOKING_TYPES,
   validateBooking,
   type CRMBooking,
+  type BookingInput,
   type CRMLead,
 } from "@/lib/crm/model";
 import { Button } from "@/components/ui/button";
@@ -29,59 +31,37 @@ function vietnamInput(time: string) {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
-export function getSmartBookingDefault(): string {
-  const now = new Date();
-  const vnParts = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const get = (type: string) => vnParts.find((p) => p.type === type)?.value;
-  const currentHour = Number(get("hour"));
-  const currentMinute = Number(get("minute"));
-
-  // Khung giờ đón tiếp tiêu chuẩn của Golden Palace: 8:00 - 10:30 sáng
-  // Nếu trước 08:30 sáng: Smart Default = Hôm nay lúc 08:30
-  // Nếu từ 08:30 sáng trở đi: Smart Default = Ngày mai lúc 08:30
-  const isBeforeSlot = currentHour < 8 || (currentHour === 8 && currentMinute < 30);
-
-  const targetDate = new Date(now);
-  if (!isBeforeSlot) {
-    targetDate.setDate(targetDate.getDate() + 1);
-  }
-
-  const targetParts = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(targetDate);
-  const getTarget = (type: string) => targetParts.find((p) => p.type === type)?.value;
-
-  return `${getTarget("year")}-${getTarget("month")}-${getTarget("day")}T08:30`;
-}
-
 export function BookingEditor({
   lead,
   booking,
   onClose,
   onSave,
+  initialType,
+  collectContact,
 }: {
-  lead: CRMLead;
+  lead: Pick<CRMLead, "id" | "full_name" | "assigned_to">;
   booking?: CRMBooking;
   onClose: () => void;
-  onSave: (input: unknown, id?: string) => Promise<void>;
+  onSave: (
+    input: BookingInput,
+    id?: string,
+    contact?: { name: string; phone: string },
+  ) => Promise<void>;
+  initialType?: BookingInput["event_type"];
+  collectContact?: string;
 }) {
   const [form, setForm] = useState({
-    time: booking ? vietnamInput(booking.appointment_time) : getSmartBookingDefault(),
-    event_type: booking?.event_type ?? "xem_sanh",
+    time: booking
+      ? vietnamInput(booking.appointment_time)
+      : getSmartBookingDefault(),
+    event_type: booking?.event_type ?? initialType ?? "xem_sanh",
     guests_count: booking?.guests_count ?? 2,
     assigned_staff: booking?.assigned_staff || lead.assigned_to || "Ngọc Khánh",
     notes: booking?.notes ?? "",
+  });
+  const [contact, setContact] = useState({
+    name: lead.full_name,
+    phone: collectContact ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -112,7 +92,11 @@ export function BookingEditor({
                 lead_id: lead.id,
                 appointment_time: `${form.time}:00+07:00`,
               });
-              await onSave(input, booking?.id);
+              await onSave(
+                input,
+                booking?.id,
+                collectContact !== undefined ? contact : undefined,
+              );
               onClose();
             } catch (e) {
               setError(
@@ -123,6 +107,33 @@ export function BookingEditor({
             }
           }}
         >
+          {collectContact !== undefined && (
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-xs font-medium">
+                Họ và tên
+                <Input
+                  required
+                  maxLength={100}
+                  value={contact.name}
+                  onChange={(e) =>
+                    setContact({ ...contact, name: e.target.value })
+                  }
+                />
+              </label>
+              <label className="block text-xs font-medium">
+                Số điện thoại
+                <Input
+                  required
+                  type="tel"
+                  maxLength={30}
+                  value={contact.phone}
+                  onChange={(e) =>
+                    setContact({ ...contact, phone: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+          )}
           <label className="block text-xs font-medium">
             Loại lịch hẹn
             <select
@@ -144,7 +155,7 @@ export function BookingEditor({
           </label>
           <div>
             <label className="block text-xs font-medium">
-              Thời gian hẹn (giờ Việt Nam · 8:00 - 10:30 đón tiếp)
+              Thời gian hẹn (giờ Việt Nam)
               <Input
                 className="mt-2"
                 type="datetime-local"
@@ -156,10 +167,12 @@ export function BookingEditor({
             <div className="flex flex-wrap gap-1.5 mt-2">
               <button
                 type="button"
-                onClick={() => setForm({ ...form, time: getSmartBookingDefault() })}
+                onClick={() =>
+                  setForm({ ...form, time: getSmartBookingDefault() })
+                }
                 className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition"
               >
-                ⚡ Khung giờ gợi ý: 08:30 sáng
+                ⚡ Khung giờ gợi ý: 09:00 sáng
               </button>
             </div>
           </div>

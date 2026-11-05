@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { NextRequest } from "next/server";
-import { getSmartBookingDefault } from "../components/crm/booking-editor";
+import { getSmartBookingDefault } from "../lib/crm/appointment";
+import { visitIntent } from "../lib/chat/follow-ups";
 import { seedCRM, deleteDemoBooking } from "../lib/crm/demo-store";
 import { CRMError } from "../lib/crm/model";
 import { GET as getBotcakeWebhook, POST as postBotcakeWebhook } from "../app/api/webhook/botcake/route";
@@ -9,9 +10,17 @@ import { POST as postTelegramAlert } from "../app/api/telegram/alert/route";
 import { DELETE as deleteBookingRoute } from "../app/api/crm/bookings/[id]/route";
 import { CRM_COOKIE, issueSession } from "../lib/crm/server";
 
-test("getSmartBookingDefault returns 08:30 formatted datetime string", () => {
-  const defaultTime = getSmartBookingDefault();
-  assert.match(defaultTime, /^\d{4}-\d{2}-\d{2}T08:30$/);
+test("getSmartBookingDefault returns 09:00 formatted datetime string", () => {
+  assert.equal(getSmartBookingDefault(Date.parse("2026-11-06T01:59:00Z")), "2026-11-06T09:00");
+  assert.equal(getSmartBookingDefault(Date.parse("2026-11-06T02:00:00Z")), "2026-11-07T09:00");
+  assert.equal(getSmartBookingDefault(Date.parse("2026-11-06T19:00:00Z")), "2026-11-07T09:00");
+});
+
+test("visit intent distinguishes an appointment from asking for venue photos", () => {
+  assert.equal(visitIntent("Anh muốn đặt lịch xem sảnh"), "xem_sanh");
+  assert.equal(visitIntent("Chị muốn hẹn thử món"), "thu_mon");
+  assert.equal(visitIntent("Cho tôi xem ảnh sảnh tiệc"), undefined);
+  assert.equal(visitIntent("Tôi muốn hủy lịch thử món"), undefined);
 });
 
 test("deleteDemoBooking removes targeted booking and raises error if not found", () => {

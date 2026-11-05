@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 
 export async function POST(req: NextRequest) {
@@ -22,9 +23,15 @@ export async function POST(req: NextRequest) {
     const lower = trimmedMsg.toLowerCase();
     const brandName = businessProfile?.name || "Golden Palace";
 
+    const respond = <T extends { success: true; suggestedQuestions?: string[] }>(data: T) =>
+      NextResponse.json({
+        ...data,
+        suggestedQuestions: suggestedQuestions(trimmedMsg, /golden palace/i.test(brandName), data.suggestedQuestions),
+      });
+
     // 1. Chế độ ngoài giờ
     if (!isWorkingHours) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: outOfHoursMessage,
         triggeredRule: "out_of_hours",
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
       lower.startsWith("chao") ||
       lower.startsWith("xin chào")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ chào Quý khách! Quý khách cần thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
         suggestedQuestions: [
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
       lower.includes("giam 50%") ||
       lower.includes("hứa giảm 30%")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ ${brandName} xin phép làm rõ ạ: Nhà hàng áp dụng các gói ưu đãi theo chính sách hiện hành của trung tâm và không có chính sách chiết khấu tiền mặt 30% trên thực đơn. Quý khách vui lòng liên hệ Hotline 0228 6595 959 hoặc để lại số lượng bàn dự kiến để chuyên viên gửi thông tin chi tiết nhất nhé!`,
         triggeredRule: "guardrail_pricing_violation",
@@ -74,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     // - Giữ sảnh mà chưa cọc
     if (lower.includes("giữ sảnh giúp tôi không cần cọc") || lower.includes("giu sanh khong coc")) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ để đảm bảo quyền lợi và tính bảo mật ngày đẹp cho Quý khách, ${brandName} chỉ giữ sảnh chính thức sau khi hoàn tất thủ tục đặt cọc và hợp đồng. Quý khách có thể ghé trực tiếp 98 Đông A xem sảnh hoặc liên hệ Hotline 0228 6595 959 để được hỗ trợ chu đáo nhé!`,
         triggeredRule: "guardrail_hold_room_without_deposit",
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     // - Khách so sánh đối thủ rẻ hơn
     if (lower.includes("bên kia rẻ hơn") || lower.includes("ben kia re hon") || lower.includes("bên khác rẻ hơn")) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ ${brandName} rất thấu hiểu sự cân nhắc ngân sách của Quý khách! Điểm nổi bật tại GOLDEN PALACE là không gian sảnh tiệc sang trọng, dịch vụ chuyên nghiệp và chất lượng món ăn được chăm chút kỹ lưỡng. Quý khách có thể xem hình ảnh tại https://goldenpalacenamdinh.com/khong-gian hoặc ghé trực tiếp 98 Đông A để trải nghiệm thực tế nhé!`,
         triggeredRule: "guardrail_competitor_comparison",
@@ -94,7 +101,7 @@ export async function POST(req: NextRequest) {
     const phoneRegex = /(0[3|5|7|8|9][0-9]{8})\b/;
     const phoneMatch = trimmedMsg.match(phoneRegex);
     if (phoneMatch) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ ${brandName} đã ghi nhận số điện thoại ${phoneMatch[0]} của Quý khách. Chuyên viên quản lý tiệc sẽ liên hệ gửi menu chi tiết và xếp lịch đón tiếp Quý khách chu đáo nhất ạ!`,
         leadExtracted: {
@@ -106,18 +113,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Khách hẹn lịch xem sảnh / thử món / trải nghiệm dịch vụ
-    if (
-      lower.includes("xem sảnh") ||
-      lower.includes("xem sanh") ||
-      lower.includes("thử món") ||
-      lower.includes("thu mon") ||
-      lower.includes("cuối tuần") ||
-      lower.includes("hẹn")
-    ) {
-      return NextResponse.json({
+    const visit = visitIntent(trimmedMsg);
+    if (visit) {
+      return respond({
         success: true,
         reply: `Dạ ${brandName} đón khách tham quan sảnh và thử món từ 8:00 đến 10:30 sáng hằng ngày tại 98 Đông A, TP. Nam Định. Để ban quản lý chuẩn bị phòng tiếp đón và chuyên viên tư vấn riêng, Quý khách cho em xin Tên và Số điện thoại nhé!`,
         appointmentIntent: true,
+        visitType: visit,
         suggestedQuestions: [
           "Địa chỉ nhà hàng ở đâu?",
           "Hotline liên hệ trực tiếp",
@@ -135,7 +137,7 @@ export async function POST(req: NextRequest) {
       lower.includes("in ảnh lấy ngay") ||
       lower.includes("máy chụp ảnh")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Golden Palace có cung cấp dịch vụ máy chụp ảnh Photobooth in lấy ngay tại sảnh tiệc với 3 gói lựa chọn tiện lợi:\n📸 Gói 1 (1.5 giờ): 3.400.000 VNĐ (In 200 ảnh nhỏ hoặc 100 ảnh to).\n📸 Gói 2 (2 giờ): 4.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n📸 Gói 3 (3 giờ): 5.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n🎁 Tất cả các gói đều đã bao gồm 01 kỹ thuật viên trực máy, bàn giao toàn bộ file mềm gốc, phụ kiện check-in vui nhộn và sổ ký tên lưu giữ lời chúc cho dâu rể ạ!`,
         suggestedQuestions: [
@@ -161,7 +163,7 @@ export async function POST(req: NextRequest) {
       lower.includes("organ") ||
       lower.includes("thiên thần")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Golden Palace cung cấp đội ngũ nhân sự biểu diễn chuyên nghiệp với bảng giá niêm yết:\n🎤 MC tiệc cưới chuyên nghiệp: 800.000 VNĐ / người\n🎶 Ca sĩ biểu diễn (hát 3 bài): 800.000 VNĐ / ca sĩ\n🎹 Nhạc công Keyboard: 800.000 VNĐ / người\n👼 Thiên thần dẫn lối cô dâu (1 cặp): 1.000.000 VNĐ / cặp\n🎷 Ban nhạc Saxophone đón khách: 5.000.000 VNĐ / ban\n🎻 Ban nhạc Tứ tấu cổ điển hoàng gia: 14.000.000 VNĐ / ban\nQuý khách có thể tích chọn khi tính Dự toán Chi phí tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
         suggestedQuestions: [
@@ -188,7 +190,7 @@ export async function POST(req: NextRequest) {
       lower.includes("bóng bay kích nổ") ||
       lower.includes("bong bay kich no")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ nhà hàng có các gói nghi thức và hiệu ứng trao nhẫn cưới độc đáo với giá niêm yết:\n🌾 Rót gạo / Tranh cát thiêng liêng: 800.000 VNĐ / Hộp\n💍 Vòng laser trao nhẫn: 700.000 VNĐ / lần (🎁 TẶNG MIỄN PHÍ cho tiệc từ 400 khách trở lên)\n🛸 Flycam trao nhẫn cưới: 1.000.000 VNĐ / lần\n🦋 Bướm bay dẫn đường: 3.000.000 VNĐ / con\n🌳 Tưới cây hạnh phúc: 500.000 VNĐ / lần\n🎈 Bóng bay kích nổ: 900.000 VNĐ / quả (từ 4 quả)\nChi tiết tại: https://goldenpalacenamdinh.com/dich-vu ạ!`,
         suggestedQuestions: [
@@ -208,7 +210,7 @@ export async function POST(req: NextRequest) {
       lower.includes("hoa don") ||
       lower.includes("xuất hóa đơn")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ các báo giá thực đơn và dịch vụ hiện tại của Golden Palace là GIÁ CHƯA BAO GỒM VAT ạ.\nKhi tính tổng bill hoặc xuất hóa đơn, thuế VAT được bóc tách theo quy định:\n• Thuế 8% VAT: Áp dụng cho Đồ ăn + Phí Hội trường (phí HT) + Nước lọc.\n• Thuế 10% VAT: Áp dụng cho Đồ uống (Nước ngọt + Bia + Rượu).\nQuý khách có thể tự tính dự toán tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
         suggestedQuestions: [
@@ -228,7 +230,7 @@ export async function POST(req: NextRequest) {
       lower.includes("mâm thử") ||
       lower.includes("mam thu")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ để đảm bảo tính đồng bộ và chất lượng phục vụ tiêu chuẩn yến tiệc số lượng lớn, hiện tại Golden Palace không áp dụng dịch vụ mâm thử món ạ.\nToàn bộ các món ăn đều do các đầu bếp chuyên nghiệp nhiều năm kinh nghiệm chế biến chuẩn vị tiệc cưới truyền thống và hiện đại, đã được hàng ngàn cặp đôi tại Nam Định tin chọn và đánh giá rất cao. Quý khách xem danh sách món ăn tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC ạ!`,
         suggestedQuestions: [
@@ -250,7 +252,7 @@ export async function POST(req: NextRequest) {
       lower.includes("ô tô") ||
       lower.includes("o to")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Golden Palace có bãi đỗ xe ô tô và xe máy vô cùng rộng rãi ngay trước khuôn viên nhà hàng, có nhân viên bảo vệ điều phối chu đáo và HOÀN TOÀN MIỄN PHÍ 100% cho toàn bộ khách tham dự tiệc ạ! Quý khách xem thêm khuôn viên tại: https://goldenpalacenamdinh.com/khong-gian`,
         suggestedQuestions: [
@@ -270,7 +272,7 @@ export async function POST(req: NextRequest) {
       lower.includes("rượu ngoài") ||
       lower.includes("đồ uống mang vào")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ chính sách đồ uống tại Golden Palace rất minh bạch và linh hoạt:\n1. Đồ uống nhà hàng: Kiểm đếm số lượng thực tế sử dụng sau tiệc (uống bao nhiêu tính tiền bấy nhiêu).\n2. Đồ uống mang từ ngoài vào: Quý khách ĐƯỢC PHÉP mang rượu, bia từ ngoài vào, nhà hàng áp dụng mức phí phục vụ (phí nút chai, đá lạnh, ly cốc niêm yết theo quy định). Quý khách xem chi tiết tại: https://goldenpalacenamdinh.com/thuc-don?tab=DO_UONG ạ!`,
         suggestedQuestions: [
@@ -319,7 +321,7 @@ export async function POST(req: NextRequest) {
 
       // 1. Dưới 50 khách (Phòng VIP)
       if (guests <= 50) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), lựa chọn hoàn hảo nhất là hệ thống Phòng VIP (10 – 50 khách) mang đẳng cấp riêng tư tuyệt đối, nội thất gỗ và mạ vàng hoàng gia: https://goldenpalacenamdinh.com/khong-gian/phong-vip . Quý khách muốn ghé xem trực tiếp không gian phòng VIP không ạ?`,
           suggestedQuestions: [
@@ -332,7 +334,7 @@ export async function POST(req: NextRequest) {
 
       // 2. 51 - 100 khách (Quầy Bar Lounge hoặc Tầng 4)
       if (guests <= 100) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), Golden Palace gợi ý:\n🍸 Quầy Bar Lounge Tầng 1 (50 – 100 khách) — Phong cách hiện đại, sành điệu: https://goldenpalacenamdinh.com/khong-gian/quay-bar\n🏛️ Hội trường Tầng 4 (100 – 300 khách) — Không gian trang nhã, ấm cúng: https://goldenpalacenamdinh.com/khong-gian/tang-4\nQuý khách muốn ghé xem trực tiếp không gian nào ạ?`,
           suggestedQuestions: [
@@ -345,7 +347,7 @@ export async function POST(req: NextRequest) {
 
       // 3. 101 - 280 khách (Hội trường Tầng 4)
       if (guests < 290) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), lựa chọn hoàn hảo nhất là Hội trường Tầng 4 (100 – 300 khách) ạ:\n• Không gian ấm cúng, sang trọng, riêng tư.\n• Trang bị sẵn màn hình LED 10m², âm thanh biểu diễn chuẩn và hoa lụa sân khấu lãng mạn.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-4\n📝 Tính dự toán: https://goldenpalacenamdinh.com/du-toan-chi-phi`,
           suggestedQuestions: [
@@ -358,7 +360,7 @@ export async function POST(req: NextRequest) {
 
       // 4. 290 - 350 khách (Bao gồm đúng 300 khách - Gợi ý cả Tầng 3 và Tầng 4)
       if (guests <= 350) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), Golden Palace trân trọng gợi ý 2 lựa chọn phù hợp nhất:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m², không gian rộng rãi rất thoải mái khi phát sinh thêm khách: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 4 (100 – 300 khách) — Không gian ấm cúng, trang nhã, vừa vặn cho tiệc ${tables} mâm: https://goldenpalacenamdinh.com/khong-gian/tang-4\nAnh/chị muốn ghé tham quan trực tiếp sảnh Tầng 3 hay Tầng 4 ạ?`,
           suggestedQuestions: [
@@ -371,7 +373,7 @@ export async function POST(req: NextRequest) {
 
       // 5. 351 - 650 khách (Tầng 3 hoặc Tầng 2)
       if (guests <= 650) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), em trân trọng gợi ý Quý khách:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Phong cách hoàng gia lộng lẫy, giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m²: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 2 (350 – 750 khách) — Đại cung điện trần cao 7m hoàn toàn không có cột chắn, đèn pha lê hoàng gia hoành tráng: https://goldenpalacenamdinh.com/khong-gian/tang-2\nQuý khách muốn ghé xem trực tiếp sảnh nào ạ?`,
           suggestedQuestions: [
@@ -383,7 +385,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 6. Trên 650 khách (Tầng 2 Đại cung điện)
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ với quy mô đại lễ trên ${guests} khách (khoảng ${tables} mâm), Hội trường Tầng 2 là sự lựa chọn duy nhất và hoàn hảo nhất tại Nam Định:\n• Sức chứa tối đa lên tới 750 khách (75 mâm).\n• Không gian trần cao 7m hoàn toàn không có cột, màn hình LED cỡ lớn 30m² đảm bảo tầm nhìn tuyệt đối.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-2\n📞 Liên hệ Hotline 0228 659 5959 để kiểm tra lịch sảnh trống ngày đẹp ạ!`,
         suggestedQuestions: [
@@ -404,7 +406,7 @@ export async function POST(req: NextRequest) {
       lower.includes("xem anh") ||
       lower.includes("ảnh sảnh")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ kính mời Quý khách tham khảo toàn bộ hình ảnh thực tế không gian 5 sảnh hội trường tráng lệ của Golden Palace tại đây: https://goldenpalacenamdinh.com/khong-gian . Anh/chị đang dự kiến tiệc bao nhiêu bàn để em tư vấn sảnh phù hợp nhất ạ?`,
         suggestedQuestions: [
@@ -426,7 +428,7 @@ export async function POST(req: NextRequest) {
       lower.includes("bản đồ") ||
       lower.includes("maps")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định. Giờ đón tiếp Quý khách tham quan trực tiếp các sảnh tiệc từ 8h00 – 21h00 tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ) ạ! Quý khách xem chỉ đường Google Maps tại: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`,
         suggestedQuestions: [
@@ -448,7 +450,7 @@ export async function POST(req: NextRequest) {
       lower.includes("lien he") ||
       lower.includes("gọi")
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Quý khách có thể liên hệ trực tiếp qua Hotline: 0228 659 5959 hoặc truy cập website https://goldenpalacenamdinh.com. Đội ngũ quản lý tiệc Golden Palace luôn sẵn sàng hỗ trợ chu đáo 24/7 ạ!`,
         suggestedQuestions: [
@@ -473,7 +475,7 @@ export async function POST(req: NextRequest) {
       lower.includes("quy trinh dat tiec")
     ) {
       const datCocItem = knowledgeBase.find((k: any) => k.category === "dat_coc");
-      return NextResponse.json({
+      return respond({
         success: true,
         reply:
           datCocItem?.answer ||
@@ -499,7 +501,7 @@ export async function POST(req: NextRequest) {
       lower.includes("mâm cỗ")
     ) {
       const thucDonItem = knowledgeBase.find((k: any) => k.category === "thuc_don");
-      return NextResponse.json({
+      return respond({
         success: true,
         reply:
           thucDonItem?.answer ||
@@ -521,7 +523,7 @@ export async function POST(req: NextRequest) {
       lower.includes("giảm giá")
     ) {
       const uuDaiItem = knowledgeBase.find((k: any) => k.category === "uu_dai");
-      return NextResponse.json({
+      return respond({
         success: true,
         reply:
           uuDaiItem?.answer ||
@@ -541,7 +543,7 @@ export async function POST(req: NextRequest) {
       lower.includes("decor")
     ) {
       const decorItem = knowledgeBase.find((k: any) => k.category === "decor_ngoai");
-      return NextResponse.json({
+      return respond({
         success: true,
         reply:
           decorItem?.answer ||
@@ -563,7 +565,7 @@ export async function POST(req: NextRequest) {
       lower.includes("cá nhân hóa")
     ) {
       const techItem = knowledgeBase.find((k: any) => k.category === "cong_nghe_so");
-      return NextResponse.json({
+      return respond({
         success: true,
         reply:
           techItem?.answer ||
@@ -586,7 +588,7 @@ export async function POST(req: NextRequest) {
       lower.includes("các sảnh") ||
       (lower.includes("sảnh") && (lower.includes("bao nhiêu") || lower.includes("quy mô")))
     ) {
-      return NextResponse.json({
+      return respond({
         success: true,
         reply: `Dạ Golden Palace có 5 sảnh hội trường với sức chứa linh hoạt từ 10 đến 750 khách (1 – 75 mâm): Hội trường Tầng 2 (350–750 khách), Tầng 3 (300–650 khách), Tầng 4 (100–300 khách), Quầy Bar Lounge (50–100 khách) và Phòng VIP (10–50 khách). Quý khách xem ảnh chi tiết tại: https://goldenpalacenamdinh.com/khong-gian ạ!`,
         suggestedQuestions: [
@@ -603,7 +605,7 @@ export async function POST(req: NextRequest) {
       const keywords = qLower.split(" ").filter((w: string) => w.length > 3);
       const matchCount = keywords.filter((w: string) => lower.includes(w)).length;
       if (matchCount >= 2) {
-        return NextResponse.json({
+        return respond({
           success: true,
           reply: item.answer,
           suggestedQuestions: [
@@ -616,7 +618,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Trả lời mặc định (Ngắn gọn, không lặp lại giới thiệu trợ lý tư vấn)
-    return NextResponse.json({
+    return respond({
       success: true,
       reply: `Dạ Quý khách cần hỗ trợ thêm thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
       suggestedQuestions: [
