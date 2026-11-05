@@ -13,73 +13,69 @@ description: >-
 > **QUY TẮC CỐT LÕI CẦN GHI NHỚ:**
 > 1. **DỰ ÁN ĐỘC LẬP:** Đây là sản phẩm dự thi VibeCoding 2026 (Bảng B - Kinh tế). **TUYỆT ĐỐI KHÔNG liên hệ, KHÔNG gán ghép và KHÔNG dùng dữ liệu của Golden Palace.**
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
+> 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
 
 ---
 
-## 📌 THÔNG TIN DỰ ÁN
+## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
-| Key | Value |
-|-----|-------|
-| **Cuộc thi** | VibeCoding 2026 — AI × Mini App |
-| **Bảng** | B — Kinh tế |
-| **Đề số** | 04 — Chatbot FAQ & Đặt lịch tư vấn |
-| **Deadline** | 08/11/2026 |
-| **Tên sản phẩm** | **OmniChat AI** |
-| **Mô hình ứng dụng** | Doanh nghiệp dịch vụ / Trung tâm đào tạo / Kinh doanh đa kênh |
-| **Deploy** | Vercel (Front-end + Serverless API Routes) |
-| **Database** | Supabase (PostgreSQL + Realtime) |
-| **Repo** | GitHub (phối hợp nhánh `main`, branch cá nhân `chinh/*` và `hien/*`) |
-
----
-
-## 🏗️ KIẾN TRÚC KẾT NỐI ĐA KÊNH (TINH GỌN)
-
-```mermaid
-flowchart LR
-    subgraph CHANNELS["📱 Kênh Tin Nhắn"]
-        FB["Facebook Page"]
-        ZL["Zalo Cá Nhân"]
-    end
-
-    subgraph BOTCAKE["⚡ Nền tảng trung gian: Botcake"]
-        BC_HUB["Botcake Omnichannel Engine"]
-    end
-
-    subgraph APP["☁️ Hệ thống OmniChat AI (Next.js / Vercel)"]
-        WH["/api/webhook/botcake\n(Nhận tin FB + Zalo)"]
-        WIDGET["Web Chat Widget\n(Nhúng website)"]
-        AI["AI Engine (9Router + Gemini)"]
-        DB["Supabase Realtime"]
-        ADMIN["Admin Dashboard\n(Inbox, Leads, Training, Settings)"]
-    end
-
-    FB --> BC_HUB
-    ZL --> BC_HUB
-    BC_HUB -->|"Webhook duy nhất"| WH
-    WH --> DB
-    WH --> AI
-    WIDGET --> DB
-    WIDGET --> AI
-    DB --> ADMIN
-```
+| Key | Value | Trạng thái |
+|-----|-------|:----------:|
+| **Cuộc thi** | VibeCoding 2026 — AI × Mini App (Bảng B) | Đang diễn ra |
+| **Đề số** | 04 — Chatbot FAQ & Đặt lịch tư vấn | Đã chốt phạm vi |
+| **Deadline** | 08/11/2026 (Còn 3.5 ngày) | Gấp |
+| **Tên sản phẩm** | **OmniChat AI** | Đã chốt |
+| **GitHub Repo** | `https://github.com/tvchinh1423-sys/goldenchat-vibecoding` | ✅ Đã tạo & push origin/main |
+| **Môi trường .env** | Đã có `.env.local` và `.env.example` | ✅ Đã cấu hình |
+| **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
+| **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
 ---
 
-## 👥 PHÂN CHIA CÔNG VIỆC CHÍNH THỨC
+## 🖼️ HỆ THỐNG GIAO DIỆN CHUẨN ĐÃ THỐNG NHẤT (4 ẢNH MẪU)
+
+Hệ thống giao diện được định hình 100% dựa trên 4 ảnh thực tế trong workspace:
+1. **Màn hình Hộp thư (Inbox 3 cột):**
+   - Cột 1: Danh sách hội thoại đa kênh (lọc FB, Zalo, Web, có lịch hẹn, có SĐT/email).
+   - Cột 2: Khung chat 2 chiều, toggle bật/tắt AI cho phiên, nút *Soạn nháp AI*, nút *Kho tin/Sổ tay*.
+   - Cột 3: Tóm tắt hội thoại AI, Ghi chú nội bộ cho sales, Hộp khách chưa định danh (phát hiện SĐT/Email ➔ Nút *Tạo khách mới*).
+2. **Màn hình Huấn luyện Bot (`/training`):**
+   - Toggle tổng bật/tắt bot toàn hệ thống.
+   - Section 1: Bot nói thế nào (Persona, giờ trực, câu hẹn ngoài giờ).
+   - Section 2: Bot biết gì (FAQ, upload Excel, link Google Sheet).
+   - Section 3: Bot không được làm gì (Guardrails, cảnh báo Telegram khi vi phạm).
+   - Bên phải: Khung Thử bot trực tiếp kèm gợi ý câu hỏi test nhanh.
+3. **Màn hình Quản lý Lead — Dạng Danh Sách & Biểu đồ Phễu (`/leads` view 1):**
+   - Bên trái: Danh sách hồ sơ khách hàng (bộ lọc: giai đoạn, phụ trách, khóa học, nguồn, lịch hẹn, checkbox *Chưa ai chạm quá 7 ngày*).
+   - Bên phải: **Phễu tuyển sinh (Funnel Chart)** thể hiện tỷ lệ chuyển đổi qua từng bậc:
+     - `N1 · Lead thô` ➔ `N2 · Tiềm năng` ➔ `N3 · Học thử` ➔ `N4 · Chính thức` ➔ `N5 · Nuôi dưỡng` / `N0 · Đã mất`.
+4. **Màn hình Quản lý Lead — Dạng Bảng Phễu Kanban (`/leads` view 2):**
+   - Thanh thống kê tỷ lệ % từng giai đoạn trên cùng.
+   - 6 cột Kanban kéo thả trực quan:
+     - `N1 · LEAD THÔ`
+     - `N2 · TIỀM NĂNG`
+     - `N3 · HỌC THỬ`
+     - `N4 · CHÍNH THỨC`
+     - `N5 · NUÔI DƯỠNG`
+     - `N0 · ĐÃ MẤT`
+
+---
+
+## 👥 PHÂN CHIA VAI TRÒ & MODULE
 
 ```
-goldenchat/
+app-root/
 ├── app/
 │   ├── (dashboard)/
 │   │   ├── inbox/        <-- Chị Hiền (Frontend Inbox 3 cột, Realtime chat)
 │   │   ├── dashboard/    <-- Chị Hiền (Thống kê biểu đồ hiệu suất)
-│   │   ├── leads/        <-- Chị Hiền (Quản lý Lead & Lịch hẹn tư vấn)
+│   │   ├── leads/        <-- Chị Hiền (Quản lý Lead Funnel & Kanban N1-N5)
 │   │   ├── training/     <-- Chinh (Quản trị tri thức, Form huấn luyện bot)
 │   │   └── settings/     <-- Chinh (Cấu hình hệ thống, giờ trực, kênh kết nối)
 │   ├── api/
 │   │   ├── ai/           <-- Chị Hiền (Tích hợp AI Engine 9Router + Gemini)
 │   │   ├── leads/        <-- Chị Hiền (API bóc tách lead, CRUD lịch hẹn)
-│   │   ├── webhook/      <-- Chinh (Webhook duy nhất nhận tin FB + Zalo từ Botcake)
+│   │   ├── webhook/      <-- Chinh (Webhook Botcake FB + Zalo)
 │   │   └── training/     <-- Chinh (API upload Excel, parse tri thức)
 │   └── widget/           <-- Chinh (Giao diện Web chat widget nhúng)
 ├── lib/
@@ -90,49 +86,13 @@ goldenchat/
 ```
 
 ### 1. Trần Vân Chinh (Quản trị tri thức + Kênh chat + Cấu hình)
-- **Quản trị tri thức (`/training`):**
-  - Form nhập ngữ cảnh bot (tên bot, xưng hô, giọng điệu, mục tiêu tư vấn).
-  - Upload file Excel FAQ tri thức → parse và nạp vào knowledge base.
-  - Kết nối Google Sheet tri thức.
-  - Khung "Thử bot" (Simulator trực quan trên màn hình).
-- **Kênh chat:**
-  - Kết nối Botcake (cho cả Facebook Page & Zalo cá nhân).
-  - Viết endpoint Webhook `/api/webhook/botcake` xử lý phân luồng tin nhắn FB & Zalo.
-  - Web Widget: Khung chat nhúng trực tiếp trên website.
-- **Cấu hình hệ thống (`/settings`):**
-  - Thiết lập giờ trực (trong giờ / ngoài giờ) và câu hẹn phản hồi.
-  - Cấu hình phạm vi bot cấm trả lời (tự ngắt bot, bắn cảnh báo Telegram).
-  - Sổ tay tư vấn (kho câu trả lời mẫu cho nhân viên).
-  - Tự động đồng bộ lead cuối ngày vào Google Sheet.
-- **Quản lý & Bàn giao:**
-  - Khởi tạo GitHub repo, quản trị dữ liệu mẫu, chuẩn bị Video demo 2 phút & README.
+- Quản trị tri thức: Form persona, upload Excel FAQ, nạp tri thức, Khung Thử bot.
+- Kênh chat: Kết nối Botcake (cho cả FB Page & Zalo cá nhân), Webhook `/api/webhook/botcake`, Web chat widget.
+- Cấu hình: Giờ trực, phạm vi cấm bot, cảnh báo Telegram, Sổ tay tư vấn, đồng bộ Google Sheet.
+- Quản lý & Bàn giao: Repo GitHub, tài liệu README.md, Video demo 2 phút.
 
 ### 2. Chị Hiền (Frontend Lead + Tích hợp AI Engine + Lead & Lịch hẹn)
-- **Frontend Lead & Giao diện:**
-  - Setup khung layout App Router + Tailwind CSS + shadcn/ui.
-  - Đảm bảo hiển thị Responsive trên Mobile & Desktop.
-  - Màn hình **Hộp thư (Inbox)** 3 cột:
-    - Cột 1: Danh sách chat (bộ lọc FB/Zalo/Web, có lịch hẹn, có SĐT).
-    - Cột 2: Khung chat 2 chiều, trạng thái AI/Thủ công, nút "Soạn nháp AI".
-    - Cột 3: Panel thông tin (Tóm tắt hội thoại, Ghi chú sales, Khách chưa định danh).
-  - Màn hình **Dashboard** thống kê tổng quan (số tin nhắn, lead mới, lịch hẹn).
-- **Tích hợp AI Engine:**
-  - Kết nối 9Router (chính) và Gemini API (dự phòng) qua `lib/ai-engine.ts`.
-  - Tính năng AI gợi ý "Soạn nháp" câu trả lời cho nhân viên trước khi gửi.
-  - Nút bật/tắt AI tự động; tự ngắt khi có nhân viên thật can thiệp.
-- **Lead & Lịch hẹn (`/leads`):**
-  - AI bóc tách lead tự động: Họ tên, SĐT, Email, Nhu cầu.
-  - Bảng CRM quản lý Lead: lọc trạng thái, tìm kiếm, xuất file.
-  - Phân hệ Đặt lịch tư vấn: Form đặt lịch, chọn ngày giờ, trạng thái hẹn.
-
----
-
-## 🏆 TIÊU CHÍ BẢNG B (100 ĐIỂM)
-
-1. **5 tính năng cốt lõi (30đ):** Chat tập trung ➔ AI phản hồi/nháp ➔ Đặt lịch hẹn ➔ Thu thập Lead ➔ Quản trị tri thức.
-2. **Vibe Coding với AI (20đ):** Minh chứng tương tác và ra lệnh cho AI trong quá trình xây dựng.
-3. **Hiểu bài toán (15đ):** Giải quyết tình huống thực tế của doanh nghiệp thiếu nhân sự trực chat 24/7.
-4. **Nghiệp vụ & Data đầu ra (15đ):** Nội dung tư vấn chuẩn xác, phân định rõ real vs mock data.
-5. **UI/UX (10đ):** shadcn/ui, mobile-first, dễ thao tác.
-6. **Xử lý lỗi (5đ):** Validate SĐT, ngày giờ lịch hẹn.
-7. **Demo & Bàn giao (5đ):** Video 2 phút, README chuẩn, source ZIP sạch.
+- Frontend Lead: Setup layout Next.js 14 App Router + Tailwind + shadcn/ui, Responsive Mobile/Desktop.
+- Hộp thư (Inbox): Dựng đúng chuẩn ảnh mẫu 1 (3 cột, filter, soạn nháp, tóm tắt).
+- Lead & Lịch hẹn: Dựng đúng chuẩn ảnh mẫu 3 & 4 (Chuyển đổi linh hoạt giữa Danh sách + Phễu Funnel và Bảng Phễu Kanban N1-N5).
+- Tích hợp AI: Kết nối 9Router / Gemini API, tính năng Soạn nháp AI, tự động bóc tách Lead từ chat.
