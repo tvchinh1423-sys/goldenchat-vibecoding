@@ -180,6 +180,7 @@ app-root/
 
 ### Mốc Module 3 CRM & lịch hẹn Golden Palace — 05/11/2026 (Hiền)
 
+- Đồng bộ 11:55 (giờ Việt Nam): xác minh commit CRM `d116be8` đã có trên cả `origin/main` và `origin/hien/frontend-ai`. Đây là xác nhận mã nguồn trên GitHub; chưa xác nhận Vercel đã triển khai đúng commit hoặc CRM đã chạy với Supabase thật.
 - Người dùng xác nhận tiếp tục đúng **Trung tâm Tiệc cưới & Sự kiện Golden Palace**. Đã tích hợp main `3c159ce` (mobile/PWA) và `895be67` (Chinh nhận Module 2/Kanban trước đó, thêm `/download`). Bản CRM mới ở nhánh `hien/frontend-ai`, chưa tự đưa lên main hay xác nhận triển khai production.
 - `/leads` có Kanban N1–N5/N0, danh sách + phân bố phễu hiện tại, lịch hẹn; tìm tên không dấu/SĐT/nhu cầu, lọc giai đoạn/nguồn/phụ trách/lịch đang mở/chưa chạm hơn 7 ngày. Biểu đồ là phân bố khách hiện tại, chưa có tỷ lệ chuyển đổi lịch sử. Có tạo/sửa hồ sơ, nhu cầu, số bàn, ngày tổ chức riêng, nguồn và người phụ trách. Chuyển giai đoạn dùng PATCH riêng để không ghi đè ghi chú/liên hệ của người khác.
 - Inbox tạo khách vào kho CRM chung, kiểm tra trùng SĐT chuẩn hóa; bổ sung hồ sơ showcase tương ứng thay vì tạo hai thẻ Trang. Mở lại Inbox nhận thông tin liên hệ/lịch đang mở từ CRM; hủy lịch bỏ lịch khỏi hội thoại. Tin nhắn, ghi chú, cờ AI vẫn cục bộ, chưa phải adapter hội thoại Supabase/Botcake thật. Đã chừa khoảng trống cho thanh điều hướng mobile để không che ô gửi tin.
