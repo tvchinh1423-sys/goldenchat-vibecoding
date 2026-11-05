@@ -86,8 +86,8 @@ Mục tiêu: Tư vấn thực đơn bàn tiệc, công suất sảnh, ưu đãi 
         id: 'gp-1',
         category: 'thuc_don',
         question: 'Thực đơn tiệc cưới bao nhiêu một bàn?',
-        answer: 'Dạ thực đơn tiệc cưới tại Golden Palace dao động từ 2.800.000đ - 6.500.000đ/bàn 10 khách với hơn 150 món ăn Á - Âu tinh hoa do các đầu bếp chuyên nghiệp chế biến. Hiện trung tâm đang tặng kèm gói đồ uống suốt tiệc cho hợp đồng từ 30 bàn trở lên ạ!',
-        tags: ['thuc_don', 'gia_ban', 'do_uong'],
+        answer: 'Dạ thực đơn tiệc cưới tại Golden Palace dao động từ 2.800.000đ - 6.500.000đ/bàn 10 khách với hơn 150 món ăn Á - Âu tinh hoa do các đầu bếp chuyên nghiệp chế biến. Quý khách vui lòng tham khảo trọn bộ menu chi tiết tại đây ạ: https://goldenpalacenamdinh.com/thuc-don . Hiện trung tâm đang tặng kèm gói đồ uống suốt tiệc cho hợp đồng từ 30 bàn trở lên ạ!',
+        tags: ['thuc_don', 'gia_ban', 'menu', 'do_uong'],
         is_active: true,
       },
       {

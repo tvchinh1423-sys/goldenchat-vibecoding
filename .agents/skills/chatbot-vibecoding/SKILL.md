@@ -210,6 +210,7 @@ app-root/
   - Địa chỉ & Bản đồ: `98 Đông A, KĐT Hòa Vượng, TP. Nam Định` (kèm link Google Maps `https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`).
   - Khung giờ đón khách tham quan & tư vấn: `8:00 - 10:30` sáng hằng ngày.
   - Hình ảnh không gian sảnh: `https://goldenpalacenamdinh.com/khong-gian`.
+  - Thực đơn & Menu chi tiết: `https://goldenpalacenamdinh.com/thuc-don`.
   - Website & Brochure: `https://goldenpalacenamdinh.com` và `https://tinyurl.com/thongtintieccuoi`.
 - **Thiết lập 5 kịch bản tình huống liên hoàn (Conversation Flow & Follow-up):**
   - Tình huống 1: Hỏi không gian sảnh ➔ Trả lời link ảnh + Gợi ý xem thực đơn / địa chỉ / giờ đón khách.

@@ -214,18 +214,23 @@ export async function POST(req: NextRequest) {
       const qLower = item.question.toLowerCase();
       const aText = item.answer;
 
-      // Thực đơn / Giá bàn
+      // Thực đơn / Giá bàn / Menu
       if (
         lower.includes("thực đơn") ||
         lower.includes("thuc don") ||
+        lower.includes("menu") ||
+        lower.includes("món ăn") ||
+        lower.includes("mon an") ||
         lower.includes("bao nhiêu một bàn") ||
         lower.includes("bn 1 ban") ||
         lower.includes("giá bàn")
       ) {
-        if (item.category === "thuc_don" || qLower.includes("thực đơn") || qLower.includes("bàn")) {
+        if (item.category === "thuc_don" || qLower.includes("thực đơn") || qLower.includes("bàn") || qLower.includes("menu")) {
           return NextResponse.json({
             success: true,
-            reply: aText,
+            reply: aText.includes("https://goldenpalacenamdinh.com/thuc-don")
+              ? aText
+              : `${aText} Quý khách vui lòng tham khảo chi tiết menu tại đây ạ: https://goldenpalacenamdinh.com/thuc-don`,
             suggestedQuestions: [
               "Ưu đãi mùa cưới hiện nay có gì?",
               "Sảnh tiệc bên mình chứa được bao nhiêu khách?",
