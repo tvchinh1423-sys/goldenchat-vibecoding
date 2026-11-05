@@ -37,28 +37,24 @@ export async function POST(req: NextRequest) {
     const parsedItems: Omit<KnowledgeItem, "id">[] = [];
 
     for (const row of rawRows) {
-      // Tìm key cho câu hỏi
       const qKey = Object.keys(row).find((k) =>
         /câu\s*hỏi|cau\s*hoi|question|faq|tiêu\s*đề/i.test(k.trim())
       );
-      // Tìm key cho câu trả lời
       const aKey = Object.keys(row).find((k) =>
         /câu\s*trả\s*lời|cau\s*tra\s*loi|trả\s*lời|answer|đáp|dap|nội\s*dung|content/i.test(
           k.trim()
         )
       );
-      // Tìm key cho danh mục
       const cKey = Object.keys(row).find((k) =>
         /danh\s*mục|danh\s*muc|category|chủ\s*đề|nhóm/i.test(k.trim())
       );
-      // Tìm key cho tags
       const tKey = Object.keys(row).find((k) =>
         /tags|từ\s*khóa|tu\s*khoa/i.test(k.trim())
       );
 
       const question = qKey ? String(row[qKey]).trim() : "";
       const answer = aKey ? String(row[aKey]).trim() : "";
-      const category = cKey ? String(row[cKey]).trim() : "faq";
+      const category = cKey ? String(row[cKey]).trim() : "thuc_don";
       const tagsRaw = tKey ? String(row[tKey]).trim() : "";
 
       if (question && answer) {
@@ -138,56 +134,56 @@ export async function GET(req: NextRequest) {
   if (isTemplate) {
     const sampleData = [
       {
-        "Danh mục": "Học phí",
-        "Câu hỏi": "Học phí khóa Digital Marketing & AI (ENTD01) là bao nhiêu?",
+        "Danh mục": "Thực đơn bàn tiệc",
+        "Câu hỏi": "Thực đơn tiệc cưới bao nhiêu một bàn?",
         "Câu trả lời":
-          "Dạ học phí chuẩn khóa ENTD01 là 15.000.000đ. Đang có ưu đãi đăng ký sớm trong tháng giảm còn 12.500.000đ, hỗ trợ trả góp 0% lãi suất.",
-        "Từ khóa": "học phí, ưu đãi, trả góp",
+          "Dạ thực đơn tiệc cưới tại Golden Palace dao động từ 2.800.000đ - 6.500.000đ/bàn 10 khách với hơn 150 món ăn Á - Âu tinh hoa. Tặng kèm gói đồ uống suốt tiệc cho hợp đồng từ 30 bàn trở lên ạ!",
+        "Từ khóa": "thực đơn, giá bàn, đồ uống",
       },
       {
-        "Danh mục": "Lịch học",
-        "Câu hỏi": "Khi nào khai giảng khóa mới?",
+        "Danh mục": "Sảnh tiệc & Sức chứa",
+        "Câu hỏi": "Sảnh tiệc bên mình chứa được bao nhiêu khách?",
         "Câu trả lời":
-          "Khóa ENTD01 gần nhất khai giảng vào ngày 15 hàng tháng. Lịch học lớp Tối 2-4-6 hoặc Cuối tuần.",
-        "Từ khóa": "lịch học, khai giảng",
+          "Dạ Golden Palace sở hữu hệ thống đại sảnh sức chứa từ 150 đến hơn 1.200 khách, trần cao không cột cùng màn hình LED 4K hiện đại bậc nhất.",
+        "Từ khóa": "sảnh tiệc, sức chứa, quy mô",
       },
       {
-        "Danh mục": "Học thử",
-        "Câu hỏi": "Tôi có được học thử trước không?",
+        "Danh mục": "Chương trình ưu đãi",
+        "Câu hỏi": "Hiện có chương trình ưu đãi gì cho mùa cưới không?",
         "Câu trả lời":
-          "Dạ có ạ! Kstudy có 01 buổi học thử và định hướng 1-1 miễn phí. Bạn để lại SĐT để ban đào tạo xếp lịch nhé!",
-        "Từ khóa": "học thử, tư vấn 1-1",
+          "Dạ Golden Palace đang triển khai gói 'Khởi Sắc Tình Yêu': Tặng 100% gói trang trí sảnh cưới hoa tươi cao cấp, tặng MC chuyên nghiệp, vũ đoàn khai tiệc và hỗ trợ tặng bàn tiệc theo số lượng thực tế ạ!",
+        "Từ khóa": "ưu đãi, khuyến mãi, hoa tươi",
+      },
+      {
+        "Danh mục": "Đặt cọc & Hợp đồng",
+        "Câu hỏi": "Đặt cọc và giữ sảnh tiệc như thế nào?",
+        "Câu trả lời":
+          "Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc đợt 1 từ 10.000.000đ - 20.000.000đ tùy quy mô tiệc. Khoản cọc này được cấn trừ trực tiếp khi thanh toán hợp đồng chính thức ạ.",
+        "Từ khóa": "đặt cọc, hợp đồng, giữ sảnh",
+      },
+      {
+        "Danh mục": "Khảo sát sảnh & Thử món",
+        "Câu hỏi": "Tôi muốn đặt lịch đến xem sảnh và thử món trực tiếp được không?",
+        "Câu trả lời":
+          "Dạ hoàn toàn được ạ! Đội ngũ tư vấn tiệc Golden Palace luôn sẵn sàng đón tiếp Quý khách từ 8h00 đến 21h00 mỗi ngày. Quý khách cho em xin SĐT và ngày dự kiến ghé qua để bên em chuẩn bị chu đáo nhất nhé!",
+        "Từ khóa": "xem sảnh, thử món, hẹn lịch",
       },
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "FAQ_Kstudy");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "FAQ_GoldenPalace");
 
     const excelBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
     return new NextResponse(excelBuffer, {
       status: 200,
       headers: {
-        "Content-Disposition": 'attachment; filename="FAQ_Mau_OmniChat.xlsx"',
+        "Content-Disposition": 'attachment; filename="FAQ_Mau_GoldenPalace.xlsx"',
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       },
     });
-  }
-
-  // Lấy danh sách FAQ hiện có
-  try {
-    const { data, error } = await supabase
-      .from("knowledge_base")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (!error && data && data.length > 0) {
-      return NextResponse.json({ success: true, items: data });
-    }
-  } catch (e) {
-    // fallback
   }
 
   return NextResponse.json({ success: true, items: [] });

@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       platform = "zalo";
     }
 
-    // Trường hợp 1: Chuẩn chuẩn payload Pancake/Botcake: entry[].changes[].value...
+    // Cấu trúc Pancake/Botcake tiêu chuẩn: entry[].changes[].value...
     if (body.entry && Array.isArray(body.entry)) {
       for (const entry of body.entry) {
         if (entry.messaging && Array.isArray(entry.messaging)) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-    // Trường hợp 2: Payload trực tiếp từ Botcake webhook custom
+    // Cấu trúc webhook trực tiếp từ Botcake custom webhook
     else if (body.sender || body.customer || body.message) {
       externalThreadId =
         body.conversation_id ||
@@ -127,7 +127,6 @@ export async function POST(req: NextRequest) {
     let isAiEnabled = true;
 
     try {
-      // Tìm xem đã có conversation chưa
       const { data: existingConv } = await supabase
         .from("conversations")
         .select("id, is_ai_enabled")
@@ -138,7 +137,6 @@ export async function POST(req: NextRequest) {
         conversationId = existingConv.id;
         isAiEnabled = existingConv.is_ai_enabled;
 
-        // Cập nhật tin nhắn mới nhất
         await supabase
           .from("conversations")
           .update({
@@ -147,8 +145,7 @@ export async function POST(req: NextRequest) {
           })
           .eq("id", conversationId);
       } else {
-        // Tạo conversation mới
-        const { data: newConv, error: createConvErr } = await supabase
+        const { data: newConv } = await supabase
           .from("conversations")
           .insert({
             platform,
@@ -169,7 +166,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Lưu tin nhắn của khách vào bảng messages
+      // Lưu tin nhắn của khách
       if (conversationId) {
         await supabase.from("messages").insert({
           conversation_id: conversationId,
@@ -179,7 +176,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Tự động tạo / cập nhật Lead nếu khách để lại SĐT
+      // Tự động tạo / cập nhật Lead N1 nếu khách để lại SĐT
       if (customerPhone) {
         const { data: existingLead } = await supabase
           .from("leads")
@@ -192,11 +189,11 @@ export async function POST(req: NextRequest) {
             full_name: customerName,
             phone: customerPhone,
             email: detectedEmail,
-            course_interest: "Digital Marketing & AI (ENTD01)",
+            course_interest: "Gói tiệc & Sảnh sự kiện Golden Palace",
             stage: "N1", // Bậc N1: Lead thô
             source: platform,
             conversation_id: conversationId || undefined,
-            notes: `Lead tự động bóc tách từ tin nhắn Botcake [${platform.toUpperCase()}]: "${messageText}"`,
+            notes: `Lead đa kênh Botcake [${platform.toUpperCase()}]: "${messageText}"`,
           });
           console.log(`🎯 Đã tạo Lead N1 mới cho SĐT ${customerPhone}`);
         }
@@ -219,8 +216,9 @@ export async function POST(req: NextRequest) {
       if (!isWorkingHour) {
         botReplyText = DEFAULT_BOT_CONFIG.outOfHoursMessage;
       } else {
-        // Tìm câu trả lời khớp nhất trong FAQ
         const lowerMsg = messageText.toLowerCase();
+
+        // Đối chiếu FAQ
         const matchedFaq = DEFAULT_KNOWLEDGE_BASE.find(
           (faq) =>
             lowerMsg.includes(faq.category) ||
@@ -236,10 +234,10 @@ export async function POST(req: NextRequest) {
         if (matchedFaq) {
           botReplyText = matchedFaq.answer;
         } else if (customerPhone) {
-          botReplyText = `Dạ em đã ghi nhận số điện thoại ${customerPhone} của bạn. Chuyên viên tư vấn Kstudy sẽ liên hệ hỗ trợ bạn ngay trong ít phút nhé!`;
+          botReplyText = `Dạ Golden Palace đã ghi nhận số điện thoại ${customerPhone} của Quý khách. Chuyên viên tư vấn tiệc sẽ liên hệ gửi menu chi tiết và xếp lịch đón tiếp anh/chị ngay nhé!`;
         } else {
           botReplyText =
-            "Dạ Kstudy chào bạn! Bạn đang quan tâm đến khóa học Digital Marketing & AI (ENTD01) hay muốn đăng ký lịch tư vấn 1-1 miễn phí ạ?";
+            "Dạ Golden Palace xin chào Quý khách! Quý khách đang quan tâm đến tiệc cưới, tiệc hội nghị hay cần tư vấn thực đơn và xem sảnh trực tiếp ạ?";
         }
       }
 

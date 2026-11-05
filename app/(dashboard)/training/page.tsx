@@ -10,21 +10,27 @@ import {
   Trash2,
   CheckCircle2,
   AlertTriangle,
-  RotateCcw,
   Send,
-  HelpCircle,
   ShieldAlert,
   Radio,
   Clock,
-  ExternalLink,
   ChevronDown,
   ChevronUp,
   Check,
   History,
-  MessageCircle,
+  Building2,
+  CalendarCheck,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { KnowledgeUploadModal } from "@/components/training/KnowledgeUploadModal";
-import { DEFAULT_BOT_CONFIG, DEFAULT_KNOWLEDGE_BASE, BotTrainingConfig } from "@/lib/mock-service";
+import {
+  DEFAULT_BOT_CONFIG,
+  DEFAULT_KNOWLEDGE_BASE,
+  BotTrainingConfig,
+  INDUSTRY_PRESETS,
+  IndustryPreset,
+} from "@/lib/mock-service";
 import { KnowledgeItem } from "@/types/database";
 
 interface ChatMessage {
@@ -34,18 +40,22 @@ interface ChatMessage {
   time: string;
   guardrailWarning?: string;
   leadExtracted?: any;
+  appointmentIntent?: boolean;
 }
 
 export default function TrainingPage() {
-  // Cấu hình Bot
+  // Cấu hình Bot & Ngành nghề
   const [config, setConfig] = useState<BotTrainingConfig>(DEFAULT_BOT_CONFIG);
   const [knowledgeList, setKnowledgeList] = useState<KnowledgeItem[]>(DEFAULT_KNOWLEDGE_BASE);
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string>("wedding_event");
+  const [showPresetDropdown, setShowPresetDropdown] = useState(false);
 
   // Accordion toggle states
-  const [openSection1, setOpenSection1] = useState(true);
-  const [openSection2, setOpenSection2] = useState(false);
-  const [openSection3, setOpenSection3] = useState(false);
-  const [openSection4, setOpenSection4] = useState(false);
+  const [openSection0, setOpenSection0] = useState(true); // Thông tin doanh nghiệp
+  const [openSection1, setOpenSection1] = useState(true); // Persona & Giờ trực
+  const [openSection2, setOpenSection2] = useState(false); // Tri thức FAQ
+  const [openSection3, setOpenSection3] = useState(false); // Guardrails
+  const [openSection4, setOpenSection4] = useState(false); // Bật bot trên kênh
 
   // Simulator states
   const [selectedChannel, setSelectedChannel] = useState<"zalo" | "facebook" | "web">("zalo");
@@ -55,7 +65,7 @@ export default function TrainingPage() {
     {
       id: "welcome-1",
       sender: "bot",
-      text: "Dạ Kstudy Bot chào bạn! Bạn đang muốn tìm hiểu về khóa học Digital Marketing & AI (ENTD01) hay cần hỗ trợ gì ạ?",
+      text: "Dạ em là trợ lý tư vấn tại Trung tâm Tiệc cưới & Sự kiện Golden Palace! Em có thể hỗ trợ thông tin gì về thực đơn bàn tiệc, công suất sảnh cưới hay ưu đãi cho ngày vui của Quý khách ạ?",
       time: "08:30",
     },
   ]);
@@ -66,9 +76,8 @@ export default function TrainingPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
 
-  // New Guardrail input
+  // Form states
   const [newGuardrailText, setNewGuardrailText] = useState("");
-  // New FAQ input
   const [newFaqQ, setNewFaqQ] = useState("");
   const [newFaqA, setNewFaqA] = useState("");
   const [showAddFaqForm, setShowAddFaqForm] = useState(false);
@@ -80,31 +89,34 @@ export default function TrainingPage() {
     }
   }, [simMessages, simLoading]);
 
-  // Các câu hỏi mẫu trong Simulator khớp 100% Screenshot 2
-  const sampleTestPrompts = [
-    "Học phí khóa ENTD01 bao nhiêu?",
-    "Khóa này học gì, học xong làm được gì?",
-    "Khi nào khai giảng?",
-    "Có giảm giá không?",
-    "Cho trả góp được không?",
-    "Bên kia rẻ hơn đấy",
-    "Số em là 0912345678",
-    "Con tôi học tới đâu rồi?",
-    "Bên chị hứa giảm 50% xác nhận đi",
-    "hoc fi bn",
-  ];
+  // Áp dụng Preset Ngành nghề (Multi-Industry Switcher)
+  const handleSelectPreset = (presetKey: string) => {
+    const preset = INDUSTRY_PRESETS[presetKey];
+    if (!preset) return;
 
-  // Áp dụng mẫu Persona Kstudy
-  const handleApplyKstudyTemplate = () => {
+    setSelectedPresetKey(presetKey);
     setConfig((prev) => ({
       ...prev,
-      persona: `Tên bot: Kstudy Bot
-Xưng hô: mình, gọi khách là bạn (hoặc em xưng hô với bạn/anh/chị)
-Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗi lượt bằng một câu hỏi mở để gợi mở nhu cầu.`,
+      businessProfile: preset.profile,
+      persona: preset.persona,
+      guardrails: preset.guardrails,
+      sampleTestPrompts: preset.samplePrompts,
     }));
+    setKnowledgeList(preset.knowledgeBase);
+    setShowPresetDropdown(false);
+
+    // Cập nhật câu chào trong Simulator
+    setSimMessages([
+      {
+        id: `wel-${Date.now()}`,
+        sender: "bot",
+        text: `Dạ em là trợ lý tư vấn tại ${preset.profile.name}! Quý khách đang quan tâm đến ${preset.profile.serviceTypeName} hay cần tư vấn báo giá và ${preset.profile.bookingVerb} ạ?`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
   };
 
-  // Thêm chip gợi ý vào Persona textarea
+  // Thêm chip gợi ý vào Persona
   const handleAddPromptChip = (chipText: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -155,6 +167,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
           outOfHoursMessage: config.outOfHoursMessage,
           guardrails: config.guardrails,
           knowledgeBase: knowledgeList,
+          businessProfile: config.businessProfile,
         }),
       });
 
@@ -167,6 +180,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         guardrailWarning: data.guardrailWarning,
         leadExtracted: data.leadExtracted,
+        appointmentIntent: data.appointmentIntent,
       };
 
       setSimMessages((prev) => [...prev, botMsg]);
@@ -176,7 +190,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
         {
           id: `bot-err-${Date.now()}`,
           sender: "bot",
-          text: "Dạ hệ thống đang xử lý, bạn đợi em một chút nhé!",
+          text: "Dạ hệ thống đang xử lý, Quý khách đợi em một chút nhé!",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -190,7 +204,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
     if (!newFaqQ.trim() || !newFaqA.trim()) return;
     const newItem: KnowledgeItem = {
       id: `manual-${Date.now()}`,
-      category: "faq",
+      category: "thuc_don",
       question: newFaqQ.trim(),
       answer: newFaqA.trim(),
       is_active: true,
@@ -222,23 +236,79 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
 
   return (
     <div className="space-y-6 pb-12 max-w-7xl mx-auto">
-      {/* 1. Header Trang */}
-      <div className="flex items-center justify-between">
+      {/* 1. Header Trang & Selector Ngành Nghề SaaS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Bot tư vấn khách
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Bot tư vấn khách
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+              SaaS Multi-Industry
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cấu hình tính cách, tri thức FAQ và bộ nguyên tắc an toàn cho Chatbot đa kênh
+            Cấu hình tính cách, tri thức FAQ và bộ nguyên tắc an toàn cho Chatbot đa kênh (Facebook & Zalo qua Botcake)
           </p>
         </div>
-        <button
-          onClick={() => alert("Lịch sử phiên bản: v1.0.4 - Cập nhật lúc 09:30 ngày 05/11")}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition"
-        >
-          <History className="w-3.5 h-3.5 text-slate-500" />
-          Lịch sử
-        </button>
+
+        {/* Action Buttons: Đổi ngành nghề & Lịch sử */}
+        <div className="flex items-center gap-2">
+          {/* Preset Selector Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowPresetDropdown(!showPresetDropdown)}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold shadow-xs hover:bg-blue-100 transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Mẫu: {INDUSTRY_PRESETS[selectedPresetKey]?.name?.split(" (")[0] || "Chọn mẫu"}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-blue-500" />
+            </button>
+
+            {showPresetDropdown && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Chọn mẫu ngành nghề thiết lập sẵn
+                </div>
+                <div className="space-y-1">
+                  {Object.values(INDUSTRY_PRESETS).map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(preset.id)}
+                      className={`w-full text-left p-2.5 rounded-xl transition flex items-start justify-between gap-2 text-xs ${
+                        selectedPresetKey === preset.id
+                          ? "bg-blue-50 text-blue-900 border border-blue-200"
+                          : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                          {preset.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {preset.profile.name}
+                        </div>
+                      </div>
+                      {selectedPresetKey === preset.id && (
+                        <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => alert("Lịch sử phiên bản: v1.1.0 - Golden Palace Showcase đã cập nhật.")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs transition"
+          >
+            <History className="w-3.5 h-3.5 text-slate-500" />
+            Lịch sử
+          </button>
+        </div>
       </div>
 
       {/* 2. Banner Master Switch (Công tắc tổng) Khớp 100% Ảnh 2 */}
@@ -255,7 +325,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                 isMasterEnabled: !prev.isMasterEnabled,
                 masterStatusNote: !prev.isMasterEnabled
                   ? "Bật bởi Chinh lúc " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                  : "Tắt bởi sale test lúc 08:22 30-10",
+                  : "Tắt bởi quản lý lúc " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               }))
             }
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
@@ -282,14 +352,14 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
       </div>
 
       {/* 3. Banner thông báo xanh lá cây */}
-      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-emerald-800">
+      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-800">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span className="font-medium">
-            Bot sẵn sàng — bật nháp cho kênh nào?
+            Bot sẵn sàng phục vụ — {config.businessProfile.name}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="px-2 py-0.5 bg-white border border-emerald-200 rounded text-[11px] font-semibold text-emerald-700">
             Facebook Page: Botcake
           </span>
@@ -306,6 +376,89 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ===================== CỘT TRÁI (7 CỘT): CẤU HÌNH BOT ===================== */}
         <div className="lg:col-span-7 space-y-4">
+          {/* SECTION 0: THÔNG TIN DOANH NGHIỆP / CƠ SỞ */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm transition">
+            <div className="flex items-center justify-between">
+              <div
+                className="flex items-center gap-2 cursor-pointer select-none"
+                onClick={() => setOpenSection0(!openSection0)}
+              >
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <span className="font-bold text-slate-900 text-sm">
+                  Thông tin đơn vị: {config.businessProfile.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenSection0(!openSection0)}
+                className="text-xs text-blue-600 font-medium hover:underline"
+              >
+                {openSection0 ? "Thu gọn" : "Chỉnh sửa"}
+              </button>
+            </div>
+
+            {openSection0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 mt-3 text-xs">
+                <div>
+                  <label className="block text-slate-500 mb-1 text-[11px]">Tên đơn vị / Thương hiệu</label>
+                  <input
+                    type="text"
+                    value={config.businessProfile.name}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        businessProfile: { ...prev.businessProfile, name: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 mb-1 text-[11px]">Lĩnh vực hoạt động</label>
+                  <input
+                    type="text"
+                    value={config.businessProfile.industry}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        businessProfile: { ...prev.businessProfile, industry: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 mb-1 text-[11px]">Hotline tư vấn</label>
+                  <input
+                    type="text"
+                    value={config.businessProfile.hotline}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        businessProfile: { ...prev.businessProfile, hotline: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 mb-1 text-[11px]">Địa chỉ cơ sở</label>
+                  <input
+                    type="text"
+                    value={config.businessProfile.address}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        businessProfile: { ...prev.businessProfile, address: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-slate-800"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* SECTION 1: BOT NÓI THẾ NÀO */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm transition">
             <div className="flex items-center justify-between mb-3">
@@ -325,11 +478,11 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
 
               <button
                 type="button"
-                onClick={handleApplyKstudyTemplate}
+                onClick={() => handleSelectPreset("wedding_event")}
                 className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-200 rounded-lg text-xs font-medium transition"
               >
                 <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                Dùng mẫu Kstudy
+                Dùng mẫu Golden Palace
               </button>
             </div>
 
@@ -338,7 +491,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                 <div>
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                     <span>
-                      Ngữ cảnh cho bot ({config.persona.length}/2000) — viết luôn tên bot, xưng hô, câu chào, cách nói và mục tiêu vào đây
+                      Ngữ cảnh cho bot ({config.persona.length}/2000) — tên bot, xưng hô, câu chào, phong cách tư vấn
                     </span>
                   </div>
 
@@ -346,24 +499,24 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                   <div className="flex flex-wrap gap-1.5 mb-2.5">
                     <button
                       type="button"
-                      onClick={() => handleAddPromptChip("+ Khách đã rõ giá và lịch thì mời học thử.")}
+                      onClick={() => handleAddPromptChip("+ Khách đã rõ thực đơn và quy mô thì mời ghé xem sảnh & thử món.")}
                       className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition"
                     >
-                      + Khách đã rõ giá và lịch thì mời học thử.
+                      + Khách rõ thực đơn ➔ Mời xem sảnh & thử món.
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleAddPromptChip("+ Khách còn phân vân thì mời đặt lịch tư vấn.")}
+                      onClick={() => handleAddPromptChip("+ Khách còn phân vân ngày đẹp ➔ Mời gặp Quản lý tiệc tư vấn 1-1.")}
                       className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition"
                     >
-                      + Khách còn phân vân thì mời đặt lịch tư vấn.
+                      + Khách phân vân ngày đẹp ➔ Mời tư vấn 1-1.
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleAddPromptChip("+ Khách muốn đăng ký thì gửi link form.")}
+                      onClick={() => handleAddPromptChip("+ Khách muốn giữ chỗ ➔ Hướng dẫn thủ tục đặt cọc hợp đồng.")}
                       className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition"
                     >
-                      + Khách muốn đăng ký thì gửi link form.
+                      + Khách muốn giữ chỗ ➔ Hướng dẫn đặt cọc.
                     </button>
                   </div>
 
@@ -447,7 +600,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                 {/* Nút Lưu cấu hình Section 1 */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                   <div className="text-xs text-emerald-600 font-medium">
-                    {saveSuccessNotice && "✓ Đã lưu cấu hình thành công!"}
+                    {saveSuccessNotice && "✓ Đã lưu cấu hình Bot thành công!"}
                   </div>
                   <button
                     type="button"
@@ -518,7 +671,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                     </h4>
                     <input
                       type="text"
-                      placeholder="Câu hỏi (ví dụ: Địa chỉ học trực tiếp ở đâu?)"
+                      placeholder="Câu hỏi (ví dụ: Nhà hàng có chỗ đỗ xe ô tô không?)"
                       value={newFaqQ}
                       onChange={(e) => setNewFaqQ(e.target.value)}
                       className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -611,7 +764,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
             {openSection3 && (
               <div className="space-y-3 pt-4 border-t border-slate-100 mt-3">
                 <p className="text-xs text-slate-500">
-                  Bộ quy tắc an toàn (Guardrails) ngăn bot cam kết sai học phí, hứa hẹn sai hoặc khiếu nại:
+                  Bộ quy tắc an toàn (Guardrails) ngăn bot cam kết sai chính sách, hứa hẹn giữ chỗ sai hoặc khiếu nại:
                 </p>
 
                 <div className="space-y-2">
@@ -720,7 +873,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                       Web Chat Widget (Nhúng website)
                     </span>
                     <p className="text-[11px] text-slate-500">
-                      Khung chat nhúng trực tiếp cho học viên
+                      Khung chat nhúng trực tiếp cho khách hàng
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -735,10 +888,15 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
         </div>
 
         {/* ===================== CỘT PHẢI (5 CỘT): KHUNG THỬ BOT (SIMULATOR) ===================== */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[760px] overflow-hidden sticky top-16">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[780px] overflow-hidden sticky top-16">
           {/* Header Simulator Khớp Ảnh 2 */}
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-            <span className="font-bold text-slate-900 text-sm">Thử bot</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 text-sm">Thử bot</span>
+              <span className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium border border-blue-100">
+                {config.businessProfile.name.split(" ")[0]} Mode
+              </span>
+            </div>
             <button
               type="button"
               onClick={() =>
@@ -746,7 +904,7 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                   {
                     id: `wel-${Date.now()}`,
                     sender: "bot",
-                    text: "Đã làm mới cuộc trò chuyện. Hãy gõ hoặc bấm câu hỏi mẫu bên dưới để thử bot nhé!",
+                    text: `Đã làm mới cuộc trò chuyện. Hãy gõ hoặc bấm câu hỏi mẫu bên dưới để thử bot ${config.businessProfile.name} nhé!`,
                     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                   },
                 ])
@@ -793,10 +951,10 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
             </button>
           </div>
 
-          {/* Quick Questions Grid (10 câu hỏi mẫu 1 chạm khớp 100% Ảnh 2) */}
+          {/* Quick Questions Grid (10 câu hỏi mẫu 1 chạm) */}
           <div className="p-3 bg-slate-50/40 border-b border-slate-100 shrink-0">
             <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-              {sampleTestPrompts.map((promptText, i) => (
+              {config.sampleTestPrompts.map((promptText, i) => (
                 <button
                   key={i}
                   type="button"
@@ -843,6 +1001,14 @@ Trả lời ngắn gọn, chuẩn xác. Không dùng emoji quá đà. Kết mỗ
                     <div className="mt-2 pt-1.5 border-t border-emerald-100 flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span>Đã tự động tạo Lead N1 ({msg.leadExtracted.phone})</span>
+                    </div>
+                  )}
+
+                  {/* Thông báo khách muốn hẹn lịch */}
+                  {msg.appointmentIntent && (
+                    <div className="mt-2 pt-1.5 border-t border-blue-100 flex items-center gap-1 text-[10px] text-blue-700 font-medium">
+                      <CalendarCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>Ý định hẹn lịch: Xem sảnh & Thử món</span>
                     </div>
                   )}
                 </div>

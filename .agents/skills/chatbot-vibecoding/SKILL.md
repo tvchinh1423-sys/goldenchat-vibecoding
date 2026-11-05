@@ -25,13 +25,14 @@ description: >-
 | **Cuộc thi** | VibeCoding 2026 — AI × Mini App (Bảng B) | Đang diễn ra |
 | **Đề số** | 04 — Chatbot FAQ & Đặt lịch tư vấn | Đã chốt phạm vi |
 | **Deadline** | 08/11/2026 (Asia/Saigon; tính thời gian còn lại theo ngày hiện tại) | Gấp |
-| **Tên sản phẩm** | **OmniChat AI** | Đã chốt |
+| **Tên sản phẩm** | **OmniChat AI (SaaS Multi-Industry)** | Đã chốt |
+| **Dự án mẫu thực chiến** | **Golden Palace (Tiệc cưới, Hội nghị & F&B)** | ✅ Showcase Client chuẩn |
 | **GitHub Repo** | `https://github.com/tvchinh1423-sys/goldenchat-vibecoding` | ✅ Đã tạo & push origin/main |
 | **Môi trường .env** | Đã có `.env.local` và `.env.example` | ✅ Đã cấu hình |
-| **Màn hình Huấn luyện Bot** | `/training` chuẩn 100% Ảnh mẫu số 2 | ✅ Hoàn thành (Chinh) |
-| **Upload Excel FAQ** | `/api/training/upload` parse & lưu FAQ | ✅ Hoàn thành (Chinh) |
-| **Webhook Botcake đa kênh** | `/api/webhook/botcake` (Facebook + Zalo) | ✅ Hoàn thành (Chinh) |
-| **Khung Simulator Thử bot** | Test trực quan 10 câu mẫu, ngoài giờ, guardrail | ✅ Hoàn thành (Chinh) |
+| **Màn hình Huấn luyện Bot** | `/training` hỗ trợ Multi-Industry Presets + Golden Palace | ✅ Hoàn thành (Chinh) |
+| **Upload Excel FAQ** | `/api/training/upload` parse & mẫu Excel Golden Palace | ✅ Hoàn thành (Chinh) |
+| **Webhook Botcake đa kênh** | `/api/webhook/botcake` (Facebook + Zalo cá nhân) | ✅ Hoàn thành (Chinh) |
+| **Khung Simulator Thử bot** | Test thực đơn, xem sảnh, guardrail, bóc tách SĐT | ✅ Hoàn thành (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
