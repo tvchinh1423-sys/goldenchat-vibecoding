@@ -191,3 +191,14 @@ app-root/
 - Migration riêng `supabase/migrations/20261105_golden_palace_crm.sql` mở rộng `leads`/`bookings`, bảo toàn cột legacy, ánh xạ status cũ khi thiếu stage, unique SĐT/hội thoại, RPC transaction lịch + N3, exclusion constraint chống lịch chồng. Bật RLS/thu hồi quyền anon trên hai bảng CRM. **Webhook Botcake hiện dùng anon client của Chinh nên phần tạo lead webhook cần adapter xác thực riêng trước khi bật CRM thật**; không mở lại public quyền CRM. Không chạy lại schema tắt RLS cũ. `handoff/supabase_schema.sql` và file setup cục bộ của người dùng vẫn được giữ nguyên, không stage.
 - Kiểm tra sau tích hợp: production build, lint, TypeScript đạt; **22 unit/API/SQL test và 12 Playwright scenario đạt**. SQL chạy PostgreSQL WASM/PGlite thật cục bộ (legacy migration/chạy lại/RLS/unique/overlap/rollback/hủy lịch), HTTP Supabase dùng mock, chưa thử cloud hay tải đồng thời thật. Đã xem ảnh danh sách/phễu desktop và lịch mobile. Hướng dẫn trong `docs/crm-golden-palace.md`, README và `.env.example` đã cập nhật.
 - Việc tiếp theo cần nối dịch vụ: chọn dự án Supabase dùng chung, thử migration trên DB test trước, cấu hình khóa phía máy chủ rồi xác minh CRUD/lịch cloud; nối adapter Inbox realtime và Botcake qua xác thực, xác minh AI với khóa thật. Không báo đã gửi tin thật/đã triển khai CRM mới nếu chỉ kiểm tra cục bộ.
+
+### Mốc Đối chiếu Tiêu chí BTC & Phân công Hoàn thiện — 05/11/2026 (Chinh & Hiền)
+
+- Rà soát toàn diện theo 4 nhóm tiêu chí chính thức của Ban tổ chức Đề 4: Phải chạy (Must-be), Làm mượt (Performance), Điểm WOW (Attractive), Né ngay (Reverse).
+- Phân công cụ thể giai đoạn nước rút:
+  - **Trần Vân Chinh:** Hoàn thiện sâu phần Quản trị tri thức (`/training` — FAQ F&B Golden Palace thực chiến, đồng bộ Google Sheets, inline edit, Guardrails giá và cọc) và Kết nối các nền tảng (`/settings` — Webhook Botcake FB Page & Zalo cá nhân, Web widget script nhúng `embed.js`, Cảnh báo Telegram).
+  - **Chị Hiền (Ưu tiên làm phần hoàn thiện còn lại):**
+    1. AI gợi ý 3 câu liên quan (Must-be): bổ sung `suggestedQuestions` vào AI Engine (`lib/ai-engine.ts`) và render 3 nút chip dưới câu trả lời chat.
+    2. Đề xuất & Đặt lịch trực tiếp trong chat + Smart default ngày giờ hôm nay (Performance): nút đặt lịch ngay trong khung chat, form tự động fill ngày hôm nay/ngày mai lúc 09:00 hoặc 14:00.
+    3. Trang quản trị xem / Xóa lịch (Must-be): bổ sung nút "Xóa / Hủy lịch" màu đỏ trực tiếp trên danh sách booking tại `/leads` (`components/crm/crm-dashboard.tsx`).
+    4. Trọn bộ Điểm WOW (Attractive): Thẻ xác nhận "✅ Đã xác nhận lịch!", Link 1-chạm "Thêm vào Google Calendar" (`calendar.google.com/render?action=TEMPLATE...`), và Âm thanh thông báo tin nhắn Web Audio ("Ting").
