@@ -261,21 +261,21 @@ function WebWidgetContent() {
   };
 
   return (
-    <div className={`min-h-screen ${isEmbedded ? "bg-transparent p-0" : "bg-slate-900/10 p-4"} flex items-center justify-center`}>
-      {/* Background mô phỏng khi xem trực tiếp trên tab riêng */}
+    <div className={`min-h-screen ${isEmbedded ? "bg-transparent p-0" : "bg-slate-900/10 sm:p-4"} flex items-center justify-center`}>
+      {/* Background mô phỏng khi xem trực tiếp trên tab riêng (chỉ hiện trên desktop) */}
       {!isEmbedded && (
-        <div className="fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="hidden sm:block fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
       )}
 
-      {/* Floating Chat Widget Container */}
-      <div className={`fixed ${isEmbedded ? "inset-0" : "bottom-6 right-6"} z-50 flex flex-col items-end`}>
+      {/* Floating Chat Widget Container - Tự động full màn hình trên mobile */}
+      <div className={`fixed ${isEmbedded ? "inset-0" : "inset-0 sm:inset-auto sm:bottom-6 sm:right-6"} z-50 flex flex-col items-end`}>
         {isOpen ? (
           <div
             className={`${
               isEmbedded
-                ? "w-full h-full rounded-none"
-                : "w-[360px] sm:w-[410px] h-[580px] rounded-3xl"
-            } bg-white shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200 relative`}
+                ? "w-full h-full rounded-none border-0"
+                : "w-full h-full sm:w-[410px] sm:h-[600px] rounded-none sm:rounded-3xl border-0 sm:border"
+            } bg-white shadow-2xl border-slate-200/80 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
           >
             {/* Header */}
             <div
@@ -326,6 +326,17 @@ function WebWidgetContent() {
                     <VolumeX className="w-4 h-4 text-white/60" />
                   )}
                 </button>
+
+                {/* Phím tắt nhanh sang Quản trị khi test trên điện thoại */}
+                {!isEmbedded && (
+                  <a
+                    href="/leads"
+                    title="Mở Quản lý Khách hàng & Lịch hẹn"
+                    className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white flex items-center gap-1"
+                  >
+                    <Users className="w-4 h-4 text-amber-300" />
+                  </a>
+                )}
 
                 <button
                   type="button"
