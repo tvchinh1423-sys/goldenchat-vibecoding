@@ -301,3 +301,11 @@ app-root/
 - Chat phát hiện ý định xem sảnh hoặc thử món và mở form tương ứng. Mặc định 09:00 giờ Việt Nam hôm nay nếu giờ đó còn ở tương lai, nếu không thì 09:00 ngày mai. Demo lưu khách và lịch cùng lần ghi, tái sử dụng hồ sơ theo SĐT và dùng quy tắc chống trùng lịch hiện có.
 - Thẻ sau khi lưu xác nhận đã nhận lịch. Trạng thái nghiệp vụ vẫn chờ tư vấn viên xác nhận. Calendar dùng thời điểm đã lưu, UTC và thời lượng 60 phút. Âm báo dùng Web Audio chung cho Inbox và Widget. Widget giữ cảnh báo Telegram cho quản lý khi lưu Supabase thành công. Chưa có nhà cung cấp gửi Zalo/SMS tới khách hoặc xác minh dịch vụ cloud, nên thẻ không báo đã gửi qua hai kênh này.
 - Hai màn hình quản trị có nút đỏ hủy và xóa lịch, xác nhận trước khi thao tác. Build/TypeScript, lint, 33 kiểm thử logic/API/SQL và 14 kịch bản trình duyệt đạt. Kiểm thử đã chạy tạo lịch từ Inbox và Widget, kiểm tra giờ Calendar, giữ lịch khi từ chối xóa và xóa lịch khi xác nhận.
+
+### Thống nhất Chiến lược Triển khai: Đấu nối Nền tảng để lại Chặng Cuối — 05/11/2026 (Chinh)
+
+- **Quyết định thống nhất:** Bước đấu nối nền tảng bên thứ ba (quét QR Zalo, gắn webhook Botcake Fanpage thật, cấu hình Bot Token Telegram thật) sẽ để lại đến **chặng cuối cùng** trước khi nộp bài thi.
+- **Mục tiêu ưu tiên hiện tại:** Tập trung làm cho sản phẩm nội tại **hoàn hảo và không tì vết** theo 4 tiêu chí chấm điểm của Ban Tổ Chức (Must-be, Performance, Điểm WOW, Né điểm trừ):
+  1. Trải nghiệm người dùng cực mượt trên toàn bộ 5 màn hình: `/training`, `/inbox`, `/leads`, `/widget`, `/dashboard`.
+  2. Tri thức thực chiến Golden Palace chuẩn chỉnh 100% (cọc 5tr, bãi đỗ xe free, VAT 8%/10%, sảnh Tầng 3/Tầng 4 theo quy mô khách).
+  3. Khi toàn bộ hệ thống đã hoàn hảo 100%, việc cắm Webhook chỉ mất 5 phút để hoàn tất kịch bản showcase.
