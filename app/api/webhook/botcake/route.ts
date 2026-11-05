@@ -196,6 +196,23 @@ export async function POST(req: NextRequest) {
             notes: `Lead đa kênh Botcake [${platform.toUpperCase()}]: "${messageText}"`,
           });
           console.log(`🎯 Đã tạo Lead N1 mới cho SĐT ${customerPhone}`);
+
+          // Gửi cảnh báo Telegram tức thì cho Quản lý tiệc
+          const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+          const tgChatId = process.env.TELEGRAM_CHAT_ID;
+          if (tgToken && tgChatId) {
+            try {
+              fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: tgChatId,
+                  text: `🎯 *[OMNICHAT] LEAD N1 MỚI!*\n━━━━━━━━━━━━━━━━━━\n👤 *Khách:* ${customerName}\n📞 *SĐT:* \`${customerPhone}\`\n🌐 *Kênh:* #${platform.toUpperCase()}\n💬 *Tin nhắn:* _"${messageText}"_\n🏛️ *Dịch vụ:* Gói tiệc & Sảnh cưới Golden Palace`,
+                  parse_mode: "Markdown",
+                }),
+              }).catch(() => {});
+            } catch (e) {}
+          }
         }
       }
     } catch (dbError) {
