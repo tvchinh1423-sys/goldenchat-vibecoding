@@ -14,6 +14,7 @@ description: >-
 > 1. **DỰ ÁN ĐỘC LẬP:** Đây là sản phẩm dự thi VibeCoding 2026 (Bảng B - Kinh tế). **TUYỆT ĐỐI KHÔNG liên hệ, KHÔNG gán ghép và KHÔNG dùng dữ liệu của Golden Palace.**
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
 > 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
+> 4. **ĐỒNG BỘ GITHUB LIÊN TỤC (BẮT BUỘC):** Cả Chinh và Chị Hiền **phải liên tục commit & push lên GitHub** sau mỗi task/bước hoàn thành. Trước khi bắt đầu làm bất kỳ việc gì, phải `git pull` để lấy cập nhật mới nhất của đối phương. Tránh tình trạng làm song song mà không biết tiến độ của nhau!
 
 ---
 
@@ -96,3 +97,26 @@ app-root/
 - Hộp thư (Inbox): Dựng đúng chuẩn ảnh mẫu 1 (3 cột, filter, soạn nháp, tóm tắt).
 - Lead & Lịch hẹn: Dựng đúng chuẩn ảnh mẫu 3 & 4 (Chuyển đổi linh hoạt giữa Danh sách + Phễu Funnel và Bảng Phễu Kanban N1-N5).
 - Tích hợp AI: Kết nối 9Router / Gemini API, tính năng Soạn nháp AI, tự động bóc tách Lead từ chat.
+
+---
+
+## 🔄 QUY TRÌNH PHỐI HỢP & ĐỒNG BỘ GITHUB (BẮT BUỘC)
+
+Để cả Chinh và Chị Hiền luôn biết đối phương đang làm tới đâu:
+
+1. **Quy tắc "Mỗi buổi sáng / trước khi code":**
+   - Chạy `git pull origin main` để kéo toàn bộ code và tài liệu mới nhất về máy.
+   - Đọc commit log gần nhất (`git log -n 5 --oneline`) để nắm nhanh chị Hiền/Chinh vừa hoàn thành module gì.
+
+2. **Quy tắc "Làm xong task nhỏ là Commit & Push ngay":**
+   - Không dồn code cả ngày mới đẩy lên một lần.
+   - Bất cứ khi nào xong 1 component, 1 API route hay 1 chỉnh sửa schema:
+     ```bash
+     git add .
+     git commit -m "feat(inbox): hoàn thành giao diện khung chat 2 chiều"
+     git push origin <tên-nhánh>
+     ```
+   - Commit message chuẩn: `feat(...)`, `fix(...)`, `docs(...)`, `chore(...)` để đối phương nhìn vào là hiểu ngay tiến độ.
+
+3. **Cập nhật trạng thái tiến độ vào file `SKILL.md`:**
+   - Khi hoàn thành 1 màn hình hay 1 tính năng cốt lõi, cập nhật trạng thái trong bảng tiến độ của file này và push lên GitHub để AI agent của cả hai bên đều nạp được ngữ cảnh mới nhất.
