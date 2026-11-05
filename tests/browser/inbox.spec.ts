@@ -185,4 +185,15 @@ test("layouts fit narrow mobile, tablet and desktop without horizontal overflow"
       expect(box && box.x + box.width <= width).toBeTruthy();
     }
   }
+  await page
+    .getByRole("link", { name: "Bot tư vấn khách", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Bot tư vấn khách", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: /^Kênh chat/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Hộp thư", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("main > header")).toHaveCount(1);
 });

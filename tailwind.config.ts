@@ -10,7 +10,12 @@ export default {
         ring: "hsl(var(--primary))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary: { DEFAULT: "hsl(var(--primary))", foreground: "#fff" },
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "#fff",
+          hover: "#2563eb",
+          light: "#eff6ff",
+        },
         muted: { DEFAULT: "#f4f5fa", foreground: "#777c99" },
       },
       fontFamily: { sans: ["Arial", "Helvetica", "sans-serif"] },

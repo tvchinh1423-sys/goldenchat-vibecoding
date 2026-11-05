@@ -100,7 +100,10 @@ test("only customer messages awaiting a response produce an SLA label", () => {
     ),
     null,
   );
-  assert.equal(waitingLabel(item, Date.parse("2026-11-01T00:00:00+07:00")), null);
+  assert.equal(
+    waitingLabel(item, Date.parse("2026-11-01T00:00:00+07:00")),
+    null,
+  );
 });
 test("draft comes from the supplied FAQ and does not mutate or send messages", () => {
   const history = messages("Học phí và trả góp thế nào ạ?");

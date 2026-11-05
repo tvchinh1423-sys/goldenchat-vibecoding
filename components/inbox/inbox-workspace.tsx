@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Bot, Check, Inbox, MessageCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -266,15 +267,20 @@ export function InboxWorkspace() {
             <MessageCircle />
             Kênh chat
           </Button>
-          <span
-            className="hidden lg:inline-flex"
-            title="Cấu hình bot sẽ được tích hợp cùng module Bot tư vấn"
+          <Button
+            variant="outline"
+            asChild
+            className="h-9 w-9 p-0 text-xs md:w-auto md:px-3"
           >
-            <Button variant="outline" disabled className="text-xs">
+            <Link
+              href="/training"
+              aria-label="Bot tư vấn khách"
+              title="Bot tư vấn khách"
+            >
               <Bot />
-              Bot tư vấn khách
-            </Button>
-          </span>
+              <span className="hidden md:inline">Bot tư vấn khách</span>
+            </Link>
+          </Button>
           <div className="relative hidden w-44 xl:block 2xl:w-64">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input

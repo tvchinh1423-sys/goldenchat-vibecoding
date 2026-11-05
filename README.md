@@ -19,6 +19,8 @@ npm run build
 npm run test:e2e
 ```
 
+Kiểm thử trình duyệt dùng Chrome cài sẵn, tự chạy production server ở cổng 3100 sau khi đã build.
+
 ## Phạm vi hiện tại
 
 - Tìm tên/SĐT/email/nội dung, hỗ trợ tên không dấu và Ctrl/Cmd+K. Tab và bộ lọc kênh, lịch hẹn, liên hệ kết hợp với nhau; bộ đếm lấy từ dữ liệu.
@@ -32,8 +34,10 @@ npm run test:e2e
 
 File mẫu gốc không có hội thoại. `lib/inbox/demo-data.ts` bổ sung **hội thoại minh họa**, dùng FAQ, lead và booking trong file gốc. Không cần biến môi trường để chạy Module 1.
 
-Chưa có kết nối Supabase, webhook Facebook/Zalo/Web hoặc nhà cung cấp AI; gửi tin và tạo lead hiện là thao tác demo cục bộ. Bật AI chỉ lưu cờ cấu hình, chưa có worker trả lời tự động. Module 2 sẽ thay `createFaqDraft` bằng AI service; lớp kiểu dữ liệu nằm trong `lib/inbox/types.ts`. Module 3 sẽ bổ sung CRM và chỉnh lịch. Nút cấu hình Bot được vô hiệu hóa khi trang cấu hình chưa được tích hợp.
+Inbox chưa nối Supabase, webhook Facebook/Zalo/Web hoặc nhà cung cấp AI; gửi tin và tạo lead hiện là thao tác demo cục bộ. Bật AI chỉ lưu cờ cấu hình, chưa có worker trả lời tự động. Module 2 sẽ thay `createFaqDraft` bằng AI service; lớp kiểu dữ liệu nằm trong `lib/inbox/types.ts`. Module 3 sẽ bổ sung CRM và chỉnh lịch.
 
-Schema bàn giao ở `handoff/supabase_schema.sql`. Khi tích hợp cần ánh xạ tên field phía UI sang schema, thêm lưu ghi chú/email và trạng thái lưu trữ (schema hiện chưa có), xác thực và chính sách RLS phù hợp. Không đưa service-role key/API key AI vào client component.
+Đã tích hợp mã Training, upload FAQ, Simulator và webhook Botcake từ `origin/main` của Chinh. Nút **Bot tư vấn khách** mở `/training`. Các dịch vụ này chưa được xác minh với tài khoản thật trong task Inbox; cần cấu hình Supabase/Botcake riêng. Khởi tạo Supabase trì hoãn đến khi handler sử dụng để build demo không cần khóa dịch vụ.
+
+Schema bàn giao ở `handoff/supabase_schema.sql`. Bản schema cục bộ do người dùng bổ sung có khác biệt với schema phễu trên GitHub và được giữ nguyên ngoài commit Inbox. Khi tích hợp CRM phải dùng phễu **N1–N5/N0**, ánh xạ lead mới sang **N1**, ánh xạ nhu cầu sang `notes`, thêm lưu ghi chú/email và trạng thái lưu trữ, xác thực và chính sách RLS phù hợp. Không đưa service-role key/API key AI vào client component.
 
 Để đưa demo về mặc định, xóa key `omnichat.inbox.v1` trong DevTools → Application → Local Storage và tải lại.
