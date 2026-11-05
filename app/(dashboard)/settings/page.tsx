@@ -50,6 +50,33 @@ export default function SettingsPage() {
   const [alertOnLead, setAlertOnLead] = useState(true);
   const [alertOnGuardrail, setAlertOnGuardrail] = useState(true);
   const [testTelegramStatus, setTestTelegramStatus] = useState<string | null>(null);
+  const [testTelegramLoading, setTestTelegramLoading] = useState(false);
+
+  // Load saved settings from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedTg = localStorage.getItem("omnichat.settings.telegram");
+        if (savedTg) {
+          const parsed = JSON.parse(savedTg);
+          if (parsed.token) setTelegramToken(parsed.token);
+          if (parsed.chatId) setTelegramChatId(parsed.chatId);
+          if (parsed.alertOnLead !== undefined) setAlertOnLead(parsed.alertOnLead);
+          if (parsed.alertOnGuardrail !== undefined) setAlertOnGuardrail(parsed.alertOnGuardrail);
+        }
+        const savedWidget = localStorage.getItem("omnichat.settings.widget");
+        if (savedWidget) {
+          const parsed = JSON.parse(savedWidget);
+          if (parsed.title) setWidgetTitle(parsed.title);
+          if (parsed.greeting) setWidgetGreeting(parsed.greeting);
+          if (parsed.color) setWidgetColor(parsed.color);
+          if (parsed.position) setWidgetPosition(parsed.position);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   // SLA state
   const [slaWarningMinutes, setSlaWarningMinutes] = useState(15);
@@ -93,16 +120,58 @@ export default function SettingsPage() {
   };
 
   // Test Telegram Alert
-  const handleTestTelegram = () => {
-    if (!telegramToken || !telegramChatId) {
-      setTestTelegramStatus("Vui lòng nhập đủ Bot Token và Chat ID trước khi test!");
-      return;
+  const handleTestTelegram = async () => {
+    setTestTelegramLoading(true);
+    setTestTelegramStatus("Đang kiểm tra và gửi tin nhắn thử nghiệm...");
+    try {
+      const res = await fetch("/api/telegram/alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          botToken: telegramToken.trim() || undefined,
+          chatId: telegramChatId.trim() || undefined,
+          type: "test",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestTelegramStatus("✅ Thành công! Đã gửi thông báo test tới Telegram.");
+      } else {
+        setTestTelegramStatus(`❌ Lỗi Telegram: ${data.error || "Không gửi được tin nhắn"}`);
+      }
+    } catch (e: any) {
+      setTestTelegramStatus(`❌ Lỗi kết nối: ${e.message}`);
+    } finally {
+      setTestTelegramLoading(false);
+      setTimeout(() => setTestTelegramStatus(null), 8000);
     }
-    setTestTelegramStatus("Đã gửi tin nhắn mẫu đến Telegram: [OmniChat Alert] Phát hiện Lead mới SĐT 0988xxxxxx");
-    setTimeout(() => setTestTelegramStatus(null), 4000);
   };
 
   const handleSaveAll = () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          "omnichat.settings.telegram",
+          JSON.stringify({
+            token: telegramToken.trim(),
+            chatId: telegramChatId.trim(),
+            alertOnLead,
+            alertOnGuardrail,
+          })
+        );
+        localStorage.setItem(
+          "omnichat.settings.widget",
+          JSON.stringify({
+            title: widgetTitle,
+            greeting: widgetGreeting,
+            color: widgetColor,
+            position: widgetPosition,
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }
     setSaveNotice(true);
     setTimeout(() => setSaveNotice(false), 3000);
   };
@@ -574,11 +643,12 @@ export default function SettingsPage() {
             <div className="pt-3 flex items-center justify-between border-t border-slate-100">
               <button
                 type="button"
+                disabled={testTelegramLoading}
                 onClick={handleTestTelegram}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-xl text-xs font-semibold transition"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-xl text-xs font-semibold transition"
               >
                 <Bell className="w-3.5 h-3.5 text-blue-600" />
-                Gửi tin nhắn thử nghiệm lên Telegram
+                {testTelegramLoading ? "Đang gửi..." : "Gửi tin nhắn thử nghiệm lên Telegram"}
               </button>
 
               {testTelegramStatus && (

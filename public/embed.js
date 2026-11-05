@@ -29,6 +29,11 @@
     (currentScript && currentScript.getAttribute("data-theme-color")) || "#2563eb";
   var position =
     (currentScript && currentScript.getAttribute("data-position")) || "right"; // 'right' hoặc 'left'
+  var widgetTitle =
+    (currentScript && currentScript.getAttribute("data-title")) ||
+    "Golden Palace - Hỗ trợ tiệc cưới & sự kiện";
+  var widgetGreeting =
+    (currentScript && currentScript.getAttribute("data-greeting")) || "";
 
   // 2. Tạo CSS cho nút chat và popup iframe
   var style = document.createElement("style");
@@ -128,7 +133,16 @@
 
   var iframe = document.createElement("iframe");
   iframe.className = "omnichat-iframe";
-  iframe.src = baseUrl + "/widget";
+  var queryParams = [
+    "embedded=true",
+    "color=" + encodeURIComponent(themeColor),
+    "position=" + encodeURIComponent(position),
+    "title=" + encodeURIComponent(widgetTitle),
+  ];
+  if (widgetGreeting) {
+    queryParams.push("greeting=" + encodeURIComponent(widgetGreeting));
+  }
+  iframe.src = baseUrl + "/widget?" + queryParams.join("&");
   iframe.title = "OmniChat AI Assistant";
   iframeWrapper.appendChild(iframe);
 
@@ -151,14 +165,28 @@
   button.innerHTML = chatIcon;
 
   var isOpen = false;
-  button.addEventListener("click", function () {
-    isOpen = !isOpen;
+  function setChatOpen(open) {
+    isOpen = open;
     if (isOpen) {
       iframeWrapper.classList.add("open");
       button.innerHTML = closeIcon;
     } else {
       iframeWrapper.classList.remove("open");
       button.innerHTML = chatIcon;
+    }
+  }
+
+  button.addEventListener("click", function () {
+    setChatOpen(!isOpen);
+  });
+
+  window.addEventListener("message", function (event) {
+    if (event.data && typeof event.data === "object") {
+      if (event.data.type === "omnichat-close") {
+        setChatOpen(false);
+      } else if (event.data.type === "omnichat-open") {
+        setChatOpen(true);
+      }
     }
   });
 

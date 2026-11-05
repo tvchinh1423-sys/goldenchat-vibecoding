@@ -253,3 +253,14 @@ export function saveDemoBooking(
       : [...snapshot.bookings, booking],
   };
 }
+export function deleteDemoBooking(
+  snapshot: CRMSnapshot,
+  id: string,
+): CRMSnapshot {
+  const existing = snapshot.bookings.find((b) => b.id === id);
+  if (!existing) throw new CRMError("Không tìm thấy lịch hẹn để xóa.", 404);
+  return {
+    ...snapshot,
+    bookings: snapshot.bookings.filter((b) => b.id !== id),
+  };
+}

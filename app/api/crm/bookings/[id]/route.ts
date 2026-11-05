@@ -43,3 +43,20 @@ export async function PATCH(
     }
   });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  return crmHandler(req, async () => {
+    requireUUID(params.id);
+    const { data, error } = await crmDatabase()
+      .from("bookings")
+      .delete()
+      .eq("id", params.id)
+      .select("id")
+      .maybeSingle();
+    databaseError(error);
+    if (!data) throw new CRMError("Không tìm thấy lịch hẹn để xóa.", 404);
+  });
+}

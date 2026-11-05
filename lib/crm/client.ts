@@ -10,6 +10,7 @@ import {
   readDemoCRM,
   saveDemoBooking,
   saveDemoLead,
+  deleteDemoBooking,
   writeDemoCRM,
 } from "./demo-store";
 export interface CRMState extends CRMSnapshot {
@@ -117,6 +118,14 @@ export async function setCRMBookingStatus(
         ),
       };
     },
+  );
+}
+export async function deleteCRMBooking(id: string) {
+  return mutate(
+    `/bookings/${encodeURIComponent(id)}`,
+    "DELETE",
+    undefined,
+    (data) => deleteDemoBooking(data, id),
   );
 }
 export async function loginCRM(password: string) {

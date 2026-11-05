@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CRMAccessPanel } from "./access-panel";
 import { BookingEditor } from "./booking-editor";
@@ -16,6 +16,7 @@ import {
   saveCRMLead,
   saveCRMBooking,
   setCRMBookingStatus,
+  deleteCRMBooking,
   type CRMState,
 } from "@/lib/crm/client";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -447,27 +448,118 @@ export function CRMDashboard() {
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {appointments.map((b) => {
                 const l = leads.find((l) => l.id === b.lead_id)!;
+                const statusBadgeClasses = {
+                  pending: "bg-amber-50 text-amber-700 border-amber-200",
+                  confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                  completed: "bg-blue-50 text-blue-700 border-blue-200",
+                  cancelled: "bg-slate-100 text-slate-500 border-slate-200 line-through",
+                }[b.status] || "bg-slate-50 text-slate-700 border-slate-200";
+
                 return (
                   <article
                     key={b.id}
-                    className="space-y-3 rounded-xl border bg-white p-5"
+                    className="space-y-3 rounded-xl border bg-white p-5 flex flex-col justify-between shadow-2xs hover:shadow-xs transition"
                   >
-                    <p className="text-sm font-semibold">{l.full_name}</p>
-                    <p className="text-xs font-medium text-violet-700">
-                      {BOOKING_TYPES[b.event_type] ?? b.event_type} ·{" "}
-                      {formatAppointment(b.appointment_time)}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {b.assigned_staff} · {b.guests_count} người ·{" "}
-                      {BOOKING_STATUSES[b.status]}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditor(l.id)}
-                    >
-                      Mở hồ sơ & chỉnh lịch
-                    </Button>
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{l.full_name}</p>
+                          <p className="text-xs text-blue-600 font-medium">
+                            {l.phone || "Chưa có SĐT"}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusBadgeClasses}`}
+                        >
+                          {BOOKING_STATUSES[b.status]}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                        <p className="text-xs font-semibold text-violet-700">
+                          {BOOKING_TYPES[b.event_type] ?? b.event_type} ·{" "}
+                          {formatAppointment(b.appointment_time)}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Tiếp đón: <span className="font-medium text-slate-700">{b.assigned_staff}</span> · {b.guests_count} khách
+                        </p>
+                        {b.notes && (
+                          <p className="text-[11px] text-slate-600 italic border-t border-slate-200/60 pt-1 mt-1">
+                            &quot;{b.notes}&quot;
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons: Edit, Confirm, Cancel, Delete */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-7 px-2.5"
+                        onClick={() => setEditor(l.id)}
+                      >
+                        Mở hồ sơ & đổi lịch
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {b.status === "pending" && (
+                          <button
+                            type="button"
+                            title="Xác nhận lịch hẹn"
+                            disabled={busy}
+                            onClick={() =>
+                              mutate(
+                                () => setCRMBookingStatus(b, "confirmed"),
+                                "Đã xác nhận lịch hẹn.",
+                              )
+                            }
+                            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-md font-medium transition"
+                          >
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Xác nhận
+                          </button>
+                        )}
+
+                        {b.status !== "cancelled" && (
+                          <button
+                            type="button"
+                            title="Hủy lịch hẹn"
+                            disabled={busy}
+                            onClick={() => {
+                              if (window.confirm(`Bạn có chắc muốn hủy lịch hẹn của khách ${l.full_name}?`)) {
+                                mutate(
+                                  () => setCRMBookingStatus(b, "cancelled"),
+                                  "Đã hủy lịch hẹn.",
+                                );
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-md font-medium transition"
+                          >
+                            <XCircle className="w-3 h-3 text-amber-600" />
+                            Hủy
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          title="Xóa hẳn lịch hẹn"
+                          disabled={busy}
+                          onClick={() => {
+                            if (window.confirm(`Bạn có chắc chắn muốn XÓA HẲN lịch hẹn của khách ${l.full_name}?`)) {
+                              mutate(
+                                () => deleteCRMBooking(b.id),
+                                "Đã xóa vĩnh viễn lịch hẹn khỏi hệ thống.",
+                              );
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md font-medium transition"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-600" />
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
                   </article>
                 );
               })}
@@ -497,6 +589,12 @@ export function CRMDashboard() {
             mutate(
               () => setCRMBookingStatus(b, status),
               "Đã cập nhật trạng thái lịch hẹn.",
+            )
+          }
+          onDeleteBooking={(b) =>
+            mutate(
+              () => deleteCRMBooking(b.id),
+              "Đã xóa vĩnh viễn lịch hẹn khỏi hệ thống.",
             )
           }
         />

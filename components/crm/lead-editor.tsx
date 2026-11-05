@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { LEAD_STAGES } from "@/lib/leads/demo-data";
 import {
   BOOKING_STATUSES,
@@ -28,6 +29,7 @@ export function LeadEditor({
   onSave,
   onBooking,
   onStatus,
+  onDeleteBooking,
 }: {
   lead?: CRMLead;
   bookings: CRMBooking[];
@@ -39,6 +41,7 @@ export function LeadEditor({
     booking: CRMBooking,
     status: CRMBooking["status"],
   ) => Promise<void>;
+  onDeleteBooking?: (booking: CRMBooking) => Promise<void>;
 }) {
   const [form, setForm] = useState<LeadInput>(
     lead ?? {
@@ -293,6 +296,30 @@ export function LeadEditor({
                       ))}
                     </select>
                   </label>
+                  {onDeleteBooking && (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={async () => {
+                        if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn này không?")) {
+                          setError("");
+                          try {
+                            await onDeleteBooking(b);
+                          } catch (e) {
+                            setError(
+                              e instanceof Error
+                                ? e.message
+                                : "Chưa xóa được lịch.",
+                            );
+                          }
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1.5 rounded-lg font-medium transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      Xóa lịch
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

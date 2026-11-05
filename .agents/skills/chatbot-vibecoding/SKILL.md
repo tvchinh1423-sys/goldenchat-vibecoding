@@ -269,3 +269,27 @@ app-root/
 - **Kiểm thử & Triển khai:**
   - Bổ sung unit test kiểm tra `300 khách` và `30 mâm`, nâng tổng số test lên **26/26 unit tests pass 100%**.
   - Đã build Next.js thành công và khởi động lại daemon server cổng 3000.
+
+### Mốc Kết Nối Nền Tảng, Script embed.js, Telegram Alert & Form Đặt Lịch CRM Thông Minh — 05/11/2026 (Chinh)
+
+- **1. Kết nối đa kênh & Cảnh báo Telegram thực chiến (`/settings` & `/api/telegram/alert`):**
+  - Webhook Botcake (`/api/webhook/botcake`): Sẵn sàng tiếp nhận tin nhắn từ cả Facebook Fanpage và Zalo cá nhân, tự động nhận diện SĐT tạo Lead N1 và gửi thông báo Telegram.
+  - Tab Telegram Alert trong `/settings`: Nâng cấp `handleTestTelegram` gọi thực tế API `/api/telegram/alert` với Telegram Bot Token và Chat ID, phản hồi trực tiếp kết quả xác thực từ Telegram Bot API và lưu cấu hình vào localStorage.
+  - Tự động hỗ trợ 4 phân loại cảnh báo: `lead` (Lead N1 mới), `guardrail` (khách đòi giảm giá sai chính sách), `appointment` (yêu cầu đặt lịch), và `test` (kiểm tra hệ thống).
+- **2. Hoàn thiện Script nhúng Web Widget `public/embed.js`:**
+  - Nhận diện các thuộc tính nhúng: `data-theme-color`, `data-position`, `data-title`, `data-greeting`.
+  - Tự động truyền các tham số tùy biến vào query URL của iframe `/widget?color=...&title=...`.
+  - Hỗ trợ cơ chế giao tiếp `postMessage` hai chiều (`omnichat-close`, `omnichat-open`) giúp đóng/mở mượt mà trên cả desktop và mobile fullscreen.
+- **3. Form Đặt lịch tư vấn trực tiếp trong Chat & Đồng bộ CRM (`app/widget/page.tsx`):**
+  - Popup Form Đặt lịch nhanh ngay trong Widget: Khách có thể bấm nút từ thanh Quick Chips, nút trên Header, hoặc từ gợi ý thông minh của Bot khi phát hiện ý định xem sảnh.
+  - **Smart Default Thời Gian (Tiêu chí BTC Đề 4):** Áp dụng hàm `getSmartBookingDefault()` chuẩn khung giờ vàng đón tiếp của Golden Palace (8:00 - 10:30 sáng). Nếu trước 08:30 sáng thì gợi ý hôm nay lúc 08:30; nếu sau 08:30 sáng thì tự động điền ngày mai lúc 08:30.
+  - Đồng bộ CRM tức thì: Gọi `saveCRMLead` tự động đưa khách hàng lên **N3 · Khảo sát 1-1** + `saveCRMBooking` lưu trữ lịch hẹn.
+  - Tự động bắn thông báo Telegram `type: appointment` cho Quản lý tiệc.
+  - Sinh thẻ xác nhận lịch hẹn trong chat + Nút **"📅 Thêm vào Google Calendar"** 1-chạm được cấu hình đúng thời gian khách vừa chọn + Âm thanh "Ting" Web Audio API.
+- **4. Trang Quản trị Xem & Xóa/Hủy Lịch Hẹn (`/leads` — Tiêu chí Must-be của BTC):**
+  - View Lịch hẹn (`components/crm/crm-dashboard.tsx`): Mỗi thẻ lịch hẹn hiển thị badge trạng thái trực quan, nút "Mở hồ sơ & đổi lịch", nút "Xác nhận lịch", nút "Hủy lịch" (status `cancelled`), và nút màu đỏ **"Xóa lịch"** (icon Trash2 kèm hộp thoại xác nhận).
+  - Modal hồ sơ khách (`components/crm/lead-editor.tsx`): Bổ sung nút "Xóa lịch" màu đỏ cho từng lịch hẹn của khách.
+  - Bổ sung API `DELETE /api/crm/bookings/[id]` và hàm client `deleteCRMBooking`, `deleteDemoBooking` trong `lib/crm/demo-store.ts` và `lib/crm/client.ts`.
+- **5. Kiểm thử & Đóng gói:**
+  - Bổ sung unit test suite `tests/channel-booking.test.ts`, nâng tổng số test từ 26 lên **32/32 tests pass 100%**.
+  - Production build Next.js 17/17 trang tĩnh đạt 100%, server local cổng 3000 đang hoạt động ổn định.

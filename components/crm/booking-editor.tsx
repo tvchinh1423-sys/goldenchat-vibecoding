@@ -28,6 +28,43 @@ function vietnamInput(time: string) {
   const get = (type: string) => parts.find((p) => p.type === type)?.value;
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
+
+export function getSmartBookingDefault(): string {
+  const now = new Date();
+  const vnParts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) => vnParts.find((p) => p.type === type)?.value;
+  const currentHour = Number(get("hour"));
+  const currentMinute = Number(get("minute"));
+
+  // Khung giờ đón tiếp tiêu chuẩn của Golden Palace: 8:00 - 10:30 sáng
+  // Nếu trước 08:30 sáng: Smart Default = Hôm nay lúc 08:30
+  // Nếu từ 08:30 sáng trở đi: Smart Default = Ngày mai lúc 08:30
+  const isBeforeSlot = currentHour < 8 || (currentHour === 8 && currentMinute < 30);
+
+  const targetDate = new Date(now);
+  if (!isBeforeSlot) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  const targetParts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(targetDate);
+  const getTarget = (type: string) => targetParts.find((p) => p.type === type)?.value;
+
+  return `${getTarget("year")}-${getTarget("month")}-${getTarget("day")}T08:30`;
+}
+
 export function BookingEditor({
   lead,
   booking,
@@ -40,7 +77,7 @@ export function BookingEditor({
   onSave: (input: unknown, id?: string) => Promise<void>;
 }) {
   const [form, setForm] = useState({
-    time: booking ? vietnamInput(booking.appointment_time) : "",
+    time: booking ? vietnamInput(booking.appointment_time) : getSmartBookingDefault(),
     event_type: booking?.event_type ?? "xem_sanh",
     guests_count: booking?.guests_count ?? 2,
     assigned_staff: booking?.assigned_staff || lead.assigned_to || "Ngọc Khánh",
@@ -105,16 +142,27 @@ export function BookingEditor({
               ))}
             </select>
           </label>
-          <label className="block text-xs font-medium">
-            Thời gian hẹn (giờ Việt Nam)
-            <Input
-              className="mt-2"
-              type="datetime-local"
-              required
-              value={form.time}
-              onChange={(e) => setForm({ ...form, time: e.target.value })}
-            />
-          </label>
+          <div>
+            <label className="block text-xs font-medium">
+              Thời gian hẹn (giờ Việt Nam · 8:00 - 10:30 đón tiếp)
+              <Input
+                className="mt-2"
+                type="datetime-local"
+                required
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+              />
+            </label>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, time: getSmartBookingDefault() })}
+                className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition"
+              >
+                ⚡ Khung giờ gợi ý: 08:30 sáng
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs font-medium">
               Số người tham gia
