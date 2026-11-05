@@ -1,6 +1,8 @@
-# OmniChat AI · Module 1
+# OmniChat AI · Golden Palace showcase
 
-Inbox theo `SPEC_GIAO_DIEN_TINH_NANG.md`, Next.js 14 App Router, TypeScript, Tailwind CSS, các primitive shadcn/ui (Radix) và Lucide.
+Chatbot FAQ & đặt lịch tư vấn đa kênh cho VibeCoding 2026, dùng **Trung tâm Tiệc
+cưới & Sự kiện Golden Palace** làm doanh nghiệp minh họa. Next.js 14 App Router,
+TypeScript, Tailwind CSS, Radix/shadcn và Supabase adapter.
 
 ## Chạy ứng dụng
 
@@ -9,35 +11,41 @@ npm install
 npm run dev
 ```
 
-Mở http://localhost:3000/inbox. `/` tự chuyển về `/inbox`.
+Mở `/inbox` để thử hội thoại, `/leads` để quản lý khách hàng/lịch hẹn,
+`/training` để cấu hình tri thức, `/settings` để cấu hình kênh, `/widget` để xem chat nhúng.
+
+## Phần đã nối
+
+- Inbox ba cột: tìm kiếm không dấu/SĐT, bộ lọc đa kênh, ghi chú, phân công,
+  hoàn tất/lưu trữ, form khách hàng, hỗ trợ mobile và điều hướng PWA.
+- Soạn nháp Inbox gọi Gemini hoặc 9Router khi có khóa; chưa cấu hình dùng gợi ý FAQ
+  có nhãn demo, luôn chờ tư vấn viên duyệt. Xem [AI Engine](docs/ai-engine.md).
+- Tạo khách từ Inbox sang CRM, chống trùng SĐT; hồ sơ có nhu cầu, số bàn, ngày tổ chức,
+  nguồn và phụ trách. Kanban N1–N5/N0, danh sách/phễu và các bộ lọc dùng chung dữ liệu.
+- Tạo/đổi/xác nhận/hủy/hoàn tất lịch xem sảnh, thử món, tư vấn; giờ Việt Nam, chặn
+  chồng 60 phút của cùng tư vấn viên. Lịch tư vấn chưa giữ chỗ sảnh hoặc xác nhận cọc.
+
+**Mặc định là demo cục bộ**, lưu vào trình duyệt. Tin nhắn chưa gửi qua Botcake;
+cờ AI chưa kích hoạt tự động trả lời. CRM có adapter Supabase riêng, migration và
+đăng nhập workspace; chưa xác minh dịch vụ cloud thật trên máy này. Xem
+[hướng dẫn CRM Golden Palace](docs/crm-golden-palace.md) để thử luồng và cấu hình.
+Biểu đồ hiện là phân bố giai đoạn, chưa có lịch sử tỷ lệ chuyển đổi.
+
+Training, Simulator, Webhook Botcake, Settings, Widget, Google Sheets FAQ và Telegram
+được tích hợp từ nhánh của Chinh; trạng thái kiểm tra dịch vụ thật theo skill dự án.
+Schema bàn giao cục bộ được giữ nguyên. CRM dùng migration riêng trong
+`supabase/migrations`; không chạy schema tắt RLS cũ sau migration CRM.
+
+## Kiểm tra
 
 ```sh
-npm run typecheck
 npm run lint
+npm run typecheck
 npm test
 npm run build
 npm run test:e2e
 ```
 
-Kiểm thử trình duyệt dùng Chrome cài sẵn, tự chạy production server ở cổng 3100 sau khi đã build.
-
-## Phạm vi hiện tại
-
-- Tìm tên/SĐT/email/nội dung, hỗ trợ tên không dấu và Ctrl/Cmd+K. Tab và bộ lọc kênh, lịch hẹn, liên hệ kết hợp với nhau; bộ đếm lấy từ dữ liệu.
-- Chat hai chiều: gửi tin của tư vấn viên, Enter/Shift+Enter, emoji, ảnh demo (PNG/JPG/WebP/GIF, tối đa 2 ảnh/tin, 700 KB/ảnh), thả tim, hoàn tất, lưu trữ, khôi phục, phân công. Khi sales gửi tin, cờ AI tự tắt.
-- Soạn nháp dùng quy tắc ghép FAQ từ `mock_data.json`, điền vào ô soạn để người dùng sửa/duyệt. Đây là **gợi ý demo**, chưa gọi AI và không tự gửi trả lời.
-- Tách SĐT/email từ tin nhắn **của khách**; form tạo lead cho phép sửa, kiểm tra số di động VN/email và chặn trùng SĐT với lead đã lưu trong Inbox.
-- Ghi chú, cờ AI, tin nhắn, ảnh, lead, trạng thái được lưu trong `localStorage` với key `omnichat.inbox.v1`; giữ lại khi tải lại trang trên cùng trình duyệt. Lỗi đọc/ghi được thông báo. Liên kết hội thoại chỉ có ý nghĩa trên trình duyệt chứa dữ liệu này.
-- Desktop từ 1280 px: ba cột. Tablet: danh sách + chat, thông tin ở drawer. Mobile: danh sách → chat → drawer thông tin. Mỗi cột cuộn riêng.
-
-## Dữ liệu và điểm tích hợp tiếp theo
-
-File mẫu gốc không có hội thoại. `lib/inbox/demo-data.ts` bổ sung **hội thoại minh họa**, dùng FAQ, lead và booking trong file gốc. Không cần biến môi trường để chạy Module 1.
-
-Inbox chưa nối Supabase, webhook Facebook/Zalo/Web hoặc nhà cung cấp AI; gửi tin và tạo lead hiện là thao tác demo cục bộ. Bật AI chỉ lưu cờ cấu hình, chưa có worker trả lời tự động. Module 2 sẽ thay `createFaqDraft` bằng AI service; lớp kiểu dữ liệu nằm trong `lib/inbox/types.ts`. Module 3 sẽ bổ sung CRM và chỉnh lịch.
-
-Đã tích hợp mã Training, upload FAQ, Simulator và webhook Botcake từ `origin/main` của Chinh. Nút **Bot tư vấn khách** mở `/training`. Các dịch vụ này chưa được xác minh với tài khoản thật trong task Inbox; cần cấu hình Supabase/Botcake riêng. Khởi tạo Supabase trì hoãn đến khi handler sử dụng để build demo không cần khóa dịch vụ.
-
-Schema bàn giao ở `handoff/supabase_schema.sql`. Bản schema cục bộ do người dùng bổ sung có khác biệt với schema phễu trên GitHub và được giữ nguyên ngoài commit Inbox. Khi tích hợp CRM phải dùng phễu **N1–N5/N0**, ánh xạ lead mới sang **N1**, ánh xạ nhu cầu sang `notes`, thêm lưu ghi chú/email và trạng thái lưu trữ, xác thực và chính sách RLS phù hợp. Không đưa service-role key/API key AI vào client component.
-
-Để đưa demo về mặc định, xóa key `omnichat.inbox.v1` trong DevTools → Application → Local Storage và tải lại.
+Kiểm thử SQL chạy PostgreSQL cục bộ qua PGlite, không cần khóa cloud. Kiểm thử
+trình duyệt dùng Chrome đã cài, production server ở cổng 3100 sau khi build.
+Không commit `.env.local`, API key hoặc dữ liệu khách thật.

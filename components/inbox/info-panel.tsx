@@ -1,5 +1,6 @@
 "use client";
 import { useId, useState, type FormEvent } from "react";
+import Link from "next/link";
 import {
   CalendarDays,
   Check,
@@ -43,7 +44,7 @@ interface Props {
   note: string;
   onNote: (note: string) => void;
   onSaveNote: () => void;
-  onCreateLead: (fields: LeadFields) => boolean;
+  onCreateLead: (fields: LeadFields) => Promise<boolean>;
   onAssign: (value: Conversation["assignedTo"]) => void;
   notify: (text: string) => void;
 }
@@ -66,6 +67,7 @@ export function InfoPanel({
     demand_notes: "",
   });
   const [error, setError] = useState("");
+  const [savingLead, setSavingLead] = useState(false);
   const id = useId();
   const contact = detectContact(conversation.messages);
   const extracted = extractLeadInfo(
@@ -96,7 +98,7 @@ export function InfoPanel({
     setError("");
     setDialog("lead");
   };
-  const saveLead = (event: FormEvent<HTMLFormElement>) => {
+  const saveLead = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const fields = {
       full_name: form.full_name.trim(),
@@ -114,8 +116,18 @@ export function InfoPanel({
       setError("Email chưa hợp lệ.");
       return;
     }
-    if (onCreateLead(fields)) setDialog(null);
-    else setError("Số điện thoại đã gắn với một khách hàng trong hộp thư.");
+    setSavingLead(true);
+    setError("");
+    try {
+      if (await onCreateLead(fields)) setDialog(null);
+      else setError("Số điện thoại đã gắn với một khách hàng trong hộp thư.");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Chưa lưu được khách hàng vào CRM.",
+      );
+    } finally {
+      setSavingLead(false);
+    }
   };
   return (
     <div className="flex h-full flex-col">
@@ -256,7 +268,7 @@ export function InfoPanel({
           </h3>
           <p className="mt-1.5 text-[10px] leading-5 text-muted-foreground">
             {conversation.lead
-              ? "Thông tin khách đã lưu trong bản demo."
+              ? "Mở CRM để xem hồ sơ và tạo lịch hẹn xem sảnh, thử món."
               : "Tự nhận diện thông tin từ tin nhắn của khách."}
           </p>
           {phone || email ? (
@@ -314,9 +326,17 @@ export function InfoPanel({
             </dl>
           )}
           {conversation.lead ? (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-              <Check className="h-4 w-4" />
-              Đã lưu khách hàng
+            <div className="space-y-3 text-xs font-medium text-emerald-600">
+              <div className="flex items-center gap-1.5">
+                <Check className="h-4 w-4" />
+                Đã lưu khách hàng
+              </div>
+              <Link
+                className="inline-block text-blue-600 hover:underline"
+                href="/leads"
+              >
+                Mở hồ sơ & lịch hẹn trong CRM
+              </Link>
             </div>
           ) : (
             <Button
@@ -346,13 +366,20 @@ export function InfoPanel({
           </button>
         )}
         <p className="px-1 text-center text-[9px] leading-5 text-muted-foreground">
-          Thông tin được lưu cục bộ trên trình duyệt này.
+          Tin nhắn, ghi chú lưu cục bộ. Hồ sơ và lịch hẹn theo nguồn dữ liệu
+          CRM.
+          <Link
+            href="/leads"
+            className="block text-xs font-medium text-blue-600 hover:underline"
+          >
+            Mở CRM khách hàng
+          </Link>
         </p>
       </div>
       <Dialog
         open={dialog !== null}
         onOpenChange={(open) => {
-          if (!open) setDialog(null);
+          if (!open && !savingLead) setDialog(null);
         }}
       >
         <DialogContent>
@@ -369,7 +396,7 @@ export function InfoPanel({
             {dialog === "lead"
               ? "Kiểm tra thông tin bóc tách trước khi lưu khách hàng."
               : dialog === "booking"
-                ? "Lịch hẹn từ dữ liệu mẫu Golden Palace."
+                ? "Giờ Việt Nam. Lịch tư vấn chưa giữ chỗ sảnh tiệc."
                 : dialog === "assign"
                   ? "Chọn người tiếp nhận cuộc hội thoại này."
                   : "Tổng hợp dữ liệu tin nhắn, chưa sử dụng mô hình AI."}
@@ -440,12 +467,16 @@ export function InfoPanel({
                 </p>
               )}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialog(null)}>
+                <Button
+                  variant="outline"
+                  disabled={savingLead}
+                  onClick={() => setDialog(null)}
+                >
                   Hủy
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={savingLead}>
                   <UserRoundPlus />
-                  Lưu khách hàng
+                  {savingLead ? "Đang lưu..." : "Lưu khách hàng"}
                 </Button>
               </div>
             </form>

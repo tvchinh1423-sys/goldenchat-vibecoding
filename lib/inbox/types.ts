@@ -39,6 +39,7 @@ export interface Conversation {
   messages: Message[];
   booking?: { appointmentTime: string; staff: string; notes: string };
   lead?: Lead;
+  crmMode?: "demo" | "supabase";
 }
 export interface InboxFilters {
   query: string;

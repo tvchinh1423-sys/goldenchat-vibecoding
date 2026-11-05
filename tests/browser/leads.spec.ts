@@ -58,12 +58,15 @@ test("Kanban allows drag and drop, and mobile keeps scrolling inside the board",
     name: "N3 · KHẢO SÁT 1-1",
     exact: true,
   });
-  const card = board
-    .locator("article")
-    .filter({
-      has: page.getByRole("heading", { name: "Vũ Huyền Trang", exact: true }),
-    });
-  await card.dragTo(target);
+  const card = board.locator("article").filter({
+    has: page.getByRole("heading", { name: "Vũ Huyền Trang", exact: true }),
+  });
+  // Start at the card heading and drop on the column heading. Center-based
+  // dragging can land on the embedded native select after automatic scrolling.
+  await card.dragTo(target, {
+    sourcePosition: { x: 20, y: 25 },
+    targetPosition: { x: 50, y: 40 },
+  });
   await expect(target).toContainText("Vũ Huyền Trang");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();

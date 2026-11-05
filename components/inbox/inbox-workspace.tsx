@@ -19,6 +19,10 @@ import { ConversationList } from "./conversation-list";
 import { ChatPane } from "./chat-pane";
 import { InfoPanel, type LeadFields } from "./info-panel";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { loadCRM, saveCRMLead } from "@/lib/crm/client";
+import { extractLeadInfo } from "@/lib/lead-extractor";
+import { applyCRMToInbox } from "@/lib/crm/inbox-adapter";
+import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -39,6 +43,7 @@ export function InboxWorkspace() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const draftRequest = useRef<AbortController | null>(null);
+  const crmRevision = useRef(0);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<Record<string, Attachment[]>>(
     {},
@@ -99,6 +104,31 @@ export function InboxWorkspace() {
       setStorageError(true);
     }
   }, [conversations, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    let mounted = true;
+    const refreshCRM = async () => {
+      const revision = ++crmRevision.current;
+      try {
+        const crm = await loadCRM();
+        if (mounted && revision === crmRevision.current)
+          setConversations((current) => applyCRMToInbox(current, crm));
+      } catch {
+        /* Inbox remains usable; CRM errors are shown when opening/saving CRM. */
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === CRM_STORAGE_KEY || event.key === null)
+        void refreshCRM();
+    };
+    void refreshCRM();
+    window.addEventListener("storage", onStorage);
+    return () => {
+      mounted = false;
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [ready]);
 
   useEffect(() => {
     if (!toast) return;
@@ -237,26 +267,68 @@ export function InboxWorkspace() {
     setAttachments((current) => ({ ...current, [active.id]: [] }));
     notify("Đã thêm tin nhắn demo. AI tự tắt khi tư vấn viên tiếp quản.");
   }
-  function createLead(fields: LeadFields) {
+  async function createLead(fields: LeadFields) {
     if (!active) return false;
+    ++crmRevision.current;
     if (
       conversations.some(
         (conversation) => conversation.lead?.phone === fields.phone,
       )
     )
       return false;
-    updateConversation(active.id, (conversation) => ({
+    const conversationId = active.id;
+    const extracted = extractLeadInfo(
+      active.messages
+        .filter((m) => m.sender === "customer")
+        .map((m) => m.content)
+        .join("\n"),
+    );
+    const currentCRM = await loadCRM();
+    const existing = currentCRM.leads.find(
+      (l) => l.inbox_reference === conversationId,
+    );
+    if (existing?.phone && existing.phone !== fields.phone)
+      throw new Error(
+        "Hội thoại đã có hồ sơ CRM. Hãy mở CRM để cập nhật thông tin.",
+      );
+    const result = await saveCRMLead(
+      {
+        full_name: fields.full_name,
+        phone: fields.phone,
+        email: fields.email,
+        notes: fields.demand_notes,
+        inbox_reference: conversationId,
+        source: active.channel,
+        stage: existing?.stage ?? "N1",
+        assigned_to:
+          existing?.assigned_to ??
+          (active.assignedTo === "me" ? "Ngọc Khánh" : ""),
+        event_date: extracted.eventDate ?? existing?.event_date ?? "",
+        table_count: extracted.tableCount ?? existing?.table_count ?? null,
+      },
+      existing?.phone ? existing.id : undefined,
+    );
+    const saved = result.leads.find(
+      (l) => l.inbox_reference === conversationId,
+    );
+    if (!saved)
+      throw new Error("Chưa xác nhận được hồ sơ đã lưu. Hãy tải lại CRM.");
+    updateConversation(conversationId, (conversation) => ({
       ...conversation,
       lead: {
         ...fields,
-        id: crypto.randomUUID(),
+        id: saved.id,
         conversation_id: conversation.id,
         source: conversation.channel,
         status: "new",
         created_at: new Date().toISOString(),
       },
     }));
-    notify("Đã lưu khách hàng vào dữ liệu demo trên trình duyệt.");
+    notify(
+      result.mode === "demo"
+        ? "Đã lưu khách hàng trong CRM demo. Mở CRM để tạo lịch xem sảnh / thử món."
+        : "Đã lưu khách hàng vào Supabase. Mở CRM để tạo lịch hẹn.",
+    );
     return true;
   }
   function renderInfo() {
@@ -290,7 +362,7 @@ export function InboxWorkspace() {
   }
 
   return (
-    <main className="flex h-dvh min-h-[360px] flex-col overflow-hidden">
+    <main className="flex h-dvh min-h-[360px] flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       <header className="z-10 flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b bg-white px-4 py-3 sm:px-6 lg:px-7">
         <div className="flex items-center gap-3">
           <div className="hidden h-9 w-9 items-center justify-center rounded-xl bg-primary text-white sm:flex">
