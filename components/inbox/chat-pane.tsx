@@ -42,6 +42,7 @@ import { Avatar } from "./shared";
 interface Props {
   conversation: Conversation;
   draft: string;
+  generatingDraft: boolean;
   attachments: Attachment[];
   onDraft: (text: string) => void;
   onAttachments: (attachments: Attachment[]) => void;
@@ -61,6 +62,7 @@ interface Props {
 export function ChatPane({
   conversation,
   draft,
+  generatingDraft,
   attachments,
   onDraft,
   onAttachments,
@@ -157,14 +159,15 @@ export function ChatPane({
               )}
             </div>
             <p className="mt-1 truncate text-[11px] text-muted-foreground">
-              {CHANNEL_LABELS[conversation.channel]} · Học viện Kstudy
+              {CHANNEL_LABELS[conversation.channel]} · Trung tâm Tiệc cưới & Sự
+              kiện Golden Palace
             </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <label
             className="mr-1 flex items-center gap-1.5 text-xs text-muted-foreground"
-            title="Cờ AI trong bản demo; kết nối AI tại Module 2"
+            title="Cờ AI trong bản demo; gửi tự động qua Botcake chưa được kết nối"
           >
             AI
             <Switch
@@ -359,7 +362,7 @@ export function ChatPane({
                   >
                     <span>
                       {message.sender === "bot"
-                        ? "Kstudy Bot · "
+                        ? "Golden Palace Assistant · "
                         : message.sender === "agent"
                           ? "Bạn · "
                           : ""}
@@ -482,12 +485,18 @@ export function ChatPane({
                   variant="secondary"
                   size="sm"
                   className="rounded-full border border-blue-200 text-[11px]"
+                  disabled={generatingDraft}
+                  aria-busy={generatingDraft}
                   onClick={() => {
                     onGenerateDraft();
                     inputRef.current?.focus();
                   }}
                 >
-                  <Sparkles className="!h-3.5 !w-3.5" />
+                  {generatingDraft ? (
+                    <LoaderCircle className="!h-3.5 !w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="!h-3.5 !w-3.5" />
+                  )}
                   Soạn nháp AI
                 </Button>
                 <Button
@@ -513,7 +522,7 @@ export function ChatPane({
               </div>
             </div>
             <p className="mt-2.5 text-[9px] text-muted-foreground">
-              Enter để gửi · Shift + Enter xuống dòng · Gợi ý FAQ cần được duyệt
+              Enter để gửi · Shift + Enter xuống dòng · Bản nháp cần được duyệt
               trước khi gửi
             </p>
           </>
@@ -522,7 +531,7 @@ export function ChatPane({
       <Dialog open={snippetsOpen} onOpenChange={setSnippetsOpen}>
         <DialogContent>
           <DialogTitle className="text-lg font-semibold">
-            Kho tin Kstudy
+            Kho tin Golden Palace
           </DialogTitle>
           <DialogDescription className="mb-5 mt-1 text-xs text-muted-foreground">
             Chọn mẫu để điền vào ô soạn thảo và chỉnh sửa trước khi gửi.

@@ -7,10 +7,10 @@ export type SenderType = 'customer' | 'bot' | 'agent';
 export type LeadStage =
   | 'N1' // Lead thô (Mới nhận thông tin)
   | 'N2' // Tiềm năng (Đã liên hệ, có nhu cầu)
-  | 'N3' // Học thử (Đã hẹn lịch tư vấn 1-1 / học thử)
-  | 'N4' // Chính thức (Đã đăng ký / nhập học)
-  | 'N5' // Nuôi dưỡng (Chưa chốt, cần chăm sóc thêm)
-  | 'N0'; // Đã mất (Không có nhu cầu / sai số)
+  | 'N3' // Khảo sát 1-1 (Đã hẹn xem sảnh & thử món trong showcase)
+  | 'N4' // Chính thức (Đã đặt cọc / ký hợp đồng)
+  | 'N5' // Nuôi dưỡng (Chăm sóc sau tiệc / upsell)
+  | 'N0'; // Đã mất (Đổi kế hoạch / chọn nơi khác)
 
 export interface Conversation {
   id: string;

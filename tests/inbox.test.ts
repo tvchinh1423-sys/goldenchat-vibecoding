@@ -106,12 +106,12 @@ test("only customer messages awaiting a response produce an SLA label", () => {
   );
 });
 test("draft comes from the supplied FAQ and does not mutate or send messages", () => {
-  const history = messages("Học phí và trả góp thế nào ạ?");
+  const history = messages("Đặt cọc giữ sảnh bao nhiêu ạ?");
   const original = JSON.stringify(history);
   const reply = createFaqDraft(history);
   assert.ok(
     reply.includes(
-      knowledgeBase.find((faq) => faq.category === "hoc_phi")!.answer,
+      knowledgeBase.find((faq) => faq.category === "dat_coc")!.answer,
     ),
   );
   assert.equal(JSON.stringify(history), original);

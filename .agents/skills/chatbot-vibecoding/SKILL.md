@@ -11,7 +11,7 @@ description: >-
 
 > [!IMPORTANT]
 > **QUY TẮC CỐT LÕI CẦN GHI NHỚ:**
-> 1. **DỰ ÁN ĐỘC LẬP:** Đây là sản phẩm dự thi VibeCoding 2026 (Bảng B - Kinh tế). **TUYỆT ĐỐI KHÔNG liên hệ, KHÔNG gán ghép và KHÔNG dùng dữ liệu của Golden Palace.**
+> 1. **SAAS ĐA NGÀNH:** Doanh nghiệp tự cấu hình Persona, FAQ và Guardrails. Chinh và Hiền đã chốt **Trung tâm Tiệc cưới & Sự kiện Golden Palace (F&B)** làm showcase ngày 05/11/2026. Hội thoại/liên hệ Inbox là dữ liệu minh họa. Quyết định này thay thế quy tắc cấm Golden Palace trước đây.
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
 > 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
 > 4. **TỰ CẬP NHẬT NGỮ CẢNH & ĐỒNG BỘ GITHUB:** Trong mỗi phiên làm việc, tự đọc cập nhật của đối phương trước khi sửa và tự cập nhật skill, kiểm tra, commit, push sau mỗi task nhỏ hoàn thành. Người dùng đã yêu cầu quy trình này ngày 05/11/2026; không hỏi lại cho các bước đồng bộ thông thường. Thực hiện theo quy trình bên dưới để giữ nguyên công việc đang làm.
@@ -55,14 +55,14 @@ Hệ thống giao diện được định hình 100% dựa trên 4 ảnh thực 
    - Bên phải: Khung Thử bot trực tiếp kèm gợi ý câu hỏi test nhanh.
 3. **Màn hình Quản lý Lead — Dạng Danh Sách & Biểu đồ Phễu (`/leads` view 1):**
    - Bên trái: Danh sách hồ sơ khách hàng (bộ lọc: giai đoạn, phụ trách, khóa học, nguồn, lịch hẹn, checkbox *Chưa ai chạm quá 7 ngày*).
-   - Bên phải: **Phễu tuyển sinh (Funnel Chart)** thể hiện tỷ lệ chuyển đổi qua từng bậc:
-     - `N1 · Lead thô` ➔ `N2 · Tiềm năng` ➔ `N3 · Học thử` ➔ `N4 · Chính thức` ➔ `N5 · Nuôi dưỡng` / `N0 · Đã mất`.
+   - Bên phải: **Phễu khách hàng / Phễu tư vấn (Funnel Chart)** thể hiện tỷ lệ chuyển đổi qua từng bậc:
+     - `N1 · Lead thô` ➔ `N2 · Tiềm năng` ➔ `N3 · Khảo sát 1-1` ➔ `N4 · Chính thức` ➔ `N5 · Nuôi dưỡng` / `N0 · Đã mất`.
 4. **Màn hình Quản lý Lead — Dạng Bảng Phễu Kanban (`/leads` view 2):**
    - Thanh thống kê tỷ lệ % từng giai đoạn trên cùng.
    - 6 cột Kanban kéo thả trực quan:
      - `N1 · LEAD THÔ`
      - `N2 · TIỀM NĂNG`
-     - `N3 · HỌC THỬ`
+     - `N3 · KHẢO SÁT 1-1`
      - `N4 · CHÍNH THỨC`
      - `N5 · NUÔI DƯỠNG`
      - `N0 · ĐÃ MẤT`
@@ -140,3 +140,40 @@ app-root/
 - Kiểm tra **sau tích hợp**: production build (Inbox/Training/Lead placeholder/API routes), lint/TypeScript, 8 unit test, 4 Playwright scenario đều đạt. Có kiểm tra đi từ Inbox sang Training và quay lại; Inbox vẫn chỉ có một header. Không có lỗi runtime ở luồng Inbox đã kiểm tra.
 - Giữ nguyên thay đổi schema bàn giao cục bộ, không stage schema trong task giao diện. Lead demo cần ánh xạ sang phễu N1–N5/N0 khi nối CRM/Supabase. Mã hoàn thiện thuộc nhánh `hien/frontend-ai`; trạng thái đồng bộ đối chiếu bằng hash remote, không tự merge vào main. Tiếp theo: Module 2 AI Engine và adapter Inbox/Supabase/Botcake, rồi Module 3 CRM/booking.
 - Đã push và xác minh remote `hien/frontend-ai` khớp commit code `457e2b5`. Lần fetch cuối phát hiện `47ac49b` mới trên main đổi Training/API sang SaaS đa ngành và Golden Palace Showcase. Chưa hợp nhất commit nghiệp vụ này vì yêu cầu task hiện tại là Kstudy và quy tắc cốt lõi hiện có vẫn cấm dùng dữ liệu Golden Palace; cần Chinh/Hiền chốt lại phạm vi trước khi thay bộ mẫu. Giữ nguyên bản Inbox Kstudy đã kiểm tra, không tự đổi nghiệp vụ.
+
+### Mốc Golden Palace Showcase — 05/11/2026 (Hiền)
+
+- Đã tích hợp main 49a7c08 (Training đa ngành, Settings, Widget, Inbox hợp nhất). Người dùng xác nhận SaaS đa ngành và Golden Palace showcase; quy tắc cấm Golden Palace cũ hết hiệu lực.
+- Inbox dùng BusinessProfile/FAQ từ preset wedding_event chung với Training. Hội thoại phủ thực đơn, sảnh 500 khách ngày 20/11 (cần kiểm tra lịch), đặt cọc, xem sảnh & thử món cuối tuần, tiệc doanh nghiệp. SĐT minh họa xuất hiện trong hộp chưa định danh.
+- Khóa localStorage riêng omnichat.inbox.golden-palace.v1 giúp hiện demo mới và giữ nguyên snapshot Kstudy cũ. Chưa gửi Botcake hay ghi lead thật.
+- Kiểm tra mốc Inbox Golden Palace: 8 unit test, lint, production build và 4 Playwright scenario desktop/mobile đạt.
+
+### Mốc Module 2 AI Engine — 05/11/2026 (Hiền)
+
+- Đã nhận thêm main a55fb71 (embed.js, Google Sheets FAQ, Telegram Alert).
+- lib/ai-engine.ts có generateBotReply/generateDraftReply, Gemini REST hoặc 9Router OpenAI-compatible; dùng Persona/Guardrails và knowledge_base qua lib/ai-context.ts. Đã cấu hình DB mà đọc lỗi thì báo lỗi, không dùng FAQ showcase thay ngành. FAQ rỗng giữ rỗng. Chưa có tenant isolation vì schema hiện tại dùng chung workspace.
+- POST /api/ai/draft nối nút Soạn nháp Inbox: chờ/lỗi, hủy kết quả khi sửa/gửi/chuyển/lưu trữ, chỉ điền composer chờ duyệt. Không có khóa thì trả mode demo với FAQ mẫu khi chưa cấu hình DB; lỗi provider không giả làm câu trả lời AI thành công.
+- extractLeadInfo export từ engine, logic cục bộ trong lib/lead-extractor.ts: họ tên, SĐT chuẩn hóa, ngày tổ chức giữ nguyên nếu thiếu năm, số bàn; không dùng ngày xem sảnh làm ngày cưới. Cột thông tin/form lead dùng bóc tách từ tin khách.
+- Hướng dẫn docs/ai-engine.md, biến môi trường trong .env.example. Máy hiện chưa có khóa Gemini/9Router, Supabase là placeholder; kiểm tra giao thức bằng HTTP mock, chưa xác minh dịch vụ thật. Simulator/Webhook/Widget vẫn giữ adapter của Chinh, chưa gửi tự động qua engine. Guardrails hiện áp dụng bằng system prompt, chưa có kiểm duyệt output độc lập.
+- Kiểm tra mốc Module 2: 14 unit/API test (HTTP mock), lint/TypeScript, production build và 5 Playwright scenario đạt; đã xem ảnh desktop Golden Palace. Không cần khóa thật để chạy demo.
+
+### Mốc chuẩn bị Module 3 — 05/11/2026 (Hiền)
+
+- Đã nhận main b169be1 (Vercel deployment config); .env.example giữ các biến kênh/Telegram của Chinh và cấu hình AI mới, dùng placeholder Supabase để tránh sao chép kết nối thật vào máy demo.
+- /leads thay placeholder bằng Phễu khách hàng / Phễu tư vấn: 6 cột N1 Lead thô, N2 Tiềm năng, N3 Khảo sát 1-1, N4 Chính thức, N5 Nuôi dưỡng, N0 Đã mất, mô tả đúng nghiệp vụ tiệc cưới. Có thẻ demo, số lượng/tỷ trọng, tìm không dấu, kéo thả và menu chuyển giai đoạn dùng được trên mobile, lưu giai đoạn cục bộ.
+- lib/leads/demo-data.ts là fixture riêng; chưa nối lead mới từ Inbox, Supabase hay booking/contract thật. Đây là bước chuẩn bị Module 3, chưa có CRUD CRM, biểu đồ funnel chuyển đổi lịch sử hoặc danh sách CRM. Giữ nguyên schema cục bộ chưa commit của người dùng.
+- Shared dashboard header hỗ trợ cuộn menu trên mobile để /leads không tràn trang.
+- Kiểm tra cuối sau Module 3: production build + lint/TypeScript đạt, 14 unit/API test đạt, 7 Playwright scenario đạt (Inbox desktop/mobile, lỗi/soạn nháp chậm, Kanban kéo thả/menu, lưu lại, tìm kiếm, không tràn trang mobile). Đã xem ảnh Inbox và Kanban desktop/mobile. Các mốc hoàn thành nằm trên hien/frontend-ai; chưa tự merge lên main.
+
+### Mốc Tích hợp Toàn diện & Xuất bản Production Vercel — 05/11/2026 (Chinh)
+
+- **Hợp nhất Main:** Đã kéo và tích hợp toàn bộ các mốc mới nhất từ `origin/hien/frontend-ai` (Module 2 AI Engine Gemini/9Router, Module 3 Kanban Phễu Lead 6 cột N1-N5/N0 chuẩn Golden Palace F&B).
+- **Vercel Production Deploy:** Đã xuất bản thành công hệ thống lên tên miền toàn cầu: `https://goldenchat-vibecoding.vercel.app`.
+- **Cấu hình Mobile PWA & Trung tâm Tải App:**
+  - Hoàn thiện PWA Standalone, icon app vector, theme color, safe-area-inset cho iPhone/Android.
+  - Bổ sung trang `/download` hướng dẫn cài đặt 1-chạm cho 4 hệ điều hành (iOS, Android, Windows, Mac) kèm trigger `beforeinstallprompt` và hướng dẫn đóng gói `.apk` / `.exe` qua PWABuilder.
+  - Bổ sung nút "Tải App" vào Top Navigation và Bottom Navigation di động.
+- **Cập nhật Cấu hình Settings:**
+  - Webhook URL chính thức: `https://goldenchat-vibecoding.vercel.app/api/webhook/botcake` (tự động nhận diện origin).
+  - Embed script URL: `https://goldenchat-vibecoding.vercel.app/embed.js`.
+- **Kiểm thử:** Production build 15/15 static pages đạt, 14/14 unit tests pass, không có lỗi TypeScript hay ESLint.

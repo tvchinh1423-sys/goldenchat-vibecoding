@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Search, Sparkles, Settings } from "lucide-react";
+import { MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function DashboardLayout({
@@ -35,28 +35,33 @@ export default function DashboardLayout({
       icon: Users,
     },
     {
-      name: "Cấu hình kênh & Botcake",
+      name: "Cài đặt kênh",
       href: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Tải App",
+      href: "/download",
+      icon: Smartphone,
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
       {/* Top Navigation Bar theo chuẩn UI Mẫu */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 md:px-6 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 md:gap-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
               <Sparkles className="w-4 h-4" />
             </div>
-            <span className="font-semibold text-slate-900 tracking-tight text-base hidden sm:inline">
+            <span className="font-semibold text-slate-900 tracking-tight text-base">
               OmniChat AI
             </span>
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+          <nav className="flex max-w-full items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -64,7 +69,7 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex shrink-0 items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? "bg-white text-slate-900 shadow-sm border border-slate-200/70"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
@@ -86,7 +91,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Right side: Global Search Cmd+K */}
-        <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-3 sm:flex">
           <div className="relative hidden md:block">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

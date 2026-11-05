@@ -275,7 +275,7 @@ export function ConversationList({
                       ) : conversation.channel === "web" ? (
                         "Khách từ website"
                       ) : (
-                        "Học viện Kstudy"
+                        "Trung tâm Tiệc cưới & Sự kiện Golden Palace"
                       )}
                     </span>
                     {wait && (

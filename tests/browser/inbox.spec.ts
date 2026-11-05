@@ -1,5 +1,52 @@
 import { expect, test } from "@playwright/test";
 
+test("draft errors preserve manual text and late responses cannot overwrite edits", async ({
+  page,
+}) => {
+  await page.goto("/inbox");
+  const composer = page.getByRole("textbox", {
+    name: "Nội dung tin nhắn",
+    exact: true,
+  });
+  await composer.fill("Bản nháp của tư vấn viên");
+  await page.route("**/api/ai/draft", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: "AI tạm thời không phản hồi." },
+    }),
+  );
+  await page.getByRole("button", { name: "Soạn nháp AI", exact: true }).click();
+  await expect(
+    page.getByText("AI tạm thời không phản hồi.", { exact: true }),
+  ).toBeVisible();
+  await expect(composer).toHaveValue("Bản nháp của tư vấn viên");
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started!: () => void;
+  const requested = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  await page.unroute("**/api/ai/draft");
+  await page.route("**/api/ai/draft", async (route) => {
+    started();
+    await pending;
+    await route
+      .fulfill({ json: { reply: "BẢN NHÁP ĐẾN MUỘN", mode: "ai" } })
+      .catch(() => {});
+  });
+  await page.getByRole("button", { name: "Soạn nháp AI", exact: true }).click();
+  await requested;
+  await expect(
+    page.getByRole("button", { name: "Soạn nháp AI", exact: true }),
+  ).toBeDisabled();
+  await composer.fill("Tư vấn viên đang sửa nội dung");
+  release();
+  await expect(composer).toHaveValue("Tư vấn viên đang sửa nội dung");
+  await expect(page.getByRole("log")).not.toContainText("BẢN NHÁP ĐẾN MUỘN");
+});
+
 test("desktop: draft, send, notes, lead validation and persistence", async ({
   page,
 }) => {
@@ -16,9 +63,9 @@ test("desktop: draft, send, notes, lead validation and persistence", async ({
     name: "Nội dung tin nhắn",
     exact: true,
   });
-  await expect(composer).toHaveValue(/15.000.000đ/);
+  await expect(composer).toHaveValue(/10.000.000đ/);
   await expect(page.getByRole("log")).not.toContainText(
-    "Bạn muốn Kstudy tư vấn thêm",
+    "Khoản cọc này được cấn trừ",
   );
   await page.getByRole("switch").check();
   await composer.fill("Tin nhắn kiểm thử: tư vấn viên đã tiếp nhận.");
