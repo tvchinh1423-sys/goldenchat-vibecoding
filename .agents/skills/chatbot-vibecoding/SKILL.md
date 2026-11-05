@@ -28,6 +28,10 @@ description: >-
 | **Tên sản phẩm** | **OmniChat AI** | Đã chốt |
 | **GitHub Repo** | `https://github.com/tvchinh1423-sys/goldenchat-vibecoding` | ✅ Đã tạo & push origin/main |
 | **Môi trường .env** | Đã có `.env.local` và `.env.example` | ✅ Đã cấu hình |
+| **Màn hình Huấn luyện Bot** | `/training` chuẩn 100% Ảnh mẫu số 2 | ✅ Hoàn thành (Chinh) |
+| **Upload Excel FAQ** | `/api/training/upload` parse & lưu FAQ | ✅ Hoàn thành (Chinh) |
+| **Webhook Botcake đa kênh** | `/api/webhook/botcake` (Facebook + Zalo) | ✅ Hoàn thành (Chinh) |
+| **Khung Simulator Thử bot** | Test trực quan 10 câu mẫu, ngoài giờ, guardrail | ✅ Hoàn thành (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
