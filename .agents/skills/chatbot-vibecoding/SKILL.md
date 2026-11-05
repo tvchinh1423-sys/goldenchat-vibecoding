@@ -202,3 +202,24 @@ app-root/
     2. Đề xuất & Đặt lịch trực tiếp trong chat + Smart default ngày giờ hôm nay (Performance): nút đặt lịch ngay trong khung chat, form tự động fill ngày hôm nay/ngày mai lúc 09:00 hoặc 14:00.
     3. Trang quản trị xem / Xóa lịch (Must-be): bổ sung nút "Xóa / Hủy lịch" màu đỏ trực tiếp trên danh sách booking tại `/leads` (`components/crm/crm-dashboard.tsx`).
     4. Trọn bộ Điểm WOW (Attractive): Thẻ xác nhận "✅ Đã xác nhận lịch!", Link 1-chạm "Thêm vào Google Calendar" (`calendar.google.com/render?action=TEMPLATE...`), và Âm thanh thông báo tin nhắn Web Audio ("Ting").
+
+### Mốc Tích hợp Dữ liệu Thực chiến Golden Palace & Điểm WOW Chat — 05/11/2026 (Chinh)
+
+- **Chuẩn hóa thông tin thực tế đơn vị:** Đã cập nhật vào `lib/mock-service.ts` và API chat:
+  - Hotline chính thức: `0228 6595 959`.
+  - Địa chỉ & Bản đồ: `98 Đông A, KĐT Hòa Vượng, TP. Nam Định` (kèm link Google Maps `https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`).
+  - Khung giờ đón khách tham quan & tư vấn: `8:00 - 10:30` sáng hằng ngày.
+  - Hình ảnh không gian sảnh: `https://goldenpalacenamdinh.com/khong-gian`.
+  - Website & Brochure: `https://goldenpalacenamdinh.com` và `https://tinyurl.com/thongtintieccuoi`.
+- **Thiết lập 5 kịch bản tình huống liên hoàn (Conversation Flow & Follow-up):**
+  - Tình huống 1: Hỏi không gian sảnh ➔ Trả lời link ảnh + Gợi ý xem thực đơn / địa chỉ / giờ đón khách.
+  - Tình huống 2: Hỏi địa chỉ ➔ Báo 98 Đông A + link Google Maps + giờ mở cửa 8:00–10:30 + gợi ý hotline / brochure.
+  - Tình huống 3: Xin tài liệu brochure ➔ Gửi website + link brochure + gợi ý xem thực đơn / ưu đãi / không gian.
+  - Tình huống 4: Hỏi hotline gọi gấp ➔ Cung cấp 0228 6595 959 + đề xuất để lại SĐT để quản lý tiệc gọi lại.
+  - Tình huống 5: Hỏi giờ đón khách & hẹn xem sảnh ➔ Nhận diện `appointmentIntent`, kích hoạt link Google Calendar.
+- **Triển khai Điểm WOW & AI gợi ý 3 câu trên Web Widget (`app/widget/page.tsx`):**
+  - AI gợi ý 3 câu liên quan (Must-be): Tự động render 3 nút chip câu hỏi ngữ cảnh dưới mỗi bubble trả lời của bot.
+  - Điểm WOW 1: Thẻ hẹn lịch có nút **"📅 Thêm vào Google Calendar"** 1-chạm sinh sự kiện ngày mai lúc 8:00–10:30 tại 98 Đông A.
+  - Điểm WOW 2: **Âm thanh thông báo tin nhắn "Ting"** (Web Audio API không cần file ngoài, có toggle bật/tắt âm lượng).
+  - Thanh Quick chips ở footer widget bổ sung nút xem ảnh không gian, địa chỉ maps và hotline.
+- **Kiểm thử:** Next.js build 17/17 static pages đạt, 22/22 unit tests đạt. Đã commit `81b463d` và chuẩn bị push đồng bộ cho Chị Hiền.
