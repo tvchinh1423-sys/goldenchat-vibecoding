@@ -157,7 +157,8 @@ export function ChatPane({
               )}
             </div>
             <p className="mt-1 truncate text-[11px] text-muted-foreground">
-              {CHANNEL_LABELS[conversation.channel]} · Học viện Kstudy
+              {CHANNEL_LABELS[conversation.channel]} · Trung tâm Tiệc cưới & Sự
+              kiện Golden Palace
             </p>
           </div>
         </div>
@@ -359,7 +360,7 @@ export function ChatPane({
                   >
                     <span>
                       {message.sender === "bot"
-                        ? "Kstudy Bot · "
+                        ? "Golden Palace Assistant · "
                         : message.sender === "agent"
                           ? "Bạn · "
                           : ""}
@@ -522,7 +523,7 @@ export function ChatPane({
       <Dialog open={snippetsOpen} onOpenChange={setSnippetsOpen}>
         <DialogContent>
           <DialogTitle className="text-lg font-semibold">
-            Kho tin Kstudy
+            Kho tin Golden Palace
           </DialogTitle>
           <DialogDescription className="mb-5 mt-1 text-xs text-muted-foreground">
             Chọn mẫu để điền vào ô soạn thảo và chỉnh sửa trước khi gửi.

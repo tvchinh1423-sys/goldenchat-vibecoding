@@ -16,9 +16,9 @@ test("desktop: draft, send, notes, lead validation and persistence", async ({
     name: "Nội dung tin nhắn",
     exact: true,
   });
-  await expect(composer).toHaveValue(/15.000.000đ/);
+  await expect(composer).toHaveValue(/10.000.000đ/);
   await expect(page.getByRole("log")).not.toContainText(
-    "Bạn muốn Kstudy tư vấn thêm",
+    "Khoản cọc này được cấn trừ",
   );
   await page.getByRole("switch").check();
   await composer.fill("Tin nhắn kiểm thử: tư vấn viên đã tiếp nhận.");

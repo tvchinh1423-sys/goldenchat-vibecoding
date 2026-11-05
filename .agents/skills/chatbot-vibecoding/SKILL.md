@@ -11,7 +11,7 @@ description: >-
 
 > [!IMPORTANT]
 > **QUY TẮC CỐT LÕI CẦN GHI NHỚ:**
-> 1. **DỰ ÁN ĐỘC LẬP:** Đây là sản phẩm dự thi VibeCoding 2026 (Bảng B - Kinh tế). **TUYỆT ĐỐI KHÔNG liên hệ, KHÔNG gán ghép và KHÔNG dùng dữ liệu của Golden Palace.**
+> 1. **SAAS ĐA NGÀNH:** Doanh nghiệp tự cấu hình Persona, FAQ và Guardrails. Chinh và Hiền đã chốt **Trung tâm Tiệc cưới & Sự kiện Golden Palace (F&B)** làm showcase ngày 05/11/2026. Hội thoại/liên hệ Inbox là dữ liệu minh họa. Quyết định này thay thế quy tắc cấm Golden Palace trước đây.
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
 > 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
 > 4. **TỰ CẬP NHẬT NGỮ CẢNH & ĐỒNG BỘ GITHUB:** Trong mỗi phiên làm việc, tự đọc cập nhật của đối phương trước khi sửa và tự cập nhật skill, kiểm tra, commit, push sau mỗi task nhỏ hoàn thành. Người dùng đã yêu cầu quy trình này ngày 05/11/2026; không hỏi lại cho các bước đồng bộ thông thường. Thực hiện theo quy trình bên dưới để giữ nguyên công việc đang làm.
@@ -55,14 +55,14 @@ Hệ thống giao diện được định hình 100% dựa trên 4 ảnh thực 
    - Bên phải: Khung Thử bot trực tiếp kèm gợi ý câu hỏi test nhanh.
 3. **Màn hình Quản lý Lead — Dạng Danh Sách & Biểu đồ Phễu (`/leads` view 1):**
    - Bên trái: Danh sách hồ sơ khách hàng (bộ lọc: giai đoạn, phụ trách, khóa học, nguồn, lịch hẹn, checkbox *Chưa ai chạm quá 7 ngày*).
-   - Bên phải: **Phễu tuyển sinh (Funnel Chart)** thể hiện tỷ lệ chuyển đổi qua từng bậc:
-     - `N1 · Lead thô` ➔ `N2 · Tiềm năng` ➔ `N3 · Học thử` ➔ `N4 · Chính thức` ➔ `N5 · Nuôi dưỡng` / `N0 · Đã mất`.
+   - Bên phải: **Phễu khách hàng / Phễu tư vấn (Funnel Chart)** thể hiện tỷ lệ chuyển đổi qua từng bậc:
+     - `N1 · Lead thô` ➔ `N2 · Tiềm năng` ➔ `N3 · Khảo sát 1-1` ➔ `N4 · Chính thức` ➔ `N5 · Nuôi dưỡng` / `N0 · Đã mất`.
 4. **Màn hình Quản lý Lead — Dạng Bảng Phễu Kanban (`/leads` view 2):**
    - Thanh thống kê tỷ lệ % từng giai đoạn trên cùng.
    - 6 cột Kanban kéo thả trực quan:
      - `N1 · LEAD THÔ`
      - `N2 · TIỀM NĂNG`
-     - `N3 · HỌC THỬ`
+     - `N3 · KHẢO SÁT 1-1`
      - `N4 · CHÍNH THỨC`
      - `N5 · NUÔI DƯỠNG`
      - `N0 · ĐÃ MẤT`
@@ -140,3 +140,10 @@ app-root/
 - Kiểm tra **sau tích hợp**: production build (Inbox/Training/Lead placeholder/API routes), lint/TypeScript, 8 unit test, 4 Playwright scenario đều đạt. Có kiểm tra đi từ Inbox sang Training và quay lại; Inbox vẫn chỉ có một header. Không có lỗi runtime ở luồng Inbox đã kiểm tra.
 - Giữ nguyên thay đổi schema bàn giao cục bộ, không stage schema trong task giao diện. Lead demo cần ánh xạ sang phễu N1–N5/N0 khi nối CRM/Supabase. Mã hoàn thiện thuộc nhánh `hien/frontend-ai`; trạng thái đồng bộ đối chiếu bằng hash remote, không tự merge vào main. Tiếp theo: Module 2 AI Engine và adapter Inbox/Supabase/Botcake, rồi Module 3 CRM/booking.
 - Đã push và xác minh remote `hien/frontend-ai` khớp commit code `457e2b5`. Lần fetch cuối phát hiện `47ac49b` mới trên main đổi Training/API sang SaaS đa ngành và Golden Palace Showcase. Chưa hợp nhất commit nghiệp vụ này vì yêu cầu task hiện tại là Kstudy và quy tắc cốt lõi hiện có vẫn cấm dùng dữ liệu Golden Palace; cần Chinh/Hiền chốt lại phạm vi trước khi thay bộ mẫu. Giữ nguyên bản Inbox Kstudy đã kiểm tra, không tự đổi nghiệp vụ.
+
+### Mốc Golden Palace Showcase — 05/11/2026 (Hiền)
+
+- Đã tích hợp main 49a7c08 (Training đa ngành, Settings, Widget, Inbox hợp nhất). Người dùng xác nhận SaaS đa ngành và Golden Palace showcase; quy tắc cấm Golden Palace cũ hết hiệu lực.
+- Inbox dùng BusinessProfile/FAQ từ preset wedding_event chung với Training. Hội thoại phủ thực đơn, sảnh 500 khách ngày 20/11 (cần kiểm tra lịch), đặt cọc, xem sảnh & thử món cuối tuần, tiệc doanh nghiệp. SĐT minh họa xuất hiện trong hộp chưa định danh.
+- Khóa localStorage riêng omnichat.inbox.golden-palace.v1 giúp hiện demo mới và giữ nguyên snapshot Kstudy cũ. Chưa gửi Botcake hay ghi lead thật.
+- Kiểm tra mốc Inbox Golden Palace: 8 unit test, lint, production build và 4 Playwright scenario desktop/mobile đạt.

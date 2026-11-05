@@ -1,6 +1,6 @@
 import type { Conversation } from "./types";
 
-export const STORAGE_KEY = "omnichat.inbox.v1";
+export const STORAGE_KEY = "omnichat.inbox.golden-palace.v1";
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const isDate = (value: unknown) =>

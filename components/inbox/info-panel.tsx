@@ -179,7 +179,8 @@ export function InfoPanel({
             Tóm tắt
           </h3>
           <p className="text-xs leading-[1.8] text-muted-foreground">
-            Học viện Kstudy · {conversation.unread} tin chưa đọc ·{" "}
+            Trung tâm Tiệc cưới & Sự kiện Golden Palace · {conversation.unread}{" "}
+            tin chưa đọc ·{" "}
             {conversation.status === "archived"
               ? "đã lưu trữ"
               : conversation.status === "resolved"
@@ -335,7 +336,7 @@ export function InfoPanel({
             {dialog === "lead"
               ? "Kiểm tra thông tin bóc tách trước khi lưu khách hàng."
               : dialog === "booking"
-                ? "Lịch hẹn từ dữ liệu mẫu Kstudy."
+                ? "Lịch hẹn từ dữ liệu mẫu Golden Palace."
                 : dialog === "assign"
                   ? "Chọn người tiếp nhận cuộc hội thoại này."
                   : "Tổng hợp dữ liệu tin nhắn, chưa sử dụng mô hình AI."}
@@ -434,7 +435,7 @@ export function InfoPanel({
               {(
                 [
                   { value: "me", label: "Tôi · NK" },
-                  { value: "team", label: "Đội tư vấn Kstudy" },
+                  { value: "team", label: "Đội tư vấn Golden Palace" },
                   { value: "unassigned", label: "Chưa phân công" },
                 ] as const
               ).map((option) => (

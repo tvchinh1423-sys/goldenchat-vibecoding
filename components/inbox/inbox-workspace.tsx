@@ -250,7 +250,7 @@ export function InboxWorkspace() {
             </div>
             <p className="mt-1 text-[10px] text-muted-foreground">
               OmniChat AI <span className="mx-1.5 text-slate-300">/</span> Không
-              gian tư vấn Kstudy
+              gian tư vấn Golden Palace
             </p>
           </div>
         </div>
@@ -372,7 +372,7 @@ export function InboxWorkspace() {
                     [active.id]: createFaqDraft(active.messages),
                   }));
                   notify(
-                    "Đã điền gợi ý từ FAQ mẫu Kstudy. Hãy kiểm tra trước khi gửi.",
+                    "Đã điền gợi ý từ FAQ mẫu Golden Palace. Hãy kiểm tra trước khi gửi.",
                   );
                 }}
                 onAiToggle={(aiEnabled) => {
