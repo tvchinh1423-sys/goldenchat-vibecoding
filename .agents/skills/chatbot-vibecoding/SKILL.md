@@ -156,3 +156,11 @@ app-root/
 - extractLeadInfo export từ engine, logic cục bộ trong lib/lead-extractor.ts: họ tên, SĐT chuẩn hóa, ngày tổ chức giữ nguyên nếu thiếu năm, số bàn; không dùng ngày xem sảnh làm ngày cưới. Cột thông tin/form lead dùng bóc tách từ tin khách.
 - Hướng dẫn docs/ai-engine.md, biến môi trường trong .env.example. Máy hiện chưa có khóa Gemini/9Router, Supabase là placeholder; kiểm tra giao thức bằng HTTP mock, chưa xác minh dịch vụ thật. Simulator/Webhook/Widget vẫn giữ adapter của Chinh, chưa gửi tự động qua engine. Guardrails hiện áp dụng bằng system prompt, chưa có kiểm duyệt output độc lập.
 - Kiểm tra mốc Module 2: 14 unit/API test (HTTP mock), lint/TypeScript, production build và 5 Playwright scenario đạt; đã xem ảnh desktop Golden Palace. Không cần khóa thật để chạy demo.
+
+### Mốc chuẩn bị Module 3 — 05/11/2026 (Hiền)
+
+- Đã nhận main b169be1 (Vercel deployment config); .env.example giữ các biến kênh/Telegram của Chinh và cấu hình AI mới, dùng placeholder Supabase để tránh sao chép kết nối thật vào máy demo.
+- /leads thay placeholder bằng Phễu khách hàng / Phễu tư vấn: 6 cột N1 Lead thô, N2 Tiềm năng, N3 Khảo sát 1-1, N4 Chính thức, N5 Nuôi dưỡng, N0 Đã mất, mô tả đúng nghiệp vụ tiệc cưới. Có thẻ demo, số lượng/tỷ trọng, tìm không dấu, kéo thả và menu chuyển giai đoạn dùng được trên mobile, lưu giai đoạn cục bộ.
+- lib/leads/demo-data.ts là fixture riêng; chưa nối lead mới từ Inbox, Supabase hay booking/contract thật. Đây là bước chuẩn bị Module 3, chưa có CRUD CRM, biểu đồ funnel chuyển đổi lịch sử hoặc danh sách CRM. Giữ nguyên schema cục bộ chưa commit của người dùng.
+- Shared dashboard header hỗ trợ cuộn menu trên mobile để /leads không tràn trang.
+- Kiểm tra cuối sau Module 3: production build + lint/TypeScript đạt, 14 unit/API test đạt, 7 Playwright scenario đạt (Inbox desktop/mobile, lỗi/soạn nháp chậm, Kanban kéo thả/menu, lưu lại, tìm kiếm, không tràn trang mobile). Đã xem ảnh Inbox và Kanban desktop/mobile. Các mốc hoàn thành nằm trên hien/frontend-ai; chưa tự merge lên main.
