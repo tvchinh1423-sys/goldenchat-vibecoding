@@ -255,3 +255,17 @@ app-root/
   - Khắc phục: Xóa bỏ vòng lặp quét lỏng lẻo; cấu trúc lại bộ định tuyến ưu tiên ý định cụ thể (Intent Hierarchy). Các câu hỏi về Đặt cọc / Tiền cọc / Giữ sảnh được nhận diện ở độ ưu tiên cao nhất, trả về chính xác mức cọc 5.000.000đ và quy trình 3 giai đoạn.
   - Khởi động lại service Next.js trên cổng 3000 để phản ánh tức thì bản build mới.
 - **Kiểm thử:** Đã bổ sung unit test `tests/chat-ux.test.ts` kiểm tra câu hỏi đặt cọc giữ sảnh, tổng cộng **25/25 unit tests pass 100%**, Next.js build 17/17 static pages đạt.
+
+### Mốc Phân Tích & Tư Vấn Quy Mô Sảnh Linh Hoạt (300 khách, số bàn/mâm) — 05/11/2026 (Chinh)
+
+- **Khắc phục lỗi không phản hồi câu "300 khách" / số bàn:**
+  - Trước đây: Hệ thống chỉ hardcode một vài con số rời rạc (`500 khách`, `700 khách`, `200 khách`), hoàn toàn thiếu `300 khách`, `30 mâm`, `35 bàn`... khiến câu trả lời của khách bị rơi xuống fallback mặc định.
+  - Khắc phục: Xây dựng cơ chế **bóc tách quy mô linh hoạt (Dynamic Capacity Parser)**:
+    - Tự động nhận diện số khách (`300 khách`, `300 người`, `300 pax`), số bàn/mâm (`30 mâm`, `35 bàn`), hoặc con số trả lời rời (`300`, `30`).
+    - Với quy mô **300 khách (30 mâm)**: Bot lập tức tư vấn và so sánh 2 lựa chọn phù hợp nhất:
+      + 🏛️ **Hội trường Tầng 3 (300 – 650 khách):** Giàn đèn bướm nghệ thuật rực rỡ, LED 30m², cực kỳ thoải mái nếu phát sinh thêm khách.
+      + 🏛️ **Hội trường Tầng 4 (100 – 300 khách):** Không gian ấm cúng, sang trọng, vừa vặn cho tiệc 30 mâm.
+    - Sinh tự động 2 nút bấm 1-chạm mở ảnh trực tiếp cho cả Sảnh Tầng 3 và Tầng 4.
+- **Kiểm thử & Triển khai:**
+  - Bổ sung unit test kiểm tra `300 khách` và `30 mâm`, nâng tổng số test lên **26/26 unit tests pass 100%**.
+  - Đã build Next.js thành công và khởi động lại daemon server cổng 3000.

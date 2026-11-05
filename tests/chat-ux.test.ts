@@ -60,3 +60,26 @@ test("API chat prioritizes deposit intent (5.000.000 VNĐ) over generic hall key
   assert.match(dataDeposit.reply, /5\.000\.000/);
   assert.doesNotMatch(dataDeposit.reply, /tọa lạc tại 98 Đông A/);
 });
+
+test("API chat dynamically responds to guest count (e.g. 300 khách / 30 mâm) with relevant hall recommendations", async () => {
+  const req300 = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "300 khách", messageCount: 3 }),
+  });
+  const res300 = await POST(req300);
+  const data300 = await res300.json();
+  assert.equal(data300.success, true);
+  assert.match(data300.reply, /Hội trường Tầng 3/);
+  assert.match(data300.reply, /Hội trường Tầng 4/);
+
+  const req30Mam = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "30 mâm", messageCount: 3 }),
+  });
+  const res30Mam = await POST(req30Mam);
+  const data30Mam = await res30Mam.json();
+  assert.equal(data30Mam.success, true);
+  assert.match(data30Mam.reply, /Hội trường Tầng 3/);
+});

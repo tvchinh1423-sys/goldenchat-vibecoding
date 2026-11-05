@@ -281,57 +281,114 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5.8. Đề xuất sảnh theo quy mô khách
-    if (
-      lower.includes("500 khách") ||
-      lower.includes("600 khách") ||
-      lower.includes("400 khách") ||
-      lower.includes("50 mâm") ||
-      lower.includes("60 mâm")
-    ) {
-      return NextResponse.json({
-        success: true,
-        reply: `Dạ với quy mô từ 300 – 650 khách (hoặc 40 – 60 mâm), em trân trọng gợi ý Quý khách:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Phong cách hoàng gia lộng lẫy, giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m²: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 2 (350 – 750 khách) — Đại cung điện trần cao 7m hoàn toàn không có cột chắn, đèn pha lê hoàng gia hoành tráng: https://goldenpalacenamdinh.com/khong-gian/tang-2\nQuý khách muốn ghé xem trực tiếp sảnh nào ạ?`,
-        suggestedQuestions: [
-          "Hội trường Tầng 2 có gì đặc biệt?",
-          "Hội trường Tầng 3 có gì đặc biệt?",
-          "Cho tôi hẹn xem sảnh vào cuối tuần",
-        ],
-      });
-    }
+    // 5.8. Đề xuất sảnh theo quy mô khách & số bàn/mâm linh hoạt
+    const parseCapacity = (text: string) => {
+      const t = text.toLowerCase().trim();
 
-    if (
-      lower.includes("700 khách") ||
-      lower.includes("750 khách") ||
-      lower.includes("800 khách") ||
-      lower.includes("70 mâm") ||
-      lower.includes("80 mâm")
-    ) {
+      // 1. Số bàn / số mâm (VD: '30 bàn', '35 mâm', 'khoảng 30 mâm')
+      const tableMatch = t.match(/(\d+)\s*(?:bàn|mâm|ban|mam)/);
+      if (tableMatch) {
+        const tables = parseInt(tableMatch[1], 10);
+        return { tables, guests: tables * 10 };
+      }
+
+      // 2. Số khách / số người / pax (VD: '300 khách', '300 người', '300 pax')
+      const guestMatch = t.match(/(\d+)\s*(?:khách|khach|người|nguoi|pax|bạn|slot)/);
+      if (guestMatch) {
+        const guests = parseInt(guestMatch[1], 10);
+        return { guests, tables: Math.round(guests / 10) };
+      }
+
+      // 3. Số độc lập khi khách chỉ trả lời con số (VD: '300', '350', '50', 'tầm 300')
+      const pureNumMatch = t.match(/(?:khoảng|tầm|tam|khoang|du kien|dự kiến)?\s*(\d{2,4})\s*$/);
+      if (pureNumMatch) {
+        const num = parseInt(pureNumMatch[1], 10);
+        if (num <= 80) {
+          return { tables: num, guests: num * 10 };
+        } else {
+          return { guests: num, tables: Math.round(num / 10) };
+        }
+      }
+
+      return null;
+    };
+
+    const cap = parseCapacity(lower);
+    if (cap) {
+      const { guests, tables } = cap;
+
+      // 1. Dưới 50 khách (Phòng VIP)
+      if (guests <= 50) {
+        return NextResponse.json({
+          success: true,
+          reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), lựa chọn hoàn hảo nhất là hệ thống Phòng VIP (10 – 50 khách) mang đẳng cấp riêng tư tuyệt đối, nội thất gỗ và mạ vàng hoàng gia: https://goldenpalacenamdinh.com/khong-gian/phong-vip . Quý khách muốn ghé xem trực tiếp không gian phòng VIP không ạ?`,
+          suggestedQuestions: [
+            "Cho tôi xem ảnh không gian sảnh tiệc",
+            "Thực đơn tiệc cưới bao nhiêu một mâm?",
+            "Địa chỉ nhà hàng ở đâu?",
+          ],
+        });
+      }
+
+      // 2. 51 - 100 khách (Quầy Bar Lounge hoặc Tầng 4)
+      if (guests <= 100) {
+        return NextResponse.json({
+          success: true,
+          reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), Golden Palace gợi ý:\n🍸 Quầy Bar Lounge Tầng 1 (50 – 100 khách) — Phong cách hiện đại, sành điệu: https://goldenpalacenamdinh.com/khong-gian/quay-bar\n🏛️ Hội trường Tầng 4 (100 – 300 khách) — Không gian trang nhã, ấm cúng: https://goldenpalacenamdinh.com/khong-gian/tang-4\nQuý khách muốn ghé xem trực tiếp không gian nào ạ?`,
+          suggestedQuestions: [
+            "Thực đơn tiệc cưới bao nhiêu một mâm?",
+            "Cho tôi xem ảnh không gian sảnh tiệc",
+            "Cho tôi hẹn xem sảnh vào cuối tuần",
+          ],
+        });
+      }
+
+      // 3. 101 - 280 khách (Hội trường Tầng 4)
+      if (guests < 290) {
+        return NextResponse.json({
+          success: true,
+          reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), lựa chọn hoàn hảo nhất là Hội trường Tầng 4 (100 – 300 khách) ạ:\n• Không gian ấm cúng, sang trọng, riêng tư.\n• Trang bị sẵn màn hình LED 10m², âm thanh biểu diễn chuẩn và hoa lụa sân khấu lãng mạn.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-4\n📝 Tính dự toán: https://goldenpalacenamdinh.com/du-toan-chi-phi`,
+          suggestedQuestions: [
+            "Thực đơn tiệc cưới bao nhiêu một mâm?",
+            "Đặt cọc giữ sảnh bao nhiêu?",
+            "Cho tôi hẹn xem sảnh vào cuối tuần",
+          ],
+        });
+      }
+
+      // 4. 290 - 350 khách (Bao gồm đúng 300 khách - Gợi ý cả Tầng 3 và Tầng 4)
+      if (guests <= 350) {
+        return NextResponse.json({
+          success: true,
+          reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), Golden Palace trân trọng gợi ý 2 lựa chọn phù hợp nhất:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m², không gian rộng rãi rất thoải mái khi phát sinh thêm khách: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 4 (100 – 300 khách) — Không gian ấm cúng, trang nhã, vừa vặn cho tiệc ${tables} mâm: https://goldenpalacenamdinh.com/khong-gian/tang-4\nAnh/chị muốn ghé tham quan trực tiếp sảnh Tầng 3 hay Tầng 4 ạ?`,
+          suggestedQuestions: [
+            "Hội trường Tầng 3 có gì đặc biệt?",
+            "Hội trường Tầng 4 có gì đặc biệt?",
+            "Cho tôi hẹn xem sảnh vào cuối tuần",
+          ],
+        });
+      }
+
+      // 5. 351 - 650 khách (Tầng 3 hoặc Tầng 2)
+      if (guests <= 650) {
+        return NextResponse.json({
+          success: true,
+          reply: `Dạ với quy mô ${guests} khách (khoảng ${tables} mâm), em trân trọng gợi ý Quý khách:\n🏛️ Hội trường Tầng 3 (300 – 650 khách) — Phong cách hoàng gia lộng lẫy, giàn đèn bướm nghệ thuật rực rỡ, màn LED 30m²: https://goldenpalacenamdinh.com/khong-gian/tang-3\n🏛️ Hội trường Tầng 2 (350 – 750 khách) — Đại cung điện trần cao 7m hoàn toàn không có cột chắn, đèn pha lê hoàng gia hoành tráng: https://goldenpalacenamdinh.com/khong-gian/tang-2\nQuý khách muốn ghé xem trực tiếp sảnh nào ạ?`,
+          suggestedQuestions: [
+            "Hội trường Tầng 2 có gì đặc biệt?",
+            "Hội trường Tầng 3 có gì đặc biệt?",
+            "Cho tôi hẹn xem sảnh vào cuối tuần",
+          ],
+        });
+      }
+
+      // 6. Trên 650 khách (Tầng 2 Đại cung điện)
       return NextResponse.json({
         success: true,
-        reply: `Dạ với quy mô đại lễ trên 700 khách, Hội trường Tầng 2 là sự lựa chọn duy nhất và hoàn hảo nhất tại Nam Định:\n• Sức chứa tối đa lên tới 750 khách (75 mâm).\n• Không gian trần cao 7m hoàn toàn không có cột, màn hình LED cỡ lớn 30m² đảm bảo tầm nhìn tuyệt đối.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-2\n📞 Liên hệ Hotline 0228 659 5959 để kiểm tra lịch sảnh trống ngày đẹp ạ!`,
+        reply: `Dạ với quy mô đại lễ trên ${guests} khách (khoảng ${tables} mâm), Hội trường Tầng 2 là sự lựa chọn duy nhất và hoàn hảo nhất tại Nam Định:\n• Sức chứa tối đa lên tới 750 khách (75 mâm).\n• Không gian trần cao 7m hoàn toàn không có cột, màn hình LED cỡ lớn 30m² đảm bảo tầm nhìn tuyệt đối.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-2\n📞 Liên hệ Hotline 0228 659 5959 để kiểm tra lịch sảnh trống ngày đẹp ạ!`,
         suggestedQuestions: [
           "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
           "Địa chỉ nhà hàng ở đâu?",
-          "Cho tôi hẹn xem sảnh vào cuối tuần",
-        ],
-      });
-    }
-
-    if (
-      lower.includes("200 khách") ||
-      lower.includes("150 khách") ||
-      lower.includes("250 khách") ||
-      lower.includes("100 khách") ||
-      lower.includes("20 mâm") ||
-      lower.includes("25 mâm")
-    ) {
-      return NextResponse.json({
-        success: true,
-        reply: `Dạ với quy mô 100 – 300 khách (10 – 30 mâm), lựa chọn hoàn hảo nhất là Hội trường Tầng 4 ạ:\n• Không gian ấm cúng, sang trọng, riêng tư.\n• Trang bị sẵn màn hình LED 10m², âm thanh biểu diễn chuẩn và hoa lụa sân khấu lãng mạn.\n📸 Xem chi tiết: https://goldenpalacenamdinh.com/khong-gian/tang-4\n📝 Tính dự toán: https://goldenpalacenamdinh.com/du-toan-chi-phi`,
-        suggestedQuestions: [
-          "Thực đơn tiệc cưới bao nhiêu một mâm?",
-          "Báo giá đã gồm thuế VAT chưa?",
           "Cho tôi hẹn xem sảnh vào cuối tuần",
         ],
       });
