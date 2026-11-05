@@ -63,7 +63,7 @@ test("desktop: draft, send, notes, lead validation and persistence", async ({
     name: "Nội dung tin nhắn",
     exact: true,
   });
-  await expect(composer).toHaveValue(/10.000.000đ/);
+  await expect(composer).toHaveValue(/5\.000\.000/);
   await expect(page.getByRole("log")).not.toContainText(
     "Khoản cọc này được cấn trừ",
   );

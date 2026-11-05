@@ -201,8 +201,8 @@ Nguyên tắc: Chỉ câu đầu tiên mở đầu cuộc trò chuyện mới gi
         id: 'gp-15',
         category: 'dat_coc',
         question: 'Đặt cọc giữ sảnh bao nhiêu? Quy trình đặt tiệc cưới tại Golden Palace gồm những bước nào?',
-        answer: 'Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc đợt 1 từ 10.000.000đ - 20.000.000đ tùy quy mô tiệc. Quy trình đặt tiệc gồm 3 giai đoạn chuyên nghiệp: • GĐ 1 (Trước 2–3 tháng): Khảo sát trực tiếp sảnh & Đặt cọc giữ ngày đẹp. • GĐ 2 (Trước 1 tháng): Ký hợp đồng chính thức, chốt thực đơn & dịch vụ bổ sung (Đặt cọc 50%). • GĐ 3 (Trước 1 ngày diễn ra tiệc): Bàn giao danh sách khách VIP, chạy thử video/ảnh LED, bàn giao kịch bản và đồ uống mang vào. Quý khách xem chi tiết tại: https://goldenpalacenamdinh.com/du-toan-chi-phi',
-        tags: ['dat_coc', 'hop_dong', 'giu_sanh', '3_giai_doan'],
+        answer: 'Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc lần 1 là 5.000.000 VNĐ ạ. Khoản cọc này được cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn chính thức. Quy trình đặt tiệc gồm 3 giai đoạn chuyên nghiệp: • GĐ 1 (Trước 2–3 tháng): Khảo sát sảnh & Đặt cọc lần 1 là 5.000.000 VNĐ giữ ngày đẹp. • GĐ 2 (Trước 1 tháng): Ký hợp đồng chính thức, chốt thực đơn & dịch vụ bổ sung (Đặt cọc 50%). • GĐ 3 (Trước 1 ngày diễn ra tiệc): Bàn giao danh sách khách VIP, chạy thử LED, kịch bản tiệc. Quý khách xem chi tiết tại: https://goldenpalacenamdinh.com/du-toan-chi-phi',
+        tags: ['dat_coc', 'hop_dong', 'giu_sanh', '3_giai_doan', '5_trieu'],
         is_active: true,
       },
       {

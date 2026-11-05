@@ -47,3 +47,16 @@ test("API chat returns official Golden Palace URLs for menu, maps and spaces for
   assert.match(dataAddress.reply, /https:\/\/maps\.app\.goo\.gl/);
   assert.match(dataAddress.reply, /98 Đông A/);
 });
+
+test("API chat prioritizes deposit intent (5.000.000 VNĐ) over generic hall keyword matching", async () => {
+  const reqDeposit = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Đặt cọc giữ sảnh bao nhiêu?", messageCount: 2 }),
+  });
+  const resDeposit = await POST(reqDeposit);
+  const dataDeposit = await resDeposit.json();
+  assert.equal(dataDeposit.success, true);
+  assert.match(dataDeposit.reply, /5\.000\.000/);
+  assert.doesNotMatch(dataDeposit.reply, /tọa lạc tại 98 Đông A/);
+});

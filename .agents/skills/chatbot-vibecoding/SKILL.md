@@ -244,3 +244,14 @@ app-root/
   - Câu trả lời luôn ngắn gọn, súc tích, đi thẳng vào đúng trọng tâm câu hỏi.
   - Đã chuẩn hóa prompt trong `lib/ai-engine.ts`, bộ quy tắc `lib/mock-service.ts`, và API `/api/simulator/chat/route.ts`.
 - **Kiểm thử:** 24/24 unit test đạt (bổ sung test case kiểm tra link clickable và không lặp giới thiệu trợ lý), Next.js build 17/17 trang tĩnh thành công 100%.
+
+### Mốc Chuẩn hóa Đặt Cọc Lần 1 (5.000.000đ) & Tối ưu Bộ Định tuyến Ý định (Intent Matcher) — 05/11/2026 (Chinh)
+
+- **Chuẩn hóa nghiệp vụ Đặt cọc theo chỉ dẫn thực tế của Chinh:**
+  - Quy định chính xác: **Đặt cọc giữ sảnh lần 1 là 5.000.000 VNĐ** (không phải 10 – 20 triệu như bản demo cũ).
+  - Cập nhật đồng bộ vào `knowledge-base/BO-TRI-THUC-CHATBOT-AI-GOLDEN-PALACE.md`, `lib/mock-service.ts`, `app/api/training/upload/route.ts` và API `/api/simulator/chat/route.ts`.
+- **Khắc phục triệt để lỗi va chạm từ khóa (Collision Bug):**
+  - Trước đây: Câu hỏi *"Đặt cọc giữ sảnh bao nhiêu?"* chứa từ "sảnh", bị vòng lặp duyệt qua câu hỏi `gp-2` (địa chỉ có chứa từ "sảnh") đánh chặn nhầm và trả về địa chỉ nhà hàng.
+  - Khắc phục: Xóa bỏ vòng lặp quét lỏng lẻo; cấu trúc lại bộ định tuyến ưu tiên ý định cụ thể (Intent Hierarchy). Các câu hỏi về Đặt cọc / Tiền cọc / Giữ sảnh được nhận diện ở độ ưu tiên cao nhất, trả về chính xác mức cọc 5.000.000đ và quy trình 3 giai đoạn.
+  - Khởi động lại service Next.js trên cổng 3000 để phản ánh tức thì bản build mới.
+- **Kiểm thử:** Đã bổ sung unit test `tests/chat-ux.test.ts` kiểm tra câu hỏi đặt cọc giữ sảnh, tổng cộng **25/25 unit tests pass 100%**, Next.js build 17/17 static pages đạt.

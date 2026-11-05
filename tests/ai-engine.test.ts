@@ -235,7 +235,7 @@ test("draft API validates input and labels offline FAQ demo without sending mess
   const result = await response.json();
   assert.equal(response.status, 200);
   assert.equal(result.mode, "demo");
-  assert.match(result.reply, /10.000.000đ/);
+  assert.match(result.reply, /5\.000\.000/);
 });
 
 test("configured database uses its own persona and empty FAQs, and fails explicitly on read errors", async (t) => {

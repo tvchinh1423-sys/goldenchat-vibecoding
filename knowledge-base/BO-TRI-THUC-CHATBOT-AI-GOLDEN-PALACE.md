@@ -258,7 +258,7 @@
 * **Từ khóa nhận diện:** `quy trình đặt tiệc`, `đặt cọc`, `cọc bao nhiêu`, `giữ ngày`, `giữ sảnh`, `hợp đồng đặt tiệc`, `các bước đặt tiệc`
 * **Câu trả lời chuẩn của AI:**
   > Dạ quy trình đặt tiệc tại Golden Palace được chuẩn hóa qua **3 giai đoạn chuyên nghiệp**:  
-  > • **Giai đoạn 1 (Trước 2 – 3 tháng):** Khảo sát trực tiếp sảnh & Đặt cọc giữ ngày đẹp (tránh trùng lịch với cặp đôi khác).  
+  > • **Giai đoạn 1 (Trước 2 – 3 tháng):** Khảo sát trực tiếp sảnh & Đặt cọc giữ sảnh lần 1 là 5.000.000 VNĐ (để giữ ngày đẹp tránh trùng lịch).  
   > • **Giai đoạn 2 (Trước 1 tháng):** Ký hợp đồng chính thức, chốt thực đơn món ăn & lựa chọn các gói dịch vụ bổ sung (Đặt cọc 50%).  
   > • **Giai đoạn 3 (Trước 1 ngày diễn ra tiệc):** Bàn giao danh sách khách VIP, chạy thử video/ảnh cưới màn hình LED, bàn giao kịch bản và đồ uống mang vào.  
   > 📝 Quý khách xem chi tiết và lên lịch tại: **[Quy Trình Đặt Tiệc & Dự Toán](/du-toan-chi-phi)**

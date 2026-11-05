@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
         "Danh mục": "Đặt cọc & Hợp đồng",
         "Câu hỏi": "Đặt cọc và giữ sảnh tiệc như thế nào?",
         "Câu trả lời":
-          "Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc đợt 1 từ 10.000.000đ - 20.000.000đ tùy quy mô tiệc. Khoản cọc này được cấn trừ trực tiếp khi thanh toán hợp đồng chính thức ạ.",
+          "Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc lần 1 là 5.000.000 VNĐ ạ. Khoản cọc này được cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn chính thức.",
         "Từ khóa": "đặt cọc, hợp đồng, giữ sảnh",
       },
       {

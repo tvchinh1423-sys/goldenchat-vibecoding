@@ -403,101 +403,156 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Đối chiếu tri thức FAQ (Knowledge Base)
+
+    // 6.1. ĐẶT CỌC & GIỮ SẢNH (Ưu tiên xử lý chính xác khi khách hỏi cọc / giữ sảnh)
+    if (
+      lower.includes("cọc") ||
+      lower.includes("coc") ||
+      lower.includes("đặt cọc") ||
+      lower.includes("tiền cọc") ||
+      lower.includes("giữ sảnh") ||
+      lower.includes("giu sanh") ||
+      lower.includes("quy trình đặt tiệc") ||
+      lower.includes("quy trinh dat tiec")
+    ) {
+      const datCocItem = knowledgeBase.find((k: any) => k.category === "dat_coc");
+      return NextResponse.json({
+        success: true,
+        reply:
+          datCocItem?.answer ||
+          `Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc lần 1 là 5.000.000 VNĐ ạ. Khoản cọc này được cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn chính thức. Quy trình gồm 3 giai đoạn:\n• GĐ 1: Khảo sát sảnh & Đặt cọc lần 1 là 5.000.000 VNĐ giữ ngày đẹp.\n• GĐ 2: Ký hợp đồng chính thức, chốt thực đơn & dịch vụ bổ sung (Đặt cọc 50%).\n• GĐ 3: Bàn giao kịch bản tiệc và chạy thử trước ngày diễn ra.\nQuý khách liên hệ Hotline 0228 659 5959 hoặc ghé 98 Đông A để được hỗ trợ chu đáo nhé!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng ở đâu?",
+        ],
+      });
+    }
+
+    // 6.2. THỰC ĐƠN / GIÁ BÀN / MENU
+    if (
+      lower.includes("thực đơn") ||
+      lower.includes("thuc don") ||
+      lower.includes("menu") ||
+      lower.includes("món ăn") ||
+      lower.includes("mon an") ||
+      lower.includes("bao nhiêu một bàn") ||
+      lower.includes("bn 1 ban") ||
+      lower.includes("giá bàn") ||
+      lower.includes("mâm cỗ")
+    ) {
+      const thucDonItem = knowledgeBase.find((k: any) => k.category === "thuc_don");
+      return NextResponse.json({
+        success: true,
+        reply:
+          thucDonItem?.answer ||
+          `Dạ thực đơn tiệc cưới được thiết kế phong phú theo từng set món. Quý khách xem chi tiết menu tại: https://goldenpalacenamdinh.com/thuc-don hoặc tính dự toán trọn gói tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+        suggestedQuestions: [
+          "Ưu đãi mùa cưới hiện nay có gì?",
+          "Đặt cọc giữ sảnh bao nhiêu?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    // 6.3. ƯU ĐÃI / KHUYẾN MÃI
+    if (
+      lower.includes("ưu đãi") ||
+      lower.includes("uu dai") ||
+      lower.includes("khuyến mãi") ||
+      lower.includes("khuyen mai") ||
+      lower.includes("giảm giá")
+    ) {
+      const uuDaiItem = knowledgeBase.find((k: any) => k.category === "uu_dai");
+      return NextResponse.json({
+        success: true,
+        reply:
+          uuDaiItem?.answer ||
+          `Dạ Golden Palace luôn có chính sách ưu đãi dành riêng cho tiệc cưới theo từng thời điểm. Đặc biệt tiệc từ 400 khách trở lên được TẶNG MIỄN PHÍ Vòng ánh sáng Laser trao nhẫn cưới độc đáo. Quý khách liên hệ Hotline 0228 659 5959 để được tư vấn gói ưu đãi chi tiết ạ!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Đặt cọc giữ sảnh bao nhiêu?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    // 6.4. TRANG TRÍ & DECOR
+    if (
+      lower.includes("trang trí") ||
+      lower.includes("trang tri") ||
+      lower.includes("decor")
+    ) {
+      const decorItem = knowledgeBase.find((k: any) => k.category === "decor_ngoai");
+      return NextResponse.json({
+        success: true,
+        reply:
+          decorItem?.answer ||
+          `Dạ Quý khách hoàn toàn có thể mời đơn vị trang trí (decor) riêng từ bên ngoài vào hoặc chọn các gói decor của sảnh. Xem hình ảnh trang trí thực tế tại: https://goldenpalacenamdinh.com/khong-gian . Hotline tư vấn: 0228 659 5959.`,
+        suggestedQuestions: [
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Đặt cọc giữ sảnh bao nhiêu?",
+        ],
+      });
+    }
+
+    // 6.5. CÔNG NGHỆ SỐ / THIỆP CƯỚI ONLINE / PHÔNG LED
+    if (
+      lower.includes("thiệp cưới") ||
+      lower.includes("thiep cuoi") ||
+      lower.includes("phông led") ||
+      lower.includes("phong led") ||
+      lower.includes("cá nhân hóa")
+    ) {
+      const techItem = knowledgeBase.find((k: any) => k.category === "cong_nghe_so");
+      return NextResponse.json({
+        success: true,
+        reply:
+          techItem?.answer ||
+          `Dạ Golden Palace có tính năng tạo Thiệp cưới online và Video phông LED sân khấu cá nhân hóa miễn phí cho dâu rể tại: https://goldenpalacenamdinh.com/ca-nhan-hoa ạ!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Đặt cọc giữ sảnh bao nhiêu?",
+        ],
+      });
+    }
+
+    // 6.6. SẢNH TIỆC / SỨC CHỨA (Chỉ khi khách hỏi về quy mô, số khách, sức chứa sảnh)
+    if (
+      lower.includes("sức chứa") ||
+      lower.includes("suc chua") ||
+      lower.includes("chứa được bao nhiêu") ||
+      lower.includes("chua duoc bao nhieu") ||
+      lower.includes("có bao nhiêu sảnh") ||
+      lower.includes("các sảnh") ||
+      (lower.includes("sảnh") && (lower.includes("bao nhiêu") || lower.includes("quy mô")))
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Golden Palace có 5 sảnh hội trường với sức chứa linh hoạt từ 10 đến 750 khách (1 – 75 mâm): Hội trường Tầng 2 (350–750 khách), Tầng 3 (300–650 khách), Tầng 4 (100–300 khách), Quầy Bar Lounge (50–100 khách) và Phòng VIP (10–50 khách). Quý khách xem ảnh chi tiết tại: https://goldenpalacenamdinh.com/khong-gian ạ!`,
+        suggestedQuestions: [
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Đặt cọc giữ sảnh bao nhiêu?",
+        ],
+      });
+    }
+
+    // 6.7. TÌM KIẾM ĐỐI CHIẾU THEO TỪ KHÓA TRONG KNOWLEDGE BASE (FALLBACK PHÙ HỢP NHẤT)
     for (const item of knowledgeBase) {
       const qLower = item.question.toLowerCase();
-      const aText = item.answer;
-
-      // Thực đơn / Giá bàn / Menu
-      if (
-        lower.includes("thực đơn") ||
-        lower.includes("thuc don") ||
-        lower.includes("menu") ||
-        lower.includes("món ăn") ||
-        lower.includes("mon an") ||
-        lower.includes("bao nhiêu một bàn") ||
-        lower.includes("bn 1 ban") ||
-        lower.includes("giá bàn")
-      ) {
-        if (item.category === "thuc_don" || qLower.includes("thực đơn") || qLower.includes("bàn") || qLower.includes("menu")) {
-          return NextResponse.json({
-            success: true,
-            reply: aText.includes("https://goldenpalacenamdinh.com/thuc-don")
-              ? aText
-              : `${aText} Quý khách vui lòng tham khảo chi tiết menu tại đây ạ: https://goldenpalacenamdinh.com/thuc-don`,
-            suggestedQuestions: [
-              "Ưu đãi mùa cưới hiện nay có gì?",
-              "Sảnh tiệc bên mình chứa được bao nhiêu khách?",
-              "Cho tôi hẹn xem sảnh vào cuối tuần",
-            ],
-          });
-        }
-      }
-
-      // Sảnh tiệc / Sức chứa
-      if (
-        lower.includes("sảnh") ||
-        lower.includes("sanh") ||
-        lower.includes("sức chứa") ||
-        lower.includes("bao nhiêu khách") ||
-        lower.includes("khách")
-      ) {
-        if (item.category === "sanh_tiec" || qLower.includes("sảnh") || qLower.includes("khách")) {
-          return NextResponse.json({
-            success: true,
-            reply: aText,
-            suggestedQuestions: [
-              "Cho tôi xem ảnh không gian sảnh tiệc",
-              "Thực đơn tiệc cưới bao nhiêu một bàn?",
-              "Cho tôi hẹn xem sảnh vào cuối tuần",
-            ],
-          });
-        }
-      }
-
-      // Ưu đãi / Khuyến mãi
-      if (
-        lower.includes("ưu đãi") ||
-        lower.includes("uu dai") ||
-        lower.includes("khuyến mãi") ||
-        lower.includes("giảm giá")
-      ) {
-        if (item.category === "uu_dai" || qLower.includes("ưu đãi")) {
-          return NextResponse.json({
-            success: true,
-            reply: aText,
-            suggestedQuestions: [
-              "Thực đơn tiệc cưới bao nhiêu một bàn?",
-              "Đặt cọc giữ sảnh bao nhiêu?",
-              "Cho tôi hẹn xem sảnh vào cuối tuần",
-            ],
-          });
-        }
-      }
-
-      // Đặt cọc
-      if (lower.includes("cọc") || lower.includes("coc") || lower.includes("đặt cọc")) {
-        if (item.category === "dat_coc" || qLower.includes("cọc")) {
-          return NextResponse.json({
-            success: true,
-            reply: aText,
-            suggestedQuestions: [
-              "Thực đơn tiệc cưới bao nhiêu một bàn?",
-              "Địa chỉ nhà hàng ở đâu?",
-              "Cho tôi hẹn xem sảnh vào cuối tuần",
-            ],
-          });
-        }
-      }
-
-      // Trang trí
-      if (lower.includes("trang trí") || lower.includes("trang tri")) {
+      const keywords = qLower.split(" ").filter((w: string) => w.length > 3);
+      const matchCount = keywords.filter((w: string) => lower.includes(w)).length;
+      if (matchCount >= 2) {
         return NextResponse.json({
           success: true,
-          reply: `Dạ Quý khách vui lòng tham khảo các hình ảnh không gian trang trí sảnh tiệc thực tế của nhà hàng GOLDEN PALACE tại đây: https://goldenpalacenamdinh.com/khong-gian . Để được tư vấn chi tiết về các gói dịch vụ trang trí, Quý khách vui lòng liên hệ Hotline 0228 6595 959 hoặc để lại số điện thoại nhé!`,
+          reply: item.answer,
           suggestedQuestions: [
-            "Cho tôi xem ảnh không gian sảnh tiệc",
             "Thực đơn tiệc cưới bao nhiêu một bàn?",
-            "Địa chỉ nhà hàng ở đâu?",
+            "Cho tôi xem ảnh không gian sảnh tiệc",
+            "Đặt cọc giữ sảnh bao nhiêu?",
           ],
         });
       }
