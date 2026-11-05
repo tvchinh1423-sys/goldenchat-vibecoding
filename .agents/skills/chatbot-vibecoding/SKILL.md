@@ -326,3 +326,21 @@ app-root/
   1. Trải nghiệm người dùng cực mượt trên toàn bộ 5 màn hình: `/training`, `/inbox`, `/leads`, `/widget`, `/dashboard`.
   2. Tri thức thực chiến Golden Palace chuẩn chỉnh 100% (cọc 5tr, bãi đỗ xe free, VAT 8%/10%, sảnh Tầng 3/Tầng 4 theo quy mô khách).
   3. Khi toàn bộ hệ thống đã hoàn hảo 100%, việc cắm Webhook chỉ mất 5 phút để hoàn tất kịch bản showcase.
+
+### Mốc Nâng cấp Toàn diện Trang Huấn Luyện Bot (`/training`) & Bộ Công cụ Demo Giám Khảo 1-Chạm — 05/11/2026 (Chinh)
+
+- **Bộ 6 Kịch bản Thực chiến Khảo sát Giám khảo 1-Chạm (`SHOWCASE_SCENARIOS`):**
+  - Đặt ngay trên cột Simulator bên phải, phân loại màu sắc và huy hiệu rõ ràng:
+    1. 🏛️ **Tiệc 300 khách (30 mâm):** Thử nghiệm thuật toán bóc tách quy mô, đề xuất so sánh 2 sảnh T3 và T4 kèm 2 nút xem ảnh.
+    2. 💰 **Đặt cọc giữ sảnh bao nhiêu?:** Kiểm tra mức cọc chuẩn 5.000.000đ và quy trình 3 giai đoạn minh bạch.
+    3. ⚠️ **Đòi giảm giá 30% tiệc:** Thử thách cơ chế Guardrail an toàn, bot từ chối khéo léo và bảo vệ chính sách giá của doanh nghiệp.
+    4. 📅 **Hẹn giờ xem sảnh sáng mai:** Kích hoạt Smart Default khung giờ đón tiếp 8:00 - 10:30 sáng và mở form hẹn.
+    5. 🅿️ **Bãi đỗ xe ô tô & VAT:** Khẳng định bãi xe ô tô miễn phí 100% và bóc tách VAT (8% đồ ăn, 10% đồ uống).
+    6. 📸 **Bảng giá Photobooth & MC:** Trả về bảng giá niêm yết minh bạch (Photobooth 3.4/4/5tr, MC 800k).
+- **Tính năng Xuất File Excel Mẫu Bộ Tri Thức Chuẩn (`.xlsx`):**
+  - Sử dụng thư viện `xlsx` xuất file `Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx` với 7 cột chi tiết (STT, Mã câu, Danh mục, Câu hỏi, Câu trả lời, Tags, Trạng thái) và độ rộng cột được căn chỉnh tối ưu.
+- **Bộ lọc & Tìm kiếm FAQ Đa Tiêu Chí:**
+  - Thanh tìm kiếm theo thời gian thực (Search bar) hỗ trợ tìm không dấu cả câu hỏi và câu trả lời.
+  - Dải thẻ (Pill tabs) lọc theo 5 danh mục: Tất cả, Thực đơn & Giá, Sảnh & Không gian, Dịch vụ & Ưu đãi, Chính sách & Đặt cọc.
+- **Kiểm thử:** 34/34 unit test pass 100%, Next.js production build 17/17 trang tĩnh thành công 100%.
+

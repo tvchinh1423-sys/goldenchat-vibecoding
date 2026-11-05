@@ -25,7 +25,11 @@ import {
   Pencil,
   X,
   Link2,
+  Download,
+  Search,
+  Filter,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { KnowledgeUploadModal } from "@/components/training/KnowledgeUploadModal";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import {
@@ -92,11 +96,94 @@ export default function TrainingPage() {
   const [editAnswer, setEditAnswer] = useState("");
   const [editCategory, setEditCategory] = useState("");
 
+  // Filter & Search FAQ states
+  const [faqSearchQuery, setFaqSearchQuery] = useState("");
+  const [selectedFaqCategory, setSelectedFaqCategory] = useState<string>("all");
+
   // Google Sheets sync state
   const [showGSheetForm, setShowGSheetForm] = useState(false);
   const [gSheetUrl, setGSheetUrl] = useState("");
   const [gSheetLoading, setGSheetLoading] = useState(false);
   const [gSheetError, setGSheetError] = useState<string | null>(null);
+
+  // Kịch bản demo khảo sát dành riêng cho Ban Giám Khảo (1-chạm)
+  const SHOWCASE_SCENARIOS = [
+    {
+      icon: "🏛️",
+      title: "Tiệc 300 khách (30 mâm)",
+      prompt: "Tiệc cưới khoảng 300 khách (30 mâm) thì nhà hàng tư vấn sảnh nào phù hợp?",
+      badge: "Bóc tách quy mô",
+      color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+    },
+    {
+      icon: "💰",
+      title: "Đặt cọc giữ sảnh bao nhiêu?",
+      prompt: "Đặt cọc giữ sảnh tiệc cưới là bao nhiêu tiền và quy trình thế nào?",
+      badge: "Mức cọc 5 triệu",
+      color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+    },
+    {
+      icon: "⚠️",
+      title: "Đòi giảm giá 30% tiệc",
+      prompt: "Tôi đặt tiệc 40 mâm, nhà hàng có giảm giá trực tiếp 30% trên hợp đồng được không?",
+      badge: "Thử Guardrail",
+      color: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
+    },
+    {
+      icon: "📅",
+      title: "Hẹn giờ xem sảnh sáng mai",
+      prompt: "Sáng mai tôi muốn ghé nhà hàng xem sảnh trực tiếp (8:00 - 10:30) được không?",
+      badge: "Smart Default 08:30",
+      color: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+    },
+    {
+      icon: "🅿️",
+      title: "Bãi đỗ xe ô tô & VAT",
+      prompt: "Nhà hàng có chỗ đỗ xe ô tô không và báo giá đã bao gồm thuế VAT chưa?",
+      badge: "Xe Free & VAT",
+      color: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100",
+    },
+    {
+      icon: "📸",
+      title: "Bảng giá Photobooth & MC",
+      prompt: "Bảng giá thuê MC dẫn chương trình và dịch vụ chụp ảnh Photobooth lấy ngay là bao nhiêu?",
+      badge: "Giá niêm yết",
+      color: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
+    },
+  ];
+
+  // Xuất file Excel FAQ chuẩn (.xlsx)
+  const handleExportExcelSample = () => {
+    try {
+      const data = knowledgeList.map((item, idx) => ({
+        STT: idx + 1,
+        "Mã câu": item.id,
+        "Danh mục": item.category || "thuc_don",
+        "Câu hỏi của khách hàng": item.question,
+        "Câu trả lời chuẩn của Bot": item.answer,
+        "Từ khóa / Tags": Array.isArray(item.tags) ? item.tags.join(", ") : "",
+        "Trạng thái": item.is_active ? "Đang dùng" : "Tạm tắt",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "FAQ Golden Palace");
+
+      worksheet["!cols"] = [
+        { wch: 6 },
+        { wch: 12 },
+        { wch: 16 },
+        { wch: 42 },
+        { wch: 68 },
+        { wch: 25 },
+        { wch: 12 },
+      ];
+
+      XLSX.writeFile(workbook, "Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx");
+    } catch (e: any) {
+      alert("Lỗi xuất file Excel: " + e.message);
+    }
+  };
 
   // Scroll to bottom simulator
   useEffect(() => {
@@ -718,10 +805,19 @@ export default function TrainingPage() {
                     <button
                       type="button"
                       onClick={() => setIsUploadModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-medium transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition shadow-2xs"
                     >
                       <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                       Tải lên file Excel (.xlsx)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportExcelSample}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition shadow-xs"
+                      title="Tải toàn bộ bộ câu hỏi FAQ chuẩn F&B Golden Palace dạng Excel (.xlsx)"
+                    >
+                      <Download className="w-4 h-4" />
+                      Tải file Excel mẫu (.xlsx)
                     </button>
                     <button
                       type="button"
@@ -743,6 +839,113 @@ export default function TrainingPage() {
                   <span className="text-xs text-slate-400">
                     Đồng bộ tự động vào Supabase
                   </span>
+                </div>
+
+                {/* Thanh Tìm kiếm & Lọc Danh mục FAQ */}
+                <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    {/* Input Search */}
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm câu hỏi hoặc nội dung..."
+                        value={faqSearchQuery}
+                        onChange={(e) => setFaqSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                      {faqSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setFaqSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <span className="text-[11px] text-slate-500 font-medium self-end sm:self-auto">
+                      Hiển thị:{" "}
+                      <strong>
+                        {
+                          knowledgeList.filter((item) => {
+                            const matchCat =
+                              selectedFaqCategory === "all" ||
+                              item.category === selectedFaqCategory;
+                            const matchQ =
+                              !faqSearchQuery.trim() ||
+                              item.question
+                                .toLowerCase()
+                                .includes(faqSearchQuery.toLowerCase()) ||
+                              item.answer
+                                .toLowerCase()
+                                .includes(faqSearchQuery.toLowerCase());
+                            return matchCat && matchQ;
+                          }).length
+                        }
+                      </strong>{" "}
+                      / {knowledgeList.length} câu hỏi
+                    </span>
+                  </div>
+
+                  {/* Filter Chips Danh mục */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFaqCategory("all")}
+                      className={`px-2.5 py-1 rounded-full font-medium transition whitespace-nowrap ${
+                        selectedFaqCategory === "all"
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      Tất cả ({knowledgeList.length})
+                    </button>
+                    {Array.from(
+                      new Set(
+                        knowledgeList
+                          .map((k) => k.category)
+                          .filter(Boolean) as string[]
+                      )
+                    ).map((cat) => {
+                      const count = knowledgeList.filter(
+                        (k) => k.category === cat
+                      ).length;
+                      const catLabels: Record<string, string> = {
+                        thuc_don: "🍽️ Thực đơn",
+                        dia_chi: "📍 Địa chỉ & Maps",
+                        tien_ich: "🅿️ Tiện ích & Bãi xe",
+                        sanh_tang_2: "🏛️ Sảnh Tầng 2",
+                        sanh_tang_3: "🏛️ Sảnh Tầng 3",
+                        sanh_tang_4: "🏛️ Sảnh Tầng 4",
+                        sanh_quay_bar: "🍸 Quầy Bar",
+                        sanh_phong_vip: "👑 Phòng VIP",
+                        dich_vu_chup_anh: "📸 Photobooth",
+                        dich_vu_mc: "🎤 MC & Ca sĩ",
+                        dich_vu_nghi_thuc: "✨ Nghi thức cưới",
+                        chinh_sach_vat: "🧾 Thuế VAT",
+                        chinh_sach_an_thu: "🍲 Thử món",
+                        chinh_sach_ruou_bia: "🍾 Rượu bia ngoài",
+                        chinh_sach_decor: "🌸 Decor ngoài",
+                        quy_trinh_dat_coc: "💰 Đặt cọc 5tr",
+                      };
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedFaqCategory(cat)}
+                          className={`px-2.5 py-1 rounded-full font-medium transition whitespace-nowrap ${
+                            selectedFaqCategory === cat
+                              ? "bg-blue-600 text-white shadow-2xs"
+                              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                          }`}
+                        >
+                          {catLabels[cat] || cat} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Form đồng bộ Google Sheet */}
@@ -832,8 +1035,23 @@ export default function TrainingPage() {
                 )}
 
                 {/* Danh sách FAQ */}
-                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
-                  {knowledgeList.map((item) => (
+                <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                  {knowledgeList
+                    .filter((item) => {
+                      const matchCat =
+                        selectedFaqCategory === "all" ||
+                        item.category === selectedFaqCategory;
+                      const matchQ =
+                        !faqSearchQuery.trim() ||
+                        item.question
+                          .toLowerCase()
+                          .includes(faqSearchQuery.toLowerCase()) ||
+                        item.answer
+                          .toLowerCase()
+                          .includes(faqSearchQuery.toLowerCase());
+                      return matchCat && matchQ;
+                    })
+                    .map((item) => (
                     <div
                       key={item.id}
                       className={`p-3 rounded-xl text-xs space-y-1.5 border transition ${
@@ -948,6 +1166,25 @@ export default function TrainingPage() {
                       )}
                     </div>
                   ))}
+
+                  {knowledgeList.filter((item) => {
+                    const matchCat =
+                      selectedFaqCategory === "all" ||
+                      item.category === selectedFaqCategory;
+                    const matchQ =
+                      !faqSearchQuery.trim() ||
+                      item.question
+                        .toLowerCase()
+                        .includes(faqSearchQuery.toLowerCase()) ||
+                      item.answer
+                        .toLowerCase()
+                        .includes(faqSearchQuery.toLowerCase());
+                    return matchCat && matchQ;
+                  }).length === 0 && (
+                    <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                      Không tìm thấy câu hỏi FAQ phù hợp với bộ lọc &quot;{faqSearchQuery || selectedFaqCategory}&quot;.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1164,19 +1401,60 @@ export default function TrainingPage() {
             </button>
           </div>
 
-          {/* Quick Questions Grid (10 câu hỏi mẫu 1 chạm) */}
-          <div className="p-3 bg-slate-50/40 border-b border-slate-100 shrink-0">
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-              {config.sampleTestPrompts.map((promptText, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSendSimulatorMessage(promptText)}
-                  className="text-[11px] px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 rounded-full transition shadow-xs text-left"
-                >
-                  {promptText}
-                </button>
-              ))}
+          {/* Kịch bản Demo Khảo sát Giám khảo (1-chạm) & Quick Questions */}
+          <div className="p-3 bg-slate-50/70 border-b border-slate-200/70 shrink-0 space-y-2.5">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Kịch bản khảo sát Giám khảo (1-chạm)
+                </span>
+                <span className="text-[10px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                  Showcase Đề 04
+                </span>
+              </div>
+
+              {/* Grid 6 Kịch bản Thực chiến */}
+              <div className="grid grid-cols-2 gap-1.5">
+                {SHOWCASE_SCENARIOS.map((sc, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSendSimulatorMessage(sc.prompt)}
+                    className={`p-2 rounded-xl border text-left transition shadow-2xs active:scale-98 flex flex-col justify-between ${sc.color}`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{sc.icon}</span>
+                      <span className="font-bold text-[11px] leading-tight line-clamp-1">
+                        {sc.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1 text-[10px] opacity-80">
+                      <span className="font-semibold">{sc.badge}</span>
+                      <span>Thử ➔</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Các câu hỏi gợi ý thêm */}
+            <div>
+              <span className="text-[10px] text-slate-400 font-medium block mb-1">
+                Các câu hỏi nghiệp vụ khác:
+              </span>
+              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto no-scrollbar">
+                {config.sampleTestPrompts.map((promptText, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSendSimulatorMessage(promptText)}
+                    className="text-[10px] px-2 py-0.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 rounded-full transition shadow-2xs text-left"
+                  >
+                    {promptText}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
