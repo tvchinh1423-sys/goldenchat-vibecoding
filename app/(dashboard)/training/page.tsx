@@ -24,6 +24,7 @@ import {
   MapPin,
   Pencil,
   X,
+  Link2,
 } from "lucide-react";
 import { KnowledgeUploadModal } from "@/components/training/KnowledgeUploadModal";
 import {
@@ -89,6 +90,12 @@ export default function TrainingPage() {
   const [editQuestion, setEditQuestion] = useState("");
   const [editAnswer, setEditAnswer] = useState("");
   const [editCategory, setEditCategory] = useState("");
+
+  // Google Sheets sync state
+  const [showGSheetForm, setShowGSheetForm] = useState(false);
+  const [gSheetUrl, setGSheetUrl] = useState("");
+  const [gSheetLoading, setGSheetLoading] = useState(false);
+  const [gSheetError, setGSheetError] = useState<string | null>(null);
 
   // Scroll to bottom simulator
   useEffect(() => {
@@ -253,6 +260,32 @@ export default function TrainingPage() {
   // Hủy bỏ chỉnh sửa câu hỏi FAQ
   const handleCancelEditFaq = () => {
     setEditingFaqId(null);
+  };
+
+  // Đồng bộ câu hỏi FAQ từ Google Sheets
+  const handleSyncGoogleSheets = async () => {
+    if (!gSheetUrl.trim()) return;
+    setGSheetLoading(true);
+    setGSheetError(null);
+    try {
+      const res = await fetch("/api/training/google-sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheetUrl: gSheetUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Đồng bộ Google Sheet thất bại");
+      }
+      setKnowledgeList((prev) => [...data.items, ...prev]);
+      setShowGSheetForm(false);
+      setGSheetUrl("");
+      alert(`Đã nạp thành công ${data.count} câu hỏi FAQ từ Google Sheet!`);
+    } catch (err: any) {
+      setGSheetError(err.message || "Lỗi đồng bộ");
+    } finally {
+      setGSheetLoading(false);
+    }
   };
 
   // Thêm Guardrail mới
@@ -679,7 +712,7 @@ export default function TrainingPage() {
               <div className="space-y-4 pt-4 border-t border-slate-100 mt-3">
                 {/* Actions Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setIsUploadModalOpen(true)}
@@ -687,6 +720,14 @@ export default function TrainingPage() {
                     >
                       <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                       Tải lên file Excel (.xlsx)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGSheetForm(!showGSheetForm)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-medium transition"
+                    >
+                      <Link2 className="w-4 h-4 text-blue-600" />
+                      Đồng bộ Google Sheet
                     </button>
                     <button
                       type="button"
@@ -701,6 +742,53 @@ export default function TrainingPage() {
                     Đồng bộ tự động vào Supabase
                   </span>
                 </div>
+
+                {/* Form đồng bộ Google Sheet */}
+                {showGSheetForm && (
+                  <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2.5 animate-in fade-in duration-150 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-blue-900 flex items-center gap-1.5">
+                        <Link2 className="w-3.5 h-3.5 text-blue-600" />
+                        Đồng bộ tri thức từ Google Sheets:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowGSheetForm(false)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600">
+                      Dán đường link Google Sheet chứa các cột: <strong>Câu hỏi</strong>, <strong>Câu trả lời</strong>, <strong>Danh mục</strong> (Nhớ mở quyền xem: <em>Bất kỳ ai có liên kết</em>).
+                    </p>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0"
+                        value={gSheetUrl}
+                        onChange={(e) => setGSheetUrl(e.target.value)}
+                        className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={!gSheetUrl.trim() || gSheetLoading}
+                        onClick={handleSyncGoogleSheets}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-semibold shadow-xs transition"
+                      >
+                        {gSheetLoading ? "Đang đồng bộ..." : "Đồng bộ ngay"}
+                      </button>
+                    </div>
+
+                    {gSheetError && (
+                      <div className="text-[11px] text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-200">
+                        {gSheetError}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Form thêm câu hỏi nhanh */}
                 {showAddFaqForm && (
