@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ ${brandName} xin phép làm rõ ạ: Trung tâm hiện áp dụng chính sách ưu đãi tặng trọn gói trang trí hoa tươi, MC vũ đoàn và tặng bàn tiệc theo số lượng thực tế, không có chính sách chiết khấu tiền mặt 30% trên thực đơn ạ. Anh/Chị cho em xin số lượng bàn dự kiến để em gửi bảng dự toán tối ưu nhất nhé!`,
+        reply: `Dạ ${brandName} xin phép làm rõ ạ: Nhà hàng áp dụng các gói ưu đãi theo chính sách hiện hành của trung tâm và không có chính sách chiết khấu tiền mặt 30% trên thực đơn. Quý khách vui lòng liên hệ Hotline 0228 6595 959 hoặc để lại số lượng bàn dự kiến để chuyên viên gửi thông tin chi tiết nhất nhé!`,
         triggeredRule: "guardrail_pricing_violation",
         guardrailWarning: "Phát hiện câu hỏi vượt quá hạn mức ưu đãi giá của trung tâm!",
       });
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (lower.includes("giữ sảnh giúp tôi không cần cọc") || lower.includes("giu sanh khong coc")) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ để đảm bảo quyền lợi và tính bảo mật ngày đẹp cho anh/chị, ${brandName} chỉ giữ sảnh chính thức sau khi nhận cọc đợt 1 ạ. Anh/Chị có thể ghé trực tiếp xem sảnh để ưng ý trước khi hoàn tất thủ tục nhé!`,
+        reply: `Dạ để đảm bảo quyền lợi và tính bảo mật ngày đẹp cho Quý khách, ${brandName} chỉ giữ sảnh chính thức sau khi hoàn tất thủ tục đặt cọc và hợp đồng. Quý khách có thể ghé trực tiếp 98 Đông A xem sảnh hoặc liên hệ Hotline 0228 6595 959 để được hỗ trợ chu đáo nhé!`,
         triggeredRule: "guardrail_hold_room_without_deposit",
       });
     }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (lower.includes("bên kia rẻ hơn") || lower.includes("ben kia re hon") || lower.includes("bên khác rẻ hơn")) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ ${brandName} rất thấu hiểu sự cân nhắc ngân sách của Quý khách! Điểm nổi bật tại trung tâm là hệ thống đại sảnh trần cao không cột, màn hình LED 4K tiêu chuẩn quốc tế và thực đơn 100% nguyên liệu tươi cao cấp kèm nước uống suốt tiệc. Em mời anh/chị ghé xem sảnh thực tế để cảm nhận không gian và dịch vụ chuẩn 4 sao nhé!`,
+        reply: `Dạ ${brandName} rất thấu hiểu sự cân nhắc ngân sách của Quý khách! Điểm nổi bật tại GOLDEN PALACE là không gian sảnh tiệc sang trọng, dịch vụ chuyên nghiệp và chất lượng món ăn được chăm chút kỹ lưỡng. Quý khách có thể xem hình ảnh tại https://goldenpalacenamdinh.com/khong-gian hoặc ghé trực tiếp 98 Đông A để trải nghiệm thực tế nhé!`,
         triggeredRule: "guardrail_competitor_comparison",
       });
     }
@@ -297,14 +297,14 @@ export async function POST(req: NextRequest) {
       }
 
       // Trang trí
-      if (lower.includes("trang trí") || lower.includes("trang tri") || lower.includes("hoa tươi")) {
+      if (lower.includes("trang trí") || lower.includes("trang tri")) {
         return NextResponse.json({
           success: true,
-          reply: `Dạ ${brandName} cung cấp dịch vụ trang trí sảnh cưới trọn gói từ hoa tươi nhập khẩu, backdrop chụp ảnh, bàn gallery, lối đi sân khấu và hệ thống ánh sáng lung linh. Đặc biệt đang có gói tặng 100% trang trí tiêu chuẩn cho tiệc cưới mùa này ạ!`,
+          reply: `Dạ Quý khách vui lòng tham khảo các hình ảnh không gian trang trí sảnh tiệc thực tế của nhà hàng GOLDEN PALACE tại đây: https://goldenpalacenamdinh.com/khong-gian . Để được tư vấn chi tiết về các gói dịch vụ trang trí, Quý khách vui lòng liên hệ Hotline 0228 6595 959 hoặc để lại số điện thoại nhé!`,
           suggestedQuestions: [
             "Cho tôi xem ảnh không gian sảnh tiệc",
-            "Ưu đãi mùa cưới hiện nay có gì?",
-            "Cho tôi hẹn xem sảnh vào cuối tuần",
+            "Thực đơn tiệc cưới bao nhiêu một bàn?",
+            "Địa chỉ nhà hàng ở đâu?",
           ],
         });
       }
