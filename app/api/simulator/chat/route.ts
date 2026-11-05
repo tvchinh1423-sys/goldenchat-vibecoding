@@ -92,12 +92,124 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({
         success: true,
-        reply: `Dạ ${brandName} rất hân hạnh được đón tiếp Quý khách vào cuối tuần này ạ! Để ban quản lý chuẩn bị phòng tiếp đón và chuyên viên tư vấn riêng, Quý khách cho em xin Tên và Số điện thoại nhé!`,
+        reply: `Dạ ${brandName} đón khách tham quan sảnh và thử món từ 8:00 đến 10:30 sáng hằng ngày tại 98 Đông A, TP. Nam Định. Để ban quản lý chuẩn bị phòng tiếp đón và chuyên viên tư vấn riêng, Quý khách cho em xin Tên và Số điện thoại nhé!`,
         appointmentIntent: true,
+        suggestedQuestions: [
+          "Địa chỉ nhà hàng ở đâu?",
+          "Hotline liên hệ trực tiếp",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+        ],
       });
     }
 
-    // 5. Đối chiếu tri thức FAQ (Knowledge Base)
+    // 5. Kiểm tra các câu hỏi thực tế về Địa chỉ, Hình ảnh, Website, Hotline, Giờ đón khách
+    // 5.1. Hình ảnh không gian sảnh tiệc
+    if (
+      lower.includes("không gian") ||
+      lower.includes("khong gian") ||
+      lower.includes("hình ảnh") ||
+      lower.includes("hinh anh") ||
+      lower.includes("xem ảnh") ||
+      lower.includes("xem anh") ||
+      lower.includes("ảnh sảnh")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ kính mời Quý khách tham khảo toàn bộ hình ảnh thực tế không gian các đại sảnh tiệc cưới tráng lệ tại đây: https://goldenpalacenamdinh.com/khong-gian . Anh/chị đang dự kiến tiệc bao nhiêu bàn để em tư vấn sảnh phù hợp nhất ạ?`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Địa chỉ nhà hàng ở đâu?",
+          "Nhà hàng đón khách lúc mấy giờ?",
+        ],
+      });
+    }
+
+    // 5.2. Địa chỉ, vị trí, Google Maps, chỉ đường
+    if (
+      lower.includes("địa chỉ") ||
+      lower.includes("dia chi") ||
+      lower.includes("ở đâu") ||
+      lower.includes("o dau") ||
+      lower.includes("chỉ đường") ||
+      lower.includes("chi duong") ||
+      lower.includes("bản đồ") ||
+      lower.includes("maps")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ địa chỉ của Golden Palace tại: 98 Đông A, KĐT Hòa Vượng, TP. Nam Định. Quý khách có thể xem vị trí và đường đi thuận tiện trên Google Maps tại đây: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic ạ! Nhà hàng đón khách từ 8:00 - 10:30 sáng, Quý khách dự kiến ghé qua hôm nào ạ?`,
+        suggestedQuestions: [
+          "Nhà hàng đón khách lúc mấy giờ?",
+          "Hotline liên hệ trực tiếp",
+          "Xem thông tin tiệc và brochure ở đâu?",
+        ],
+      });
+    }
+
+    // 5.3. Thông tin tiệc, Brochure, Website
+    if (
+      lower.includes("thông tin tiệc") ||
+      lower.includes("thong tin tiec") ||
+      lower.includes("website") ||
+      lower.includes("brochure") ||
+      lower.includes("tài liệu") ||
+      lower.includes("link")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Quý khách có thể tham khảo trọn bộ thông tin tiệc cưới tại Website: https://goldenpalacenamdinh.com hoặc xem nhanh tài liệu tổng quan tại: https://tinyurl.com/thongtintieccuoi ạ! Anh/Chị cần em tư vấn thêm phần nào không ạ?`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Ưu đãi mùa cưới hiện nay có gì?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+        ],
+      });
+    }
+
+    // 5.4. Hotline, Số điện thoại liên hệ
+    if (
+      lower.includes("hotline") ||
+      lower.includes("số điện thoại") ||
+      lower.includes("so dien thoai") ||
+      lower.includes("sđt") ||
+      lower.includes("sdt") ||
+      lower.includes("liên hệ") ||
+      lower.includes("lien he") ||
+      lower.includes("gọi")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Quý khách có thể liên hệ trực tiếp qua Hotline: 0228 6595 959 hoặc truy cập website https://goldenpalacenamdinh.com. Đội ngũ quản lý tiệc Golden Palace luôn sẵn sàng giải đáp 24/7 ạ!`,
+        suggestedQuestions: [
+          "Địa chỉ nhà hàng ở đâu?",
+          "Nhà hàng đón khách lúc mấy giờ?",
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+        ],
+      });
+    }
+
+    // 5.5. Giờ đón khách, giờ mở cửa
+    if (
+      lower.includes("đón khách") ||
+      lower.includes("don khach") ||
+      lower.includes("mấy giờ") ||
+      lower.includes("may gio") ||
+      lower.includes("giờ mở cửa") ||
+      lower.includes("gio mo cua") ||
+      lower.includes("khung giờ")
+    ) {
+      return NextResponse.json({
+        success: true,
+        reply: `Dạ Golden Palace đón khách tham quan, tư vấn và thử món từ 8:00 đến 10:30 sáng hằng ngày. Quý khách muốn đặt lịch vào ngày nào để bên em chuẩn bị bàn trà tiếp đón riêng chu đáo nhất ạ?`,
+        suggestedQuestions: [
+          "Cho tôi hẹn xem sảnh vào cuối tuần",
+          "Địa chỉ nhà hàng ở đâu?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+        ],
+      });
+    }
+
+    // 6. Đối chiếu tri thức FAQ (Knowledge Base)
     for (const item of knowledgeBase) {
       const qLower = item.question.toLowerCase();
       const aText = item.answer;
@@ -111,7 +223,15 @@ export async function POST(req: NextRequest) {
         lower.includes("giá bàn")
       ) {
         if (item.category === "thuc_don" || qLower.includes("thực đơn") || qLower.includes("bàn")) {
-          return NextResponse.json({ success: true, reply: aText });
+          return NextResponse.json({
+            success: true,
+            reply: aText,
+            suggestedQuestions: [
+              "Ưu đãi mùa cưới hiện nay có gì?",
+              "Sảnh tiệc bên mình chứa được bao nhiêu khách?",
+              "Cho tôi hẹn xem sảnh vào cuối tuần",
+            ],
+          });
         }
       }
 
@@ -124,7 +244,15 @@ export async function POST(req: NextRequest) {
         lower.includes("khách")
       ) {
         if (item.category === "sanh_tiec" || qLower.includes("sảnh") || qLower.includes("khách")) {
-          return NextResponse.json({ success: true, reply: aText });
+          return NextResponse.json({
+            success: true,
+            reply: aText,
+            suggestedQuestions: [
+              "Cho tôi xem ảnh không gian sảnh tiệc",
+              "Thực đơn tiệc cưới bao nhiêu một bàn?",
+              "Cho tôi hẹn xem sảnh vào cuối tuần",
+            ],
+          });
         }
       }
 
@@ -136,14 +264,30 @@ export async function POST(req: NextRequest) {
         lower.includes("giảm giá")
       ) {
         if (item.category === "uu_dai" || qLower.includes("ưu đãi")) {
-          return NextResponse.json({ success: true, reply: aText });
+          return NextResponse.json({
+            success: true,
+            reply: aText,
+            suggestedQuestions: [
+              "Thực đơn tiệc cưới bao nhiêu một bàn?",
+              "Đặt cọc giữ sảnh bao nhiêu?",
+              "Cho tôi hẹn xem sảnh vào cuối tuần",
+            ],
+          });
         }
       }
 
       // Đặt cọc
       if (lower.includes("cọc") || lower.includes("coc") || lower.includes("đặt cọc")) {
         if (item.category === "dat_coc" || qLower.includes("cọc")) {
-          return NextResponse.json({ success: true, reply: aText });
+          return NextResponse.json({
+            success: true,
+            reply: aText,
+            suggestedQuestions: [
+              "Thực đơn tiệc cưới bao nhiêu một bàn?",
+              "Địa chỉ nhà hàng ở đâu?",
+              "Cho tôi hẹn xem sảnh vào cuối tuần",
+            ],
+          });
         }
       }
 
@@ -152,14 +296,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           reply: `Dạ ${brandName} cung cấp dịch vụ trang trí sảnh cưới trọn gói từ hoa tươi nhập khẩu, backdrop chụp ảnh, bàn gallery, lối đi sân khấu và hệ thống ánh sáng lung linh. Đặc biệt đang có gói tặng 100% trang trí tiêu chuẩn cho tiệc cưới mùa này ạ!`,
+          suggestedQuestions: [
+            "Cho tôi xem ảnh không gian sảnh tiệc",
+            "Ưu đãi mùa cưới hiện nay có gì?",
+            "Cho tôi hẹn xem sảnh vào cuối tuần",
+          ],
         });
       }
     }
 
-    // 6. Trả lời mặc định theo Persona
+    // 7. Trả lời mặc định theo Persona
     return NextResponse.json({
       success: true,
       reply: `Dạ em là trợ lý tư vấn tại ${brandName}! Quý khách đang quan tâm đến tiệc cưới, hội nghị công ty hay cần tư vấn thực đơn và xem sảnh trực tiếp ạ?`,
+      suggestedQuestions: [
+        "Thực đơn tiệc cưới bao nhiêu một bàn?",
+        "Cho tôi xem ảnh không gian sảnh tiệc",
+        "Địa chỉ nhà hàng ở đâu?",
+      ],
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
