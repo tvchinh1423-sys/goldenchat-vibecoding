@@ -344,3 +344,18 @@ app-root/
   - Dải thẻ (Pill tabs) lọc theo 5 danh mục: Tất cả, Thực đơn & Giá, Sảnh & Không gian, Dịch vụ & Ưu đãi, Chính sách & Đặt cọc.
 - **Kiểm thử:** 34/34 unit test pass 100%, Next.js production build 17/17 trang tĩnh thành công 100%.
 
+### Mốc Chuẩn Bị Hồ Sơ Nộp Bài, Video Demo 2 Phút & Đóng Gói Trọn Bộ 26 Kịch Bản FAQ — 05/11/2026 (Chinh)
+
+- **1. Nâng cấp README.md chuẩn tài liệu nộp bài VibeCoding 2026:**
+  - Bảng đối chiếu 4 nhóm tiêu chí chấm điểm BTC Đề 04 (Must-be, Performance, Attractive, Reverse) với tỷ lệ hoàn thành 100%.
+  - Link Live Production Vercel (`goldenchat-vibecoding.vercel.app`), Web Widget (`/widget`), PWA App Store (`/download`), Botcake Webhook (`/api/webhook/botcake`).
+  - Danh mục 6 Kịch bản Khảo sát Nhanh 1-chạm dành riêng cho Ban Giám Khảo.
+- **2. Kịch bản Video Demo 2 Phút Nộp Bài (`docs/video-demo-script.md`):**
+  - Cấu trúc chặt chẽ 1:55s (dưới hạn mức 2 phút của BTC), phân bổ từng giây (0:00 - 2:00) kèm lời thoại thuyết minh (Voiceover) và thao tác chuột cụ thể.
+  - Thể hiện nổi bật: Trả lời thông minh sảnh 300 khách, gợi ý 3 câu liên quan, cọc 5tr, guardrail chống giảm giá 30%, form đặt lịch in-chat 8:30 sáng, âm thanh "Ting", Google Calendar 1-chạm, cảnh báo Telegram, Kanban CRM N3 và thao tác xóa lịch màu đỏ.
+- **3. Đóng gói trọn vẹn 26 Kịch bản Hỏi Đáp Chuẩn F&B Golden Palace (`lib/mock-service.ts`):**
+  - Bổ sung các kịch bản thực tế từ `gp-19` đến `gp-26`: tiệc cưới ngày lễ/cuối tuần không phụ thu, tự tính dự toán 30s, nghi thức sân khấu laser/flycam, chính sách thanh toán cấn trừ 3 đợt, Google Maps 98 Đông A, decor hoa tươi và xe hoa đón dâu.
+  - Sinh 2 file Excel mẫu tĩnh `.xlsx` phục vụ tải trực tiếp: `public/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx` và `knowledge-base/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx`.
+- **4. Kiểm thử:** 34/34 unit tests pass 100%, Next.js build 17/17 trang tĩnh đạt 100%.
+
+
