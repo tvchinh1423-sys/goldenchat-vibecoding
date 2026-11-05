@@ -121,6 +121,7 @@ app-root/
 
 ### Trạng thái phối hợp gần nhất — 05/11/2026 (Asia/Saigon)
 
+- Máy Hiền đã bật lịch tự động mỗi giờ trong chat này: `Đồng bộ OmniChat với Chinh` (automation ID `ng-b-omnichat-v-i-chinh`). Mỗi lượt đọc skill, fetch/tích hợp cập nhật phù hợp, kiểm tra rồi push phần hoàn thành; vẫn đồng bộ trước/sau task. Không tạo lịch trùng và không commit chỉ để ghi lượt kiểm tra không có thay đổi.
 - Đã nhận commit `76874b4` từ Chinh trên `origin/main` về quy tắc đồng bộ liên tục.
 - Đã fetch tiếp commit `0f18646` của Chinh (Training, upload FAQ, Simulator, webhook Botcake). Các trạng thái hoàn thành ở bảng trên do Chinh cập nhật, phiên này chưa kiểm thử lại dịch vụ. Code mới được nhận trong worktree đồng bộ tách biệt; chưa tích hợp vào workspace Inbox vì có file chưa commit trùng đường dẫn. Cần tích hợp code hai bên ở task tiếp theo.
 - Workspace Hiền đang ở nhánh `hien/frontend-ai`. Đã có mã nguồn Inbox demo, README và kiểm thử cục bộ chưa commit; phiên cập nhật quy trình này chưa xác minh chúng và chưa công bố code đó lên GitHub.
