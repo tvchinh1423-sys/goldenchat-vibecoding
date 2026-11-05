@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { createDemoConversations, createFaqDraft } from "@/lib/inbox/demo-data";
+import { createDemoConversations } from "@/lib/inbox/demo-data";
 import { filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
 import type { Attachment, Conversation, InboxFilters } from "@/lib/inbox/types";
@@ -36,6 +36,8 @@ export function InboxWorkspace() {
   const [selectedId, setSelectedId] = useState("trang");
   const [filters, setFilters] = useState<InboxFilters>(DEFAULT_FILTERS);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const draftRequest = useRef<AbortController | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<Record<string, Attachment[]>>(
     {},
@@ -117,6 +119,59 @@ export function InboxWorkspace() {
   }, []);
 
   const activeId = active?.id;
+  useEffect(() => {
+    draftRequest.current?.abort();
+    draftRequest.current = null;
+    setGeneratingId(null);
+    return () => draftRequest.current?.abort();
+  }, [activeId]);
+
+  function cancelDraft() {
+    draftRequest.current?.abort();
+    draftRequest.current = null;
+    setGeneratingId(null);
+  }
+
+  async function generateDraft() {
+    if (!active || generatingId) return;
+    const id = active.id;
+    const controller = new AbortController();
+    draftRequest.current = controller;
+    setGeneratingId(id);
+    try {
+      const response = await fetch("/api/ai/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: active.messages.map(({ sender, content }) => ({
+            sender,
+            content,
+          })),
+        }),
+        signal: controller.signal,
+      });
+      const result = await response.json();
+      if (controller.signal.aborted) return;
+      if (!response.ok || typeof result.reply !== "string")
+        throw new Error(result.error || "Chưa tạo được bản nháp.");
+      setDrafts((current) => ({ ...current, [id]: result.reply }));
+      notify(
+        result.mode === "demo"
+          ? "Đã điền gợi ý FAQ mẫu (chưa cấu hình AI). Hãy duyệt trước khi gửi."
+          : "AI đã soạn bản nháp. Hãy duyệt trước khi gửi.",
+      );
+    } catch (error) {
+      if (!controller.signal.aborted)
+        notify(
+          error instanceof Error ? error.message : "Chưa tạo được bản nháp.",
+        );
+    } finally {
+      if (draftRequest.current === controller) {
+        draftRequest.current = null;
+        setGeneratingId(null);
+      }
+    }
+  }
   const activeUnread = active?.unread;
   useEffect(() => {
     if (
@@ -160,6 +215,7 @@ export function InboxWorkspace() {
     const content = (drafts[active.id] ?? "").trim();
     const files = attachments[active.id] ?? [];
     if (!content && !files.length) return;
+    cancelDraft();
     updateConversation(active.id, (conversation) => ({
       ...conversation,
       aiEnabled: false,
@@ -355,10 +411,12 @@ export function InboxWorkspace() {
                 key={`${active.id}-${chatOpen}`}
                 conversation={active}
                 draft={drafts[active.id] ?? ""}
+                generatingDraft={generatingId === active.id}
                 attachments={attachments[active.id] ?? []}
-                onDraft={(text) =>
-                  setDrafts((current) => ({ ...current, [active.id]: text }))
-                }
+                onDraft={(text) => {
+                  cancelDraft();
+                  setDrafts((current) => ({ ...current, [active.id]: text }));
+                }}
                 onAttachments={(files) =>
                   setAttachments((current) => ({
                     ...current,
@@ -366,22 +424,14 @@ export function InboxWorkspace() {
                   }))
                 }
                 onSend={sendMessage}
-                onGenerateDraft={() => {
-                  setDrafts((current) => ({
-                    ...current,
-                    [active.id]: createFaqDraft(active.messages),
-                  }));
-                  notify(
-                    "Đã điền gợi ý từ FAQ mẫu Golden Palace. Hãy kiểm tra trước khi gửi.",
-                  );
-                }}
+                onGenerateDraft={() => void generateDraft()}
                 onAiToggle={(aiEnabled) => {
                   updateConversation(active.id, (conversation) => ({
                     ...conversation,
                     aiEnabled,
                   }));
                   notify(
-                    `${aiEnabled ? "Đã bật" : "Đã tắt"} cờ AI cho hội thoại demo. AI Engine sẽ được kết nối tại Module 2.`,
+                    `${aiEnabled ? "Đã bật" : "Đã tắt"} cờ AI cho hội thoại demo. Gửi tự động qua Botcake chưa được kết nối.`,
                   );
                 }}
                 onResolve={() => {
@@ -400,6 +450,7 @@ export function InboxWorkspace() {
                   );
                 }}
                 onArchive={() => {
+                  cancelDraft();
                   updateConversation(active.id, (conversation) => ({
                     ...conversation,
                     status:

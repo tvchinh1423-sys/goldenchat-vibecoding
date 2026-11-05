@@ -32,6 +32,7 @@ import {
   formatTime,
 } from "@/lib/inbox/helpers";
 import type { Conversation, Lead } from "@/lib/inbox/types";
+import { extractLeadInfo } from "@/lib/lead-extractor";
 
 export type LeadFields = Pick<
   Lead,
@@ -67,6 +68,12 @@ export function InfoPanel({
   const [error, setError] = useState("");
   const id = useId();
   const contact = detectContact(conversation.messages);
+  const extracted = extractLeadInfo(
+    conversation.messages
+      .filter((message) => message.sender === "customer")
+      .map((message) => message.content)
+      .join("\n"),
+  );
   const email = conversation.lead?.email || contact.emails[0];
   const phone = conversation.lead?.phone || contact.phones[0];
   const latestCustomerMessage =
@@ -75,10 +82,16 @@ export function InfoPanel({
       .find((message) => message.sender === "customer")?.content ?? "";
   const openLeadForm = () => {
     setForm({
-      full_name: contact.fullName || conversation.name,
+      full_name: extracted.fullName || conversation.name,
       phone: contact.phones[0] ?? "",
       email: contact.emails[0] ?? "",
-      demand_notes: latestCustomerMessage,
+      demand_notes: [
+        extracted.eventDate && `Ngày tổ chức: ${extracted.eventDate}`,
+        extracted.tableCount && `Số bàn dự kiến: ${extracted.tableCount}`,
+        latestCustomerMessage,
+      ]
+        .filter(Boolean)
+        .join("\n"),
     });
     setError("");
     setDialog("lead");
@@ -279,6 +292,26 @@ export function InfoPanel({
               Chưa tìm thấy SĐT/email trong tin nhắn. Bạn có thể nhập khi tạo
               khách mới.
             </p>
+          )}
+          {(extracted.eventDate || extracted.tableCount) && (
+            <dl className="mb-4 space-y-2 text-xs text-muted-foreground">
+              {extracted.eventDate && (
+                <div>
+                  <dt>Ngày tổ chức dự kiến</dt>
+                  <dd className="mt-1 font-medium text-foreground">
+                    {extracted.eventDate}
+                  </dd>
+                </div>
+              )}
+              {extracted.tableCount && (
+                <div>
+                  <dt>Số bàn dự kiến</dt>
+                  <dd className="mt-1 font-medium text-foreground">
+                    {extracted.tableCount} bàn
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
           {conversation.lead ? (
             <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">

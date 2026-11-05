@@ -147,3 +147,12 @@ app-root/
 - Inbox dùng BusinessProfile/FAQ từ preset wedding_event chung với Training. Hội thoại phủ thực đơn, sảnh 500 khách ngày 20/11 (cần kiểm tra lịch), đặt cọc, xem sảnh & thử món cuối tuần, tiệc doanh nghiệp. SĐT minh họa xuất hiện trong hộp chưa định danh.
 - Khóa localStorage riêng omnichat.inbox.golden-palace.v1 giúp hiện demo mới và giữ nguyên snapshot Kstudy cũ. Chưa gửi Botcake hay ghi lead thật.
 - Kiểm tra mốc Inbox Golden Palace: 8 unit test, lint, production build và 4 Playwright scenario desktop/mobile đạt.
+
+### Mốc Module 2 AI Engine — 05/11/2026 (Hiền)
+
+- Đã nhận thêm main a55fb71 (embed.js, Google Sheets FAQ, Telegram Alert).
+- lib/ai-engine.ts có generateBotReply/generateDraftReply, Gemini REST hoặc 9Router OpenAI-compatible; dùng Persona/Guardrails và knowledge_base qua lib/ai-context.ts. Đã cấu hình DB mà đọc lỗi thì báo lỗi, không dùng FAQ showcase thay ngành. FAQ rỗng giữ rỗng. Chưa có tenant isolation vì schema hiện tại dùng chung workspace.
+- POST /api/ai/draft nối nút Soạn nháp Inbox: chờ/lỗi, hủy kết quả khi sửa/gửi/chuyển/lưu trữ, chỉ điền composer chờ duyệt. Không có khóa thì trả mode demo với FAQ mẫu khi chưa cấu hình DB; lỗi provider không giả làm câu trả lời AI thành công.
+- extractLeadInfo export từ engine, logic cục bộ trong lib/lead-extractor.ts: họ tên, SĐT chuẩn hóa, ngày tổ chức giữ nguyên nếu thiếu năm, số bàn; không dùng ngày xem sảnh làm ngày cưới. Cột thông tin/form lead dùng bóc tách từ tin khách.
+- Hướng dẫn docs/ai-engine.md, biến môi trường trong .env.example. Máy hiện chưa có khóa Gemini/9Router, Supabase là placeholder; kiểm tra giao thức bằng HTTP mock, chưa xác minh dịch vụ thật. Simulator/Webhook/Widget vẫn giữ adapter của Chinh, chưa gửi tự động qua engine. Guardrails hiện áp dụng bằng system prompt, chưa có kiểm duyệt output độc lập.
+- Kiểm tra mốc Module 2: 14 unit/API test (HTTP mock), lint/TypeScript, production build và 5 Playwright scenario đạt; đã xem ảnh desktop Golden Palace. Không cần khóa thật để chạy demo.
