@@ -4,7 +4,7 @@ export type PlatformType = 'facebook' | 'zalo' | 'web';
 export type SenderType = 'customer' | 'bot' | 'agent';
 
 // Giai đoạn phễu khách hàng (Khớp 100% Ảnh 3 & 4)
-export type LeadStage = 
+export type LeadStage =
   | 'N1' // Lead thô (Mới nhận thông tin)
   | 'N2' // Tiềm năng (Đã liên hệ, có nhu cầu)
   | 'N3' // Học thử (Đã hẹn lịch tư vấn 1-1 / học thử)

@@ -12,6 +12,10 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
 
+  // Inbox owns its viewport and header; retain the shared shell for other modules.
+  if (pathname === "/inbox" || pathname.startsWith("/inbox/"))
+    return <>{children}</>;
+
   const navItems = [
     {
       name: "Kênh chat",
@@ -65,7 +69,9 @@ export default function DashboardLayout({
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-500"}`} />
+                  <Icon
+                    className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-500"}`}
+                  />
                   <span>{item.name}</span>
                   {item.badge && (
                     <span className="text-[11px] px-1.5 py-0.2 bg-blue-100 text-blue-700 rounded-full font-semibold">

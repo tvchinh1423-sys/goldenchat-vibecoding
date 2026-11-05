@@ -3,6 +3,8 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 import { KnowledgeItem } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
