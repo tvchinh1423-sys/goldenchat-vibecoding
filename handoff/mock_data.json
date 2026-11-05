@@ -1,0 +1,91 @@
+{
+  "business": {
+    "name": "Học viện Đào tạo Kstudy",
+    "field": "Đào tạo Digital Marketing, AI & Automation",
+    "hotline": "0987 654 321",
+    "working_hours": "08:00 - 21:00",
+    "address": "Tầng 5, Tòa nhà Công nghệ, Hà Nội"
+  },
+  "knowledge_base": [
+    {
+      "category": "hoc_phi",
+      "question": "Học phí khóa Digital Marketing & AI (ENTD01) là bao nhiêu?",
+      "answer": "Dạ học phí chuẩn khóa ENTD01 là 15.000.000đ. Đang có ưu đãi đăng ký sớm trong tháng giảm còn 12.500.000đ, hỗ trợ trả góp 0% lãi suất qua thẻ tín dụng."
+    },
+    {
+      "category": "noi_dung_hoc",
+      "question": "Khóa học này học những gì, học xong làm được gì?",
+      "answer": "Khóa học đào tạo thực chiến 3 tháng: Xây dựng chiến lược Marketing đa kênh, ứng dụng AI (ChatGPT, Midjourney, Claude) tự động hóa sáng tạo nội dung, chạy quảng cáo Meta/Google/TikTok và phân tích dữ liệu kinh doanh."
+    },
+    {
+      "category": "chung_chi",
+      "question": "Sau khi hoàn thành khóa học có được cấp chứng chỉ không?",
+      "answer": "Dạ có ạ! Học viên hoàn thành đủ các bài thực hành và đồ án tốt nghiệp sẽ được Học viện Kstudy cấp Chứng nhận hoàn thành khóa học chuyên nghiệp, có giá trị công nhận trong mạng lưới đối tác tuyển dụng."
+    },
+    {
+      "category": "lich_hoc",
+      "question": "Thời gian và lịch khai giảng khóa gần nhất khi nào?",
+      "answer": "Khóa ENTD01 gần nhất khai giảng vào ngày 15 hàng tháng. Lịch học linh hoạt gồm lớp Tối 2-4-6 (19h30 - 21h30) hoặc lớp Cuối tuần (Sáng/Chiều Thứ 7 & Chủ Nhật)."
+    },
+    {
+      "category": "hoc_thu",
+      "question": "Tôi có được học thử hoặc tham gia buổi định hướng trước không?",
+      "answer": "Dạ hoàn toàn được ạ! Kstudy có 01 buổi học thử và định hướng lộ trình nghề nghiệp 1-1 miễn phí cùng Giảng viên chuyên gia. Bạn để lại SĐT để ban đào tạo xếp lịch nhé!"
+    }
+  ],
+  "sample_leads": [
+    {
+      "full_name": "Vũ Huyền Trang",
+      "phone": "0339516196",
+      "email": "vhuyntrang231@gmail.com",
+      "demand_notes": "Quan tâm khóa Digital Marketing AI, cần tư vấn chính sách trả góp và lịch học tối.",
+      "source": "facebook",
+      "status": "contacting"
+    },
+    {
+      "full_name": "Nguyễn Nhật Minh",
+      "phone": "0988123456",
+      "email": "nhatminh.mkt@gmail.com",
+      "demand_notes": "Hỏi thông tin khóa học cho nhân viên doanh nghiệp, cần xuất hóa đơn VAT.",
+      "source": "web",
+      "status": "new"
+    },
+    {
+      "full_name": "Hoàng Tú Anh",
+      "phone": "0912345789",
+      "email": "tuanh.hoang@gmail.com",
+      "demand_notes": "Đã đăng ký tham gia buổi học thử 1-1 tối thứ 6 tuần này.",
+      "source": "zalo",
+      "status": "booked"
+    }
+  ],
+  "sample_bookings": [
+    {
+      "customer_name": "Hoàng Tú Anh",
+      "phone": "0912345789",
+      "appointment_time": "2026-11-07T19:30:00+07:00",
+      "event_type": "tu_van_lo_trinh",
+      "status": "confirmed",
+      "assigned_staff": "Chuyên gia tư vấn Kstudy",
+      "notes": "Tư vấn định hướng chuyển ngành từ Kế toán sang Digital Marketing AI."
+    }
+  ],
+  "bot_configs": {
+    "persona": {
+      "name": "Kstudy Bot",
+      "role": "Trợ lý tư vấn khóa học và định hướng nghề nghiệp",
+      "pronouns": "Em xưng hô với Bạn / Anh/Chị",
+      "tone": "Chuyên nghiệp, thân thiện, súc tích, không dùng emoji quá đà, kết thúc lượt bằng câu hỏi mở",
+      "working_hours": {
+        "start": "08:00",
+        "end": "21:00"
+      },
+      "out_of_hours_message": "Dạ hiện tại đã ngoài giờ tư vấn trực tiếp của học viện. Em đã ghi lại thông tin của bạn, ban tư vấn tuyển sinh sẽ liên hệ lại bạn vào 8h30 sáng mai nhé!"
+    },
+    "guardrails": [
+      "Không tự ý cam kết mức giảm học phí vượt quá chính sách công bố của học viện.",
+      "Không đưa ra cam kết 100% có việc làm nếu học viên không hoàn thành điều kiện đồ án.",
+      "Khi khách hàng có nhu cầu khiếu nại hoặc hỏi ngoài phạm vi đào tạo -> Tự động chuyển máy cho tư vấn viên thật."
+    ]
+  }
+}
