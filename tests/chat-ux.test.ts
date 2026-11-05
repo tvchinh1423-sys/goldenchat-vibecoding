@@ -83,3 +83,18 @@ test("API chat dynamically responds to guest count (e.g. 300 khách / 30 mâm) w
   assert.equal(data30Mam.success, true);
   assert.match(data30Mam.reply, /Hội trường Tầng 3/);
 });
+
+test("API chat identifies appointment intent when user says chị muốn đặt lịch", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "chị muốn đặt lịch", messageCount: 3 }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.appointmentIntent, true);
+  assert.equal(data.visitType, "xem_sanh");
+  assert.match(data.reply, /8:00 đến 10:30 sáng/);
+  assert.match(data.reply, /Điền thông tin đặt lịch/);
+});

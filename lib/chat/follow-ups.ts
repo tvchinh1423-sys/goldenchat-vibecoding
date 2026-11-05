@@ -10,13 +10,20 @@ export function visitIntent(text: string) {
   const query = normalize(text);
   if (/\b(khong muon|huy|doi lich|da hen|da dat lich)\b/.test(query))
     return undefined;
+  // Khách chỉ muốn xem hình ảnh/video/album ảnh mẫu trên mạng
+  if (/\b(xem anh|hinh anh|hinh sanh|anh sanh|video|album)\b/.test(query))
+    return undefined;
+  // Tránh nhầm với câu hỏi đặt cọc giữ sảnh
+  if (/\b(coc|dat coc|tien coc)\b/.test(query) && !/\b(lich|hen|booking)\b/.test(query))
+    return undefined;
   if (/\b(thu mon|nem thu)\b/.test(query)) return "thu_mon" as const;
-  if (/\b(dat lich|hen lich|hen xem sanh|xin hen)\b/.test(query))
-    return "xem_sanh" as const;
   if (
-    /\b(ghe xem sanh|tham quan sanh|muon xem sanh|muon ghe)\b/.test(query) &&
-    !/\b(xem anh|hinh anh|video)\b/.test(query)
+    /\b(dat lich|hen lich|hen xem sanh|xin hen|dat hen|book lich|booking|len lich|muon dat|muon hen|xep lich|cho xin lich|qua xem|ghe xem|den xem|tham quan|xem truc tiep)\b/.test(
+      query,
+    )
   )
+    return "xem_sanh" as const;
+  if (/\b(xem sanh|den sanh|qua sanh|toi sanh|tu van truc tiep)\b/.test(query))
     return "xem_sanh" as const;
 }
 

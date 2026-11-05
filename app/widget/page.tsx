@@ -126,6 +126,10 @@ function WebWidgetContent() {
 
       if (soundEnabled) playChatTone();
 
+      const resolvedVisitType = data.appointmentIntent
+        ? (data.visitType || visitIntent(userText) || "xem_sanh")
+        : undefined;
+
       setMessages((prev) => [
         ...prev,
         {
@@ -134,9 +138,15 @@ function WebWidgetContent() {
           text: data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           suggestedQuestions: data.suggestedQuestions,
-          visitType: data.appointmentIntent ? visitIntent(userText) : undefined,
+          visitType: resolvedVisitType,
         },
       ]);
+
+      if (data.appointmentIntent) {
+        setTimeout(() => {
+          openBooking(resolvedVisitType || "xem_sanh");
+        }, 400);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -366,24 +376,26 @@ function WebWidgetContent() {
                           <button
                             type="button"
                             onClick={() => openBooking(m.visitType)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-semibold transition shadow-xs active:scale-95"
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer mt-1"
                           >
-                            <CalendarCheck className="w-3.5 h-3.5" />
+                            <CalendarCheck className="w-4 h-4 text-white" />
                             <span>Điền thông tin đặt lịch ngay (8:00 - 10:30)</span>
                           </button>
                         )}
 
                         {/* Nút Thêm vào Google Calendar */}
-                        {m.customCalendarUrl && <a
-                          href={m.customCalendarUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-[11px] font-semibold transition border border-blue-200 shadow-2xs"
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Thêm vào Google Calendar</span>
-                          <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
-                        </a>}
+                        {m.customCalendarUrl && (
+                          <a
+                            href={m.customCalendarUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer mt-1"
+                          >
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <span>Thêm lịch hẹn vào Google Calendar</span>
+                            <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-60" />
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>

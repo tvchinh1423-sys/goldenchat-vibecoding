@@ -302,6 +302,23 @@ app-root/
 - Thẻ sau khi lưu xác nhận đã nhận lịch. Trạng thái nghiệp vụ vẫn chờ tư vấn viên xác nhận. Calendar dùng thời điểm đã lưu, UTC và thời lượng 60 phút. Âm báo dùng Web Audio chung cho Inbox và Widget. Widget giữ cảnh báo Telegram cho quản lý khi lưu Supabase thành công. Chưa có nhà cung cấp gửi Zalo/SMS tới khách hoặc xác minh dịch vụ cloud, nên thẻ không báo đã gửi qua hai kênh này.
 - Hai màn hình quản trị có nút đỏ hủy và xóa lịch, xác nhận trước khi thao tác. Build/TypeScript, lint, 33 kiểm thử logic/API/SQL và 14 kịch bản trình duyệt đạt. Kiểm thử đã chạy tạo lịch từ Inbox và Widget, kiểm tra giờ Calendar, giữ lịch khi từ chối xóa và xóa lịch khi xác nhận.
 
+### Mốc Tối Ưu Hóa Nhận Diện Ý Định Đặt Lịch & Khắc Phục Lỗi Câu "chị muốn đặt lịch" — 05/11/2026 (Chinh)
+
+- **Nguyên nhân bug ảnh chụp 23:27:**
+  - Ở phiên bản cũ, Mục 4 trong router chat chỉ lọc các từ rời rạc (`xem sảnh`, `thử món`, `hẹn`, `cuối tuần`), hoàn toàn thiếu từ khóa `"đặt lịch"`, `"dat lich"`, `"muốn đặt"`, dẫn tới tin nhắn `"chị muốn đặt lịch"` bị trôi xuống câu fallback mặc định của bot.
+- **Giải pháp xử lý triệt để:**
+  - **Mở rộng bộ nhận diện ý định đặt lịch (`lib/chat/follow-ups.ts`):** Bao phủ toàn diện các biến thể đặt hẹn: `dat lich`, `hen lich`, `hen xem sanh`, `xin hen`, `dat hen`, `book lich`, `booking`, `len lich`, `muon dat`, `muon hen`, `xep lich`, `cho xin lich`, `qua xem`, `ghe xem`, `den xem`, `tham quan`, `xem truc tiep`.
+  - **Phòng chống va chạm tri thức:** Chặn tuyệt đối nhầm lẫn giữa đặt lịch với câu hỏi xem ảnh media (`xem anh`, `hinh anh`, `video`, `album`) hoặc câu hỏi đặt cọc giữ sảnh (`coc`, `dat coc`, `tien coc`).
+  - **Bảo hiểm 2 lớp tại API Chat (`app/api/simulator/chat/route.ts`):** Kết hợp cả `visitIntent` và regex mở rộng, phản hồi chuyên nghiệp khung giờ đón khách chuẩn 8:00 - 10:30 sáng, hướng dẫn bấm nút đặt lịch hoặc để lại SĐT.
+  - **Tối ưu trải nghiệm Web Widget (`app/widget/page.tsx`):**
+    - Nhận diện `resolvedVisitType` an toàn từ `data.visitType || visitIntent(userText) || "xem_sanh"`.
+    - Khi nhận diện ý định đặt lịch, tự động kích hoạt hiển thị Modal Form Đặt lịch nhanh (sau 400ms) với Smart Default ngày giờ (8:00 - 10:30) để khách điền Tên + SĐT 1-chạm.
+    - Render nút bấm gradient nổi bật `📅 Điền thông tin đặt lịch ngay (8:00 - 10:30)` trực tiếp trên bong bóng chat của Bot.
+- **Kiểm thử & Triển khai:**
+  - Bổ sung unit test case cho `"chị muốn đặt lịch"` và các biến thể, nâng tổng số test lên **34/34 unit tests pass 100%**.
+  - Next.js production build 17/17 trang tĩnh thành công.
+  - Đã khởi động lại server daemon local cổng 3000 sẵn sàng phục vụ.
+
 ### Thống nhất Chiến lược Triển khai: Đấu nối Nền tảng để lại Chặng Cuối — 05/11/2026 (Chinh)
 
 - **Quyết định thống nhất:** Bước đấu nối nền tảng bên thứ ba (quét QR Zalo, gắn webhook Botcake Fanpage thật, cấu hình Bot Token Telegram thật) sẽ để lại đến **chặng cuối cùng** trước khi nộp bài thi.

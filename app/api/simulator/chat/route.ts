@@ -113,11 +113,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Khách hẹn lịch xem sảnh / thử món / trải nghiệm dịch vụ
-    const visit = visitIntent(trimmedMsg);
+    const visit =
+      visitIntent(trimmedMsg) ||
+      (/\b(đặt lịch|dat lich|muốn đặt|đặt hẹn|dat hen|hẹn lịch|hen lich|hẹn|xem sảnh|thử món|qua xem|ghé xem|đến xem)\b/i.test(
+        lower,
+      ) && !/\b(cọc|coc|giữ sảnh|giu sanh)\b/i.test(lower)
+        ? ("xem_sanh" as const)
+        : undefined);
+
     if (visit) {
       return respond({
         success: true,
-        reply: `Dạ ${brandName} đón khách tham quan sảnh và thử món từ 8:00 đến 10:30 sáng hằng ngày tại 98 Đông A, TP. Nam Định. Để ban quản lý chuẩn bị phòng tiếp đón và chuyên viên tư vấn riêng, Quý khách cho em xin Tên và Số điện thoại nhé!`,
+        reply: `Dạ ${brandName} trân trọng đón tiếp Quý khách tham quan sảnh và tư vấn trực tiếp từ 8:00 đến 10:30 sáng hằng ngày tại 98 Đông A, TP. Nam Định. Quý khách vui lòng bấm nút "Điền thông tin đặt lịch" ngay bên dưới (hoặc để lại Tên và Số điện thoại) để chuyên viên chuẩn bị phòng tiếp đón chu đáo nhất nhé!`,
         appointmentIntent: true,
         visitType: visit,
         suggestedQuestions: [

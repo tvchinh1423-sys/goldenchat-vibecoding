@@ -18,9 +18,15 @@ test("getSmartBookingDefault returns 09:00 formatted datetime string", () => {
 
 test("visit intent distinguishes an appointment from asking for venue photos", () => {
   assert.equal(visitIntent("Anh muốn đặt lịch xem sảnh"), "xem_sanh");
+  assert.equal(visitIntent("chị muốn đặt lịch"), "xem_sanh");
+  assert.equal(visitIntent("em muốn book lịch tư vấn"), "xem_sanh");
+  assert.equal(visitIntent("mai tôi qua xem sảnh"), "xem_sanh");
   assert.equal(visitIntent("Chị muốn hẹn thử món"), "thu_mon");
   assert.equal(visitIntent("Cho tôi xem ảnh sảnh tiệc"), undefined);
   assert.equal(visitIntent("Tôi muốn hủy lịch thử món"), undefined);
+  // Không nhầm lẫn với câu hỏi đặt cọc giữ sảnh
+  assert.equal(visitIntent("Đặt cọc giữ sảnh bao nhiêu?"), undefined);
+  assert.equal(visitIntent("Đặt cọc lần 1 là bao nhiêu"), undefined);
 });
 
 test("deleteDemoBooking removes targeted booking and raises error if not found", () => {
