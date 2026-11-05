@@ -127,3 +127,10 @@ app-root/
 - Workspace Hiền đang ở nhánh `hien/frontend-ai`. Đã có mã nguồn Inbox demo, README và kiểm thử cục bộ chưa commit; phiên cập nhật quy trình này chưa xác minh chúng và chưa công bố code đó lên GitHub.
 - `handoff/supabase_schema.sql` đang có thay đổi cục bộ khác schema N1–N5 trên main; cần đối chiếu trước khi tích hợp, giữ yêu cầu nghiệp vụ phễu N1–N5/N0.
 - Người dùng đã hoàn tất đăng nhập Git Credential Manager bằng `ritapham94-cloud` trong phiên này. Khi báo kết quả đồng bộ, luôn kiểm tra push thành công và hash remote; lịch sử commit là nguồn đối chiếu, không lưu hash của chính commit đang tạo vào skill.
+
+### Mốc Inbox Module 1 — 05/11/2026 (Hiền)
+
+- Đã dựng `app/(dashboard)/inbox/page.tsx`, component trong `components/inbox`, UI primitive shadcn/Radix và kiểu dữ liệu/fixture trong `lib/inbox`. Có search không dấu/SĐT, tab, lọc đa kênh/lịch hẹn/liên hệ, chat, ảnh/emoji/thả tim, cờ AI từng hội thoại, ghi chú, phân công, hoàn tất/lưu trữ/khôi phục, form tạo lead kiểm tra dữ liệu. Mobile chuyển danh sách/chat và drawer thông tin.
+- Đây là **demo cục bộ**: localStorage có kiểm tra snapshot và báo lỗi lưu; tin nhắn không gửi qua Botcake, lead chưa ghi Supabase, AI switch chỉ lưu cờ. Soạn nháp dùng FAQ trong `mock_data.json` để người dùng duyệt, chưa phải AI Engine. File mẫu không có hội thoại nên đã bổ sung fixture minh họa; không có dữ liệu khách thật.
+- Đã kiểm tra riêng Inbox: build Next 14, lint, 8 unit test và 4 Playwright scenario (desktop/mobile; 360–1920 px) đạt. Next 14 trên Windows cần `experimental.webpackBuildWorker: false` để tránh manifest rỗng khi build; giữ workaround trong cấu hình chung.
+- Đang đối chiếu phần Training/API mới trên origin/main và tạo checkpoint Inbox trước khi tích hợp; chưa báo push hoàn tất cho mốc này. Giữ nguyên thay đổi schema bàn giao cục bộ, không stage schema trong task giao diện. Lead demo cần ánh xạ sang phễu N1–N5/N0 khi nối CRM/Supabase.
