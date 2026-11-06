@@ -376,6 +376,7 @@ app-root/
 - Widget hủy bộ hẹn giờ tự mở form khi khách mở form bằng nút hoặc đóng Widget, tránh ghi đè giờ hẹn đang chỉnh. Giữ luồng tự mở form và kiểm tra lịch Google Calendar theo giờ khách đã chọn.
 - Kiểm tra Playwright với chiều rộng 360, 390 và 414 px, mô phỏng vùng nhìn còn 300 px, đóng bàn phím, gửi tin và iframe nhúng. Kiểm tra thêm kiểu thu nhỏ cả bố cục ở 360 px. Chưa kiểm tra bàn phím trên điện thoại thật.
 - Production build, lint, TypeScript, 34 test logic/API/SQL và 17 kịch bản Playwright đạt trên bản cục bộ.
+- Đã mở [PR #1](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/1) từ `hien/frontend-ai` vào `main` và tag Chinh để tiếp nhận hai mốc. Bước kế tiếp là tích hợp, thử bàn phím trên Safari iOS và Chrome Android thật, rồi xác minh bản Vercel.
 
 
 
