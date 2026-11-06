@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
+import { BarChart3, MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function DashboardLayout({
@@ -35,6 +35,11 @@ export default function DashboardLayout({
       icon: Users,
     },
     {
+      name: "Báo cáo",
+      href: "/dashboard",
+      icon: BarChart3,
+    },
+    {
       name: "Cài đặt kênh",
       href: "/settings",
       icon: Settings,
@@ -61,7 +66,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex max-w-full items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+          <nav aria-label="Điều hướng quản trị" className="hidden max-w-full items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60 md:flex">
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -69,6 +74,7 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex shrink-0 items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? "bg-white text-slate-900 shadow-sm border border-slate-200/70"

@@ -362,5 +362,13 @@ app-root/
   - Sinh 2 file Excel mẫu tĩnh `.xlsx` phục vụ tải trực tiếp: `public/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx` và `knowledge-base/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx`.
 - **5. Kiểm thử:** 34/34 unit tests pass 100%, Next.js build 17/17 trang tĩnh đạt 100%.
 
+### Mốc Báo cáo thống kê — 06/11/2026 (Hiền)
+
+- Nhận `af4bce8` từ Chinh. Giữ quyết định đấu nối Botcake Fanpage, quét QR Zalo và gắn token Telegram thật ở chặng cuối.
+- `/dashboard` có bốn KPI, phân bổ hội thoại theo Facebook Messenger/Zalo cá nhân/Web Widget và phễu N1 → N3 → N4. Tab Báo cáo có trong điều hướng quản trị và thanh điều hướng di động.
+- Hội thoại đọc từ Inbox demo của trình duyệt, gồm cả hội thoại lưu trữ. Lead đếm hồ sơ ở giai đoạn hiện tại N1–N5. Lịch đếm loại xem sảnh, trừ lịch đã hủy. Hai số đếm CRM theo chế độ CRM của workspace và dùng đăng nhập hiện có khi cần.
+- Tỷ lệ AI 82% và phễu 50 → 20 → 8 được ghi rõ là minh họa. Cần dữ liệu kết quả tự xử lý và lịch sử đổi giai đoạn để tính hai chỉ số thực tế.
+- Kiểm tra production build, lint/TypeScript và Playwright cho tab Báo cáo ở 360 px, số đếm Inbox/CRM, cách loại N0 và lịch hủy, tỷ trọng theo kênh và nhãn minh họa.
+
 
 
