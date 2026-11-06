@@ -49,6 +49,15 @@ export async function POST(req: NextRequest) {
         `🤝 *Loại hẹn:* Xem sảnh tiệc & Thử món thực đơn\n` +
         `⏰ *Thời gian hẹn:* ${data.appointmentTime || "Cuối tuần này"}\n` +
         `🌐 *Kênh:* #${data.platform || "Botcake"}`;
+    } else if (type === "handover" || type === "human_takeover") {
+      messageText = `⚡ *[OMNICHAT AI] YÊU CẦU NHÂN VIÊN THẬT TIẾP QUẢN!*\n` +
+        `━━━━━━━━━━━━━━━━━━\n` +
+        `👤 *Khách hàng:* ${data.name || "Khách hàng"}\n` +
+        `🌐 *Kênh:* #${data.platform || "Web Widget"}\n` +
+        `💬 *Nội dung câu hỏi:* _"${data.message || ""}"_\n` +
+        `🤖 *Hành động của Bot:* Đã TỰ ĐỘNG TẮT AI để tránh trả lời lung tung ngoài phạm vi.\n` +
+        `👉 *Yêu cầu:* Nhân viên tư vấn vào Inbox hỗ trợ khách ngay!\n` +
+        `⏰ *Thời gian:* ${now}`;
     } else {
       // Test message
       messageText = `🔔 *[OMNICHAT AI] THÔNG BÁO TEST HỆ THỐNG*\n` +

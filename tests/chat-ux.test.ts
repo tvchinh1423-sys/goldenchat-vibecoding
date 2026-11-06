@@ -25,6 +25,10 @@ test("API chat provides concise answers without repeating assistant introduction
   assert.equal(dataFallback.success, true);
   assert.equal(dataFallback.reply.includes("em là trợ lý tư vấn"), false);
   assert.match(dataFallback.reply, /Quý khách cần hỗ trợ thêm thông tin cụ thể/);
+  assert.equal(dataFallback.aiEnabled, false);
+  assert.equal(dataFallback.handoff, true);
+  assert.equal(dataFallback.requiresHuman, true);
+  assert.match(dataFallback.reply, /chuyển tiếp hội thoại ngay cho chuyên viên tư vấn/);
 });
 
 test("API chat returns official Golden Palace URLs for menu, maps and spaces for 1-tap navigation", async () => {
@@ -97,4 +101,22 @@ test("API chat identifies appointment intent when user says chị muốn đặt 
   assert.equal(data.visitType, "xem_sanh");
   assert.match(data.reply, /8:00 đến 10:30 sáng/);
   assert.match(data.reply, /Tên cùng Số điện thoại/);
+});
+
+test("API chat disables AI and initiates human handoff when question is out of scope", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Bên em có bán bảo hiểm xe máy không?", messageCount: 2 }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.aiEnabled, false);
+  assert.equal(data.handoff, true);
+  assert.equal(data.requiresHuman, true);
+  assert.equal(data.triggeredRule, "out_of_scope_human_handoff");
+  assert.match(data.reply, /nằm ngoài phạm vi/);
+  assert.match(data.reply, /tạm ngắt AI/);
+  assert.match(data.reply, /chuyên viên tư vấn tiếp quản/);
 });

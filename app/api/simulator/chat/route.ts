@@ -717,11 +717,20 @@ export async function POST(req: NextRequest) {
     }
 
     // 6.7. TÌM KIẾM ĐỐI CHIẾU THEO TỪ KHÓA TRONG KNOWLEDGE BASE (FALLBACK PHÙ HỢP NHẤT)
+    const STOPWORDS = new Set([
+      "không", "được", "hoặc", "trong", "nhiều", "những", "mình", "người",
+      "nhau", "cũng", "đang", "từng", "nào", "phải", "thế", "này", "kia",
+      "cho", "bên", "quý", "khách", "nhé", "ạ", "giúp", "em", "anh", "chị"
+    ]);
+
     for (const item of knowledgeBase) {
       const qLower = item.question.toLowerCase();
-      const keywords = qLower.split(" ").filter((w: string) => w.length > 3);
-      const matchCount = keywords.filter((w: string) => lower.includes(w)).length;
-      if (matchCount >= 2) {
+      const rawWords = qLower.split(/\s+/).map((w: string) => w.replace(/[?,.!:;()"]/g, "").trim());
+      const uniqueKeywords: string[] = Array.from(
+        new Set<string>(rawWords.filter((w: string) => w.length > 3 && !STOPWORDS.has(w))),
+      );
+      const matchCount = uniqueKeywords.filter((w) => lower.includes(w)).length;
+      if (uniqueKeywords.length >= 2 && matchCount >= 2) {
         return respond({
           success: true,
           reply: item.answer,
@@ -734,10 +743,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Trả lời mặc định (Ngắn gọn, không lặp lại giới thiệu trợ lý tư vấn)
+    // 7. Câu hỏi nằm ngoài phạm vi tri thức / không trả lời được -> Tự động tắt AI & Chuyển giao nhân viên thật tiếp quản (Human Handoff)
     return respond({
       success: true,
-      reply: `Dạ Quý khách cần hỗ trợ thêm thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
+      reply: `Dạ câu hỏi này của Quý khách nằm ngoài phạm vi thông tin tự động của em hoặc cần kiểm tra thực tế. Em xin phép tạm ngắt AI và chuyển tiếp hội thoại ngay cho chuyên viên tư vấn tiếp quản hỗ trợ trực tiếp Quý khách nhé ạ! Quý khách cần hỗ trợ thêm thông tin cụ thể có thể liên hệ trực tiếp Hotline/Zalo: 0228 659 5959.`,
+      aiEnabled: false,
+      handoff: true,
+      requiresHuman: true,
+      triggeredRule: "out_of_scope_human_handoff",
       suggestedQuestions: [
         "Thực đơn tiệc cưới bao nhiêu một bàn?",
         "Cho tôi xem ảnh không gian sảnh tiệc",

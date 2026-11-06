@@ -260,7 +260,13 @@ export function ChatPane({
               ? "Đã hoàn tất tư vấn"
               : "Hội thoại đang mở"}
         </span>
-        <span>Chỉ hiển thị trong bản demo</span>
+        {conversation.aiEnabled ? (
+          <span>Chỉ hiển thị trong bản demo</span>
+        ) : (
+          <span className="font-medium text-amber-700 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+            ⚡ AI đã tạm ngắt · Chuyên viên tiếp quản
+          </span>
+        )}
       </div>
       <div className="flex shrink-0 justify-end gap-3 border-b px-4 py-2 text-[10px] text-muted-foreground sm:hidden">
         <button

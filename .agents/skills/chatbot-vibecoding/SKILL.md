@@ -434,6 +434,26 @@ app-root/
 - **3. Kiểm thử & Trạng thái:**
   - 40/40 unit tests pass 100%. Next.js build 17/17 trang tĩnh thành công.
 
+### Mốc Cập Nhật Cơ Chế Tự Động Ngắt AI & Chuyển Giao Nhân Viên Thật (Autonomous Human Handoff) — 06/11/2026 (Chinh)
+
+- **1. Cập nhật Bộ Nguyên Tắc An Toàn (Guardrails — "Bot không được làm gì"):**
+  - Bổ sung điều cấm cốt lõi vào toàn bộ các Preset (Golden Palace, OmniTech B2B, Aura Spa) và `DEFAULT_BOT_CONFIG` trong `lib/mock-service.ts`:
+    > *"Khi gặp câu hỏi nằm ngoài phạm vi tri thức hoặc chưa được xác thực: Tuyệt đối không suy đoán hay trả lời lung tung. Tự động tắt chế độ AI của hội thoại và chuyển giao cho nhân viên tư vấn thật tiếp quản ngay lập tức."*
+  - Tại Tab 3 "Bot không được làm gì" trên màn hình Huấn Luyện Bot (`/training`): Bổ sung Banner cảnh báo đỏ-vàng nổi bật thể hiện **Nguyên tắc an toàn tối thượng (Human Handoff)** và cơ chế ngắt AI tự động khi ngoài phạm vi.
+  - Đồng bộ cập nhật tài liệu `SPEC_GIAO_DIEN_TINH_NANG.md` và `handoff/SPEC_GIAO_DIEN_TINH_NANG.md`.
+- **2. Nâng cấp Bộ Phân Tích & Định Tuyến Chat (`app/api/simulator/chat/route.ts`):**
+  - **Khắc phục lỗi bắt nhầm từ khóa (Stop words collision):** Ở Mục 6.7, trước đây từ dừng như `"không?"` bị đếm lặp khiến câu hỏi lạ ngoài phạm vi bị gán nhầm vào FAQ. Đã xây dựng bộ lọc `STOPWORDS` chuẩn hóa tiếng Việt, chỉ so khớp từ khóa nghiệp vụ thực sự có nghĩa.
+  - **Kích hoạt Human Handoff tại Mục 7:** Khi câu hỏi nằm ngoài phạm vi tri thức, bot tuyệt đối không trả lời lung tung mà phản hồi rõ ràng: *"Dạ câu hỏi này của Quý khách nằm ngoài phạm vi thông tin tự động của em hoặc cần kiểm tra thực tế. Em xin phép tạm ngắt AI và chuyển tiếp hội thoại ngay cho chuyên viên tư vấn tiếp quản hỗ trợ trực tiếp Quý khách nhé ạ!"*, đồng thời trả về cờ `aiEnabled: false`, `handoff: true`, `requiresHuman: true`.
+- **3. Đồng bộ Trải Nghiệm Hộp Thư (Inbox) & Web Chat Widget:**
+  - **Inbox Workspace (`components/inbox/inbox-workspace.tsx` & `chat-pane.tsx`):** Tự động gạt công tắc Switch AI sang vị trí TẮT (OFF) cho hội thoại đó, hiển thị thông báo toast cho nhân viên và huy hiệu trạng thái: `⚡ AI đã tạm ngắt · Chuyên viên tiếp quản`.
+  - **Web Chat Widget (`app/widget/page.tsx`):**
+    - Header chuyển sang trạng thái: `⚡ Đã ngắt AI · Tư vấn viên tiếp quản`.
+    - Dưới tin nhắn của Bot render thẻ hỗ trợ nhân viên thật với 2 nút 1-chạm: Gọi Hotline 0228 659 5959 và Nhắn Zalo tư vấn.
+    - Tự động kích hoạt gọi API Telegram Alert `type: "handover"` gửi thông báo tức thì cho ban quản lý.
+- **4. Kiểm thử tự động & Đóng gói:**
+  - Bổ sung unit test case kiểm tra cơ chế ngắt AI và Human Handoff trong `tests/chat-ux.test.ts`, nâng tổng số test lên **41/41 tests pass 100%**.
+  - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
+
 
 
 
