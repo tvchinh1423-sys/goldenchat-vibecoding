@@ -406,6 +406,21 @@ app-root/
   - 39/39 unit tests pass 100%. Next.js production build 17/17 trang tĩnh thành công.
   - Khởi động lại server daemon cổng 3000 phục vụ trải nghiệm test mượt mà trên mobile.
 
+### Mốc Khắc Phục Lỗi Nhận Diện Số Khách 8978 & Tối Ưu Bóc Tách Đặt Lịch Đa Lượt — 06/11/2026 (Chinh)
+
+- **1. Phân tích & Tự nhận định lỗi từ ảnh chụp thực tế:**
+  - Khách nhắn: *"9h ngày 12/11, tên Chi, số điện thoại 093488978"*.
+  - **Lỗi 1 (Mất Context):** Ở lượt trước, `bookingDraft` trả về null khiến client không lưu context. Khi sang lượt 2, tin nhắn không chứa từ khóa "đặt lịch" nên hệ thống bỏ qua nhánh booking.
+  - **Lỗi 2 (SĐT 9 chữ số):** Regex cũ chỉ nhận 10 số `0[35789]\d{8}`, bỏ qua số `093488978` (9 số) dù có tiền tố "số điện thoại".
+  - **Lỗi 3 (Thảm họa Regex parseCapacity):** Parser dung tích sảnh dùng `\d{2,4}\s*$` không có dấu neo `^` ở đầu câu, dẫn tới việc nuốt 4 chữ số cuối của SĐT (`8978`) và biến nó thành "quy mô đại lễ trên 8978 khách (khoảng 898 mâm)".
+- **2. Giải pháp khắc phục triệt để:**
+  - `parseCapacity` (`app/api/simulator/chat/route.ts`): Bổ sung chặn tuyệt đối các câu có chứa SĐT, ngày tháng, giờ hẹn; neo `^...$` để chỉ parse số khách khi toàn bộ tin nhắn chỉ là một con số đơn lẻ.
+  - `booking-extractor.ts`: Hỗ trợ bóc tách SĐT linh hoạt (9 đến 11 số, có tiền tố `số điện thoại`, `sđt`, `phone`, có dấu cách/chấm).
+  - Định tuyến ý định: Bổ sung `hasExplicitBookingDetails` tự động nhận diện tin nhắn chứa thông tin đặt lịch (Tên + Giờ/Ngày/SĐT), kết hợp với `awaitingInfo: true` từ lượt trước để tự động chốt lịch hẹn mà không bị rò rỉ sang các bộ phân tích khác.
+- **3. Kiểm thử tự động:**
+  - Bổ sung unit test case kiểm tra câu `"9h ngày 12/11, tên Chi, số điện thoại 093488978"` tự động chốt lịch và không bị nhầm 8978 khách.
+  - Tổng số test: **40/40 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
+
 
 
 

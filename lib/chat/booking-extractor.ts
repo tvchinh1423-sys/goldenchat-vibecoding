@@ -16,6 +16,7 @@ export interface BookingDraftInfo {
   notes: string;
   isComplete: boolean;
   missingFields: ("fullName" | "phone" | "dateTime")[];
+  awaitingInfo?: boolean;
 }
 
 // Chuẩn hóa tên (Viết hoa chữ cái đầu: "vân" -> "Vân")
@@ -65,10 +66,30 @@ export function extractBookingDetails(
   }
 
   // 2. Trích xuất Số điện thoại (Phone)
+  // Hỗ trợ số điện thoại 9 - 11 chữ số, có dấu cách, dấu chấm, hoặc sau từ khóa 'sđt', 'số điện thoại'
   let extractedPhone = existingContext?.phone || null;
-  const phoneMatch = clean.match(/(0[3|5|7|8|9][0-9]{8})\b/);
-  if (phoneMatch) {
-    extractedPhone = phoneMatch[0];
+
+  // 2.1. Có tiền tố chỉ định: "số điện thoại", "sđt", "phone", "tel"
+  const explicitPhoneMatch = clean.match(/(?:số\s*điện\s*thoại|sđt|sdt|đt|phone|tel)\s*[:=]?\s*([0-9\s.-]{8,15})/i);
+  if (explicitPhoneMatch) {
+    const raw = explicitPhoneMatch[1].replace(/[\s.-]/g, "");
+    if (/^0?[0-9]{8,11}$/.test(raw)) {
+      extractedPhone = raw.startsWith("0") ? raw : "0" + raw;
+    }
+  }
+
+  // 2.2. Nhận diện số điện thoại tự nhiên trong câu (bắt đầu bằng 0, độ dài 9-11 số)
+  if (!extractedPhone) {
+    const phoneMatches = clean.match(/\b(0[1-9][0-9\s.-]{7,12})\b/g);
+    if (phoneMatches) {
+      for (const m of phoneMatches) {
+        const raw = m.replace(/[\s.-]/g, "");
+        if (/^0[1-9][0-9]{7,10}$/.test(raw)) {
+          extractedPhone = raw;
+          break;
+        }
+      }
+    }
   }
 
   // 3. Trích xuất Loại sự kiện (Event Type)

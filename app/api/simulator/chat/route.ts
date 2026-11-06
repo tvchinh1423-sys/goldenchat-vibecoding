@@ -105,16 +105,23 @@ export async function POST(req: NextRequest) {
       Boolean(visitIntent(trimmedMsg)) ||
       /\b(đặt lịch|dat lich|muốn đặt|đặt hẹn|dat hen|hẹn lịch|hen lich|hẹn|xem sảnh|thử món|qua xem|ghé xem|đến xem|tư vấn trực tiếp|tư vấn)\b/i.test(lower);
 
-    // Tiếp nối nếu trước đó đang có booking draft chờ bổ sung SĐT hoặc Tên
+    // Tiếp nối nếu trước đó đang có booking draft chờ bổ sung SĐT, Tên, Ngày/Giờ hoặc bot vừa hỏi
     const isContinuingDraft = Boolean(
       bookingDraftContext &&
-      (bookingDraftContext.fullName || bookingDraftContext.dateTimeIso) &&
-      (bookingDetails.phone || bookingDetails.fullName)
+      (bookingDraftContext.fullName || bookingDraftContext.dateTimeIso || bookingDraftContext.phone || bookingDraftContext.awaitingInfo)
+    );
+
+    // Hoặc tin nhắn chứa thông tin đặt lịch rõ ràng (Tên + SĐT, hoặc Tên + Ngày/Giờ, hoặc SĐT + Ngày/Giờ)
+    const hasExplicitBookingDetails = Boolean(
+      (bookingDetails.fullName && (bookingDetails.dateTimeIso || bookingDetails.phone)) ||
+      (bookingDetails.phone && bookingDetails.dateTimeIso) ||
+      (bookingDetails.phone && bookingDetails.fullName) ||
+      (/\btên\b/i.test(lower) && /\b(sđt|số điện thoại|sdt|phone)\b/i.test(lower))
     );
 
     const isDepositQuestion = /\b(cọc|coc|giữ sảnh|giu sanh)\b/i.test(lower) && !/\b(lịch|hẹn|booking|qua xem|đến xem)\b/i.test(lower);
 
-    if ((hasBookingKeywords || isContinuingDraft) && !isDepositQuestion) {
+    if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !isDepositQuestion) {
       // 3.1. ĐÃ ĐẦY ĐỦ THÔNG TIN (Tên + SĐT + Ngày Giờ) -> TỰ ĐỘNG CHỐT LỊCH HẸN
       if (bookingDetails.isComplete) {
         return respond({
@@ -168,13 +175,44 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 3.4. CHỈ NÓI ĐẶT LỊCH CHUNG CHUNG (Ví dụ: "chị muốn đặt lịch xem sảnh" - Chưa có cả thời gian lẫn tên/SĐT)
+      // 3.4. ĐÃ CÓ TÊN & SĐT NHƯNG THIẾU NGÀY GIỜ (Ví dụ: "tên Chi, 093488978")
+      if (bookingDetails.fullName && bookingDetails.phone && !bookingDetails.dateTimeIso) {
+        return respond({
+          success: true,
+          reply: `Dạ em đã ghi nhận thông tin của chị ${bookingDetails.fullName} (SĐT ${bookingDetails.phone}). Chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng) ạ?`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: "dateTime",
+          suggestedQuestions: [
+            "Sáng mai lúc 9h",
+            "Cuối tuần này lúc 9h30",
+            "Hotline hỗ trợ",
+          ],
+        });
+      }
+
+      // 3.5. CHỈ NÓI ĐẶT LỊCH CHUNG CHUNG (Ví dụ: "chị muốn đặt lịch xem sảnh" - Chưa có cả thời gian lẫn tên/SĐT)
       return respond({
         success: true,
         reply: `Dạ chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng), và em xin Tên cùng Số điện thoại của chị nhé ạ?`,
         appointmentIntent: true,
         autoBooked: false,
-        bookingDraft: null, // KHÔNG BỊA THỜI GIAN ẢO!
+        bookingDraft: {
+          fullName: null,
+          phone: null,
+          dateStr: null,
+          timeStr: null,
+          dateTimeIso: null,
+          eventType: bookingDetails.eventType || "xem_sanh",
+          eventTypeName: "Tham quan & Xem sảnh tiệc",
+          guestsCount: 2,
+          notes: trimmedMsg,
+          isComplete: false,
+          missingFields: ["dateTime", "fullName", "phone"],
+          awaitingInfo: true,
+        },
         visitType: bookingDetails.eventType,
         suggestedQuestions: [
           "Mai tôi qua lúc 9h sáng",
@@ -358,6 +396,14 @@ export async function POST(req: NextRequest) {
     const parseCapacity = (text: string) => {
       const t = text.toLowerCase().trim();
 
+      // Nếu câu có chứa SĐT, ngày tháng, giờ hẹn hoặc thông tin đặt lịch -> TUYỆT ĐỐI KHÔNG parse thành số khách!
+      if (
+        /\b(sđt|sdt|điện thoại|dien thoai|phone|tel|ngày|ngay|tháng|thang|hôm nay|mai|lúc|luc|giờ|gio)\b/i.test(t) ||
+        /(0[1-9][0-9]{7,10})/.test(t)
+      ) {
+        return null;
+      }
+
       // 1. Số bàn / số mâm (VD: '30 bàn', '35 mâm', 'khoảng 30 mâm')
       const tableMatch = t.match(/(\d+)\s*(?:bàn|mâm|ban|mam)/);
       if (tableMatch) {
@@ -372,8 +418,8 @@ export async function POST(req: NextRequest) {
         return { guests, tables: Math.round(guests / 10) };
       }
 
-      // 3. Số độc lập khi khách chỉ trả lời con số (VD: '300', '350', '50', 'tầm 300')
-      const pureNumMatch = t.match(/(?:khoảng|tầm|tam|khoang|du kien|dự kiến)?\s*(\d{2,4})\s*$/);
+      // 3. Số độc lập khi khách CHỈ TRẢ LỜI DUY NHẤT CON SỐ (VD: '300', '350', '50', 'tầm 300')
+      const pureNumMatch = t.match(/^(?:khoảng|tầm|tam|khoang|du kien|dự kiến)?\s*(\d{2,3}|1000)\s*$/);
       if (pureNumMatch) {
         const num = parseInt(pureNumMatch[1], 10);
         if (num <= 80) {

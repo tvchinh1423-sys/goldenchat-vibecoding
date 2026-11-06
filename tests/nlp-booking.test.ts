@@ -96,3 +96,30 @@ test("Chat Simulator API auto-books in 1 turn if customer supplies all informati
   assert.equal(data.bookingDraft.phone, "0987654321");
   assert.equal(data.bookingDraft.isComplete, true);
 });
+
+test("Chat Simulator correctly books when customer provides time, name, and phone (e.g. 9h ngày 12/11, tên Chi, số điện thoại 093488978) without mistaking phone as guest capacity", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "9h ngày 12/11, tên Chi, số điện thoại 093488978",
+      channel: "web",
+    }),
+  });
+  const res = await postChatSimulator(req);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+
+  assert.equal(data.success, true);
+  assert.equal(data.appointmentIntent, true);
+  assert.equal(data.autoBooked, true);
+  assert.equal(data.bookingDraft.fullName, "Chi");
+  assert.equal(data.bookingDraft.phone, "093488978");
+  assert.equal(data.bookingDraft.dateStr, "12/11/2026");
+  assert.equal(data.bookingDraft.timeStr, "09:00");
+  assert.match(data.reply, /xác nhận lịch/i);
+  assert.match(data.reply, /Chi/);
+  // Tuyệt đối không bị nhầm 8978 khách!
+  assert.doesNotMatch(data.reply, /8978\s*khách/i);
+  assert.doesNotMatch(data.reply, /quy mô đại lễ/i);
+});
