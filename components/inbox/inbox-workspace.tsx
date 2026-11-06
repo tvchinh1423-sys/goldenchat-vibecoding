@@ -493,7 +493,7 @@ export function InboxWorkspace() {
     <main
       ref={viewportRef}
       data-chat-open={chatOpen ? "" : undefined}
-      className="group/chat flex h-dvh flex-col overflow-hidden max-md:fixed max-md:inset-x-0 max-md:top-[var(--chat-top,0px)] max-md:h-[var(--chat-height,100dvh)] max-md:pb-[calc(4rem+env(safe-area-inset-bottom))] max-md:data-[keyboard-open]:pb-0 max-md:[@media(max-height:420px)]:data-[chat-open]:pb-0"
+      className="app-safe-x group/chat flex h-dvh flex-col overflow-hidden pt-[var(--safe-top)] max-md:fixed max-md:inset-x-0 max-md:top-[var(--chat-top,0px)] max-md:h-[var(--chat-height,100dvh)] max-md:pb-[var(--mobile-nav-height)] max-md:data-[keyboard-open]:pb-0 max-md:[@media(max-height:420px)]:data-[chat-open]:pb-0"
     >
       <header className="z-10 flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b bg-white px-4 py-3 max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:group-data-[chat-open]/chat:hidden sm:px-6 lg:px-7">
         <div className="flex items-center gap-3">
@@ -730,7 +730,7 @@ export function InboxWorkspace() {
         </div>
       )}
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
-        <DialogContent className="inset-y-0 left-auto right-0 top-0 h-dvh max-h-dvh w-full max-w-sm translate-x-0 translate-y-0 rounded-none p-0">
+        <DialogContent className="left-auto right-0 top-[var(--chat-top,0px)] h-[var(--chat-height,100dvh)] max-h-none w-full max-w-sm translate-x-0 translate-y-0 rounded-none !pt-[var(--safe-top)] !pb-[var(--safe-bottom)] !pl-[var(--safe-left)] !pr-[var(--safe-right)] [--dialog-top-inset:var(--safe-top)]">
           <DialogTitle className="sr-only">Thông tin khách hàng</DialogTitle>
           <DialogDescription className="sr-only">
             Thông tin liên hệ, ghi chú nội bộ và hồ sơ lead.

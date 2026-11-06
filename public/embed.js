@@ -106,7 +106,8 @@
       height: 100%;
       border: none;
     }
-    @media (max-width: 480px) {
+    @media (max-width: 480px),
+      (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
       .omnichat-iframe-wrapper {
         position: fixed;
         top: var(--omnichat-top, 0px);
@@ -117,7 +118,11 @@
         height: var(--omnichat-height, 100dvh);
         max-width: 100vw;
         max-height: none;
+        box-sizing: border-box;
+        border: 0;
         border-radius: 0;
+        padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
         z-index: 1000000;
       }
     }

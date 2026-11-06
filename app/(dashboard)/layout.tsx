@@ -52,9 +52,9 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
+    <div className="app-safe-x min-h-dvh bg-[#f8fafc] flex flex-col font-sans">
       {/* Top Navigation Bar theo chuẩn UI Mẫu */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 pb-2.5 pt-[calc(0.625rem+var(--safe-top))] md:px-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 md:gap-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
@@ -122,7 +122,7 @@ export default function DashboardLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 max-w-[1700px] w-full mx-auto">
+      <main className="flex-1 p-3 pb-[calc(var(--mobile-nav-height)+1rem)] sm:px-4 sm:pt-4 md:p-6 max-w-[1700px] w-full mx-auto">
         {children}
       </main>
 

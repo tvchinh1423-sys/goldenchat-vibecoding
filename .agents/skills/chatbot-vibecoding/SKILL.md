@@ -378,6 +378,13 @@ app-root/
 - Production build, lint, TypeScript, 34 test logic/API/SQL và 17 kịch bản Playwright đạt trên bản cục bộ.
 - Đã mở [PR #1](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/1) từ `hien/frontend-ai` vào `main` và tag Chinh để tiếp nhận hai mốc. Bước kế tiếp là tích hợp, thử bàn phím trên Safari iOS và Chrome Android thật, rồi xác minh bản Vercel.
 
+### Mốc giao diện iPhone và Android — 06/11/2026 (Hiền)
+
+- Làm trên worktree riêng trong lúc workspace chính xử lý merge, sau đó nhận mốc tích hợp `8eef0c9` và tiếp tục bàn giao qua PR #1. Giữ luồng đặt lịch tự động và chuyển giao tư vấn viên từ Chinh.
+- Giao diện quản trị và Inbox chừa vùng an toàn cho tai thỏ/thanh Home. Thanh điều hướng có vùng chạm tối thiểu 44 px theo chiều dọc. Ô nhập trên thiết bị cảm ứng dùng chữ 16 px và trình duyệt cho phép phóng to.
+- Form CRM và form đặt lịch Widget cuộn trong vùng nhìn khi bàn phím mở. Widget có nút lớn hơn và dùng toàn màn hình cả khi điện thoại xoay ngang. Trang Huấn luyện có lối tắt đến phần Thử bot trên mobile.
+- Production build, lint/TypeScript, 41 test logic/API/SQL, 20 kịch bản Chrome và 5 kịch bản mobile WebKit đạt. Đã xem ảnh mô phỏng Widget trên iPhone và Báo cáo trên Android. Kết quả là mô phỏng trên máy tính, cần thử bàn phím và chế độ PWA trên thiết bị thật sau khi tích hợp.
+
 ### Mốc Bổ Sung Nút Xóa Khách Hàng (Delete Lead) & Tối Ưu Hiển Thị Xóa Lịch Hẹn — 06/11/2026 (Chinh)
 
 - **1. Nâng cấp Modal Hồ Sơ Khách Hàng (`components/crm/lead-editor.tsx`):**

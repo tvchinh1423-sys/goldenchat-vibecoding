@@ -462,6 +462,9 @@ export default function TrainingPage() {
             )}
           </div>
 
+          <a href="#thu-bot" className="inline-flex min-h-11 items-center rounded-xl bg-blue-50 px-3 text-xs font-semibold text-blue-700 lg:hidden">
+            Thử bot
+          </a>
           <button
             onClick={() => alert("Lịch sử phiên bản: v1.1.0 - Golden Palace Showcase đã cập nhật.")}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs transition"
@@ -1350,7 +1353,7 @@ export default function TrainingPage() {
         </div>
 
         {/* ===================== CỘT PHẢI (5 CỘT): KHUNG THỬ BOT (SIMULATOR) ===================== */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[780px] overflow-hidden sticky top-16">
+        <div id="thu-bot" className="flex h-[min(42rem,90dvh)] min-h-[32rem] min-w-0 scroll-mt-[calc(4rem+var(--safe-top))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-16 lg:col-span-5 lg:h-[780px]">
           {/* Header Simulator Khớp Ảnh 2 */}
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div className="flex items-center gap-2">

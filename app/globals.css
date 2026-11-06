@@ -8,6 +8,11 @@
     --foreground: 233 34% 17%;
     --border: 231 30% 90%;
     --primary: 216 100% 58%;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --mobile-nav-height: calc(3.75rem + var(--safe-bottom));
   }
   * {
     @apply border-border;
@@ -29,7 +34,47 @@
   }
 }
 
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  body .widget-viewport {
+    inset: var(--chat-top, 0px) 0 auto;
+    height: var(--chat-height, 100dvh);
+  }
+
+  .widget-viewport .widget-panel {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .widget-viewport .widget-header {
+    padding-left: max(0.75rem, var(--safe-left));
+    padding-right: max(0.75rem, var(--safe-right));
+    padding-top: calc(0.75rem + var(--safe-top));
+  }
+
+  .widget-viewport .widget-launcher {
+    margin-top: auto;
+    margin-right: max(1rem, var(--safe-right));
+    margin-bottom: max(1rem, var(--safe-bottom));
+  }
+}
+
 @layer utilities {
+  .app-safe-x {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  @media (pointer: coarse) {
+    /* Keep editable fields legible without triggering Safari's focus zoom. */
+    input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"]),
+    select:not([multiple]),
+    textarea:not([readonly]) {
+      font-size: 1rem;
+    }
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #dcdfea transparent;

@@ -73,7 +73,7 @@ export function LeadEditor({
         if (!open && !disabled) onClose();
       }}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogTitle className="text-lg font-semibold">
           {lead ? "Hồ sơ khách hàng" : "Thêm khách hàng"}
         </DialogTitle>

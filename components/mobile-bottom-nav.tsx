@@ -46,7 +46,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
   return (
     <nav
       aria-label="Thanh điều hướng di động"
-      className={cn("fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/90 grid grid-cols-6 items-center py-1.5 px-1 pb-[max(env(safe-area-inset-bottom),6px)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden", className)}
+      className={cn("fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-6 items-center border-t border-slate-200/90 bg-white/95 pl-[max(0.25rem,var(--safe-left))] pr-[max(0.25rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden", className)}
     >
       {navItems.map((item) => {
         const isActive =
@@ -60,7 +60,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
             key={item.href}
             href={item.href}
             aria-current={isActive ? "page" : undefined}
-            className={`relative flex flex-col items-center justify-center whitespace-nowrap rounded-xl px-0.5 py-1 ${
+            className={`relative flex min-h-11 min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-0.5 ${
               isActive
                 ? "text-blue-600 font-bold"
                 : "text-slate-500 hover:text-slate-800 font-medium"
