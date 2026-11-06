@@ -180,10 +180,20 @@ function WebWidgetContent() {
           ],
         },
       ]);
+      window.dispatchEvent(new Event("storage"));
       setShowBookingModal(false);
       setActiveBookingDraft(null);
     } catch (e: any) {
       console.error("Auto booking error:", e);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `b-err-${Date.now()}`,
+          sender: "bot",
+          text: `⚠️ Lưu ý: ${e?.message || "Chưa lưu được thông tin"}. Quý khách có thể bấm nút "Đặt lịch" ở góc trên hoặc liên hệ Hotline 0228 6595 959 để được hỗ trợ nhé ạ!`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
     }
   };
 

@@ -71,8 +71,13 @@ export function CRMDashboard() {
     const storage = (e: StorageEvent) => {
       if (e.key === CRM_STORAGE_KEY || e.key === null) void refresh();
     };
+    const crmChange = () => void refresh();
     window.addEventListener("storage", storage);
-    return () => window.removeEventListener("storage", storage);
+    window.addEventListener("omnichat-crm-change", crmChange);
+    return () => {
+      window.removeEventListener("storage", storage);
+      window.removeEventListener("omnichat-crm-change", crmChange);
+    };
   }, [refresh]);
   async function mutate(operation: () => Promise<CRMState>, message: string) {
     if (busy) throw new CRMError("Đang lưu thay đổi trước. Vui lòng chờ.");

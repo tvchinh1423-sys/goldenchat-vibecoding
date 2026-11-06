@@ -421,6 +421,19 @@ app-root/
   - Bổ sung unit test case kiểm tra câu `"9h ngày 12/11, tên Chi, số điện thoại 093488978"` tự động chốt lịch và không bị nhầm 8978 khách.
   - Tổng số test: **40/40 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
 
+### Mốc Sửa Lỗi Lưu Khách Hàng Vào CRM (Lead Validation & Auto-Sync) — 06/11/2026 (Chinh)
+
+- **1. Nguyên nhân Lead chưa lưu vào CRM:**
+  - Khách nhập SĐT `093488978` (9 chữ số). Trong khi đó, hàm `validateLead` (`lib/crm/model.ts`) áp đặt regex cứng `/^0[35789]\d{8}$/` (chỉ chấp nhận đúng 10 số).
+  - Khi bóc tách thành công ở chat, widget gọi `saveChatBooking` nhưng bị `validateLead` quăng lỗi `CRMError` ("Vui lòng nhập số di động Việt Nam hợp lệ (10 chữ số)") và bị catch ngầm, dẫn tới việc chưa kịp lưu vào `localStorage`/CRM.
+  - Ngoài ra, component `CRMDashboard` chỉ lắng nghe sự kiện `storage` (liên tab) mà không lắng nghe sự kiện nội bộ `omnichat-crm-change` do widget phát ra.
+- **2. Giải pháp khắc phục:**
+  - `lib/crm/model.ts`: Cập nhật regex SĐT trong `validateLead` thành `/^0[1-9]\d{7,10}$/` để hỗ trợ linh hoạt số điện thoại từ 9 đến 11 chữ số (chấp nhận cả số 9 số khách gõ vội, 10 số di động chuẩn và 11 số máy bàn).
+  - `components/crm/crm-dashboard.tsx`: Bổ sung event listener `omnichat-crm-change` để tự động làm mới danh sách Lead & Lịch hẹn ngay tức thì khi có booking mới từ chat widget.
+  - `app/widget/page.tsx`: Thêm thông báo phản hồi nếu có lỗi lưu dữ liệu, đồng thời kích hoạt sự kiện `storage` để đồng bộ đa màn hình.
+- **3. Kiểm thử & Trạng thái:**
+  - 40/40 unit tests pass 100%. Next.js build 17/17 trang tĩnh thành công.
+
 
 
 

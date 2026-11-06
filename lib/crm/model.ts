@@ -71,8 +71,8 @@ export function validateLead(value: unknown): LeadInput {
   if (!isRecord(value))
     throw new CRMError("Thông tin khách hàng không hợp lệ.");
   const phone = normalizePhone(textField(value.phone, 30, true));
-  if (!/^0[35789]\d{8}$/.test(phone))
-    throw new CRMError("Vui lòng nhập số di động Việt Nam hợp lệ (10 chữ số).");
+  if (!/^0[1-9]\d{7,10}$/.test(phone))
+    throw new CRMError("Vui lòng nhập số điện thoại hợp lệ (9 đến 11 chữ số).");
   const email = textField(value.email ?? "", 100);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     throw new CRMError("Email chưa hợp lệ.");

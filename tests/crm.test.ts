@@ -58,6 +58,7 @@ const memory = () => {
 };
 test("CRM validates phone, stage and event dates without inventing a year", () => {
   assert.equal(validateLead(input).phone, "0912345678");
+  assert.equal(validateLead({ ...input, phone: "093488978" }).phone, "093488978");
   assert.equal(
     validateLead({ ...input, event_date: "20/11" }).event_date,
     "20/11",
