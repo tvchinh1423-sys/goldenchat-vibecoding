@@ -375,6 +375,23 @@ app-root/
   - Bổ sung 2 test cases mới cho `deleteDemoLead` và API `DELETE /api/crm/leads/[id]`, nâng tổng số test lên **36/36 tests pass 100%**.
   - Next.js production build 17/17 trang tĩnh thành công 100%.
 
+### Mốc Trích Xuất Thông Tin Đặt Lịch Tự Động (Smart Booking NLP) & Tự Động Chốt Lịch Không Cần Điền Lại — 06/11/2026 (Chinh)
+
+- **1. Xây dựng Bộ Bóc Tách NLP Thông Minh (`lib/chat/booking-extractor.ts`):**
+  - Tự động trích xuất Tên khách (hỗ trợ `c tên vân`, `chị tên Vân`, `em tên Chinh`, `tên Dũng`...), Ngày hẹn (`ngày 9/11`, `mai`, `thứ 7`, `hôm nay`...), Giờ hẹn (`lúc 10h`, `10:00`, `8h30`, `14h`...), Số điện thoại và Loại lịch hẹn (`tư vấn trực tiếp`, `xem sảnh`, `thử món`).
+- **2. Hội Thoại Thông Minh Đa Lượt (Multi-turn Contextual Dialogue) (`app/api/simulator/chat/route.ts`):**
+  - **Trường hợp 1 (Thiếu thông tin):** Ví dụ khách nhắn *"chị muốn đặt lịch tư vấn trực tiếp ngày 9/11 lúc 10h , c tên vân"* -> Bot tự động nhận diện đã có Tên Vân, 10:00 ngày 09/11/2026, tư vấn trực tiếp; ân cần hỏi thêm Số điện thoại để gửi xác nhận.
+  - **Trường hợp 2 (Bổ sung SĐT ở tin nhắn tiếp theo):** Khách chỉ cần nhắn *"0912345678"* hoặc *"sđt chị 0912345678"* -> Bot tự động kết hợp với context đã lưu và **TỰ ĐỘNG CHỐT LỊCH HẸN LUÔN**.
+  - **Trường hợp 3 (Đầy đủ thông tin trong 1 câu):** Tự động tạo lịch ngay lập tức.
+- **3. Trải nghiệm Tự Động Hóa Không Cần Điền Lại (`app/widget/page.tsx`):**
+  - Toàn bộ thông tin bóc tách được **TỰ ĐỘNG ĐIỀN SẴN (Pre-fill)** vào form đặt lịch.
+  - Hiển thị **Thẻ Phiếu Hẹn Thông Minh (Smart Booking Preview Card)** ngay dưới bong bóng chat để khách theo dõi trực quan.
+  - Khi đã đủ thông tin (`autoBooked: true`), hệ thống tự động gọi `saveChatBooking`, đẩy Lead N3 lên CRM, gửi Telegram alert, phát chuông "Ting" và hiển thị nút **Google Calendar 1-chạm** mà **KHÔNG BẮT KHÁCH TỰ ĐIỀN LẠI BẤT KỲ FORM NÀO**!
+- **4. Kiểm thử tự động:**
+  - Bổ sung bộ test `tests/nlp-booking.test.ts` (3 test cases kiểm tra bóc tách NLP, hội thoại đa lượt và auto-book 1 lượt).
+  - Tổng số test: **39/39 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
+
+
 
 
 

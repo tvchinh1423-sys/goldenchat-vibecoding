@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
+import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
       guardrails = [],
       knowledgeBase = DEFAULT_KNOWLEDGE_BASE,
       businessProfile,
+      bookingDraftContext,
     } = await req.json();
 
     if (!message || !message.trim()) {
@@ -97,7 +99,74 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Nhận diện SĐT để tự động bóc tách Lead
+    // 3. Phân tích chi tiết Đặt lịch thông minh (NLP Smart Booking Extraction)
+    const bookingDetails = extractBookingDetails(trimmedMsg, bookingDraftContext);
+    const hasBookingKeywords =
+      Boolean(visitIntent(trimmedMsg)) ||
+      /\b(đặt lịch|dat lich|muốn đặt|đặt hẹn|dat hen|hẹn lịch|hen lich|hẹn|xem sảnh|thử món|qua xem|ghé xem|đến xem|tư vấn trực tiếp|tư vấn)\b/i.test(lower);
+
+    // Tiếp nối nếu trước đó đang có booking draft chờ bổ sung SĐT hoặc Tên
+    const isContinuingDraft = Boolean(
+      bookingDraftContext &&
+      (bookingDraftContext.fullName || bookingDraftContext.dateTimeIso) &&
+      (bookingDetails.phone || bookingDetails.fullName)
+    );
+
+    const isDepositQuestion = /\b(cọc|coc|giữ sảnh|giu sanh)\b/i.test(lower) && !/\b(lịch|hẹn|booking|qua xem|đến xem)\b/i.test(lower);
+
+    if ((hasBookingKeywords || isContinuingDraft) && !isDepositQuestion) {
+      // 3.1. ĐÃ ĐẦY ĐỦ THÔNG TIN (Tên + SĐT + Ngày Giờ) -> TỰ ĐỘNG CHỐT LỊCH HẸN
+      if (bookingDetails.isComplete) {
+        return respond({
+          success: true,
+          reply: `Dạ ${brandName} xin trân trọng xác nhận lịch ${bookingDetails.eventTypeName.toLowerCase()} của Quý khách ${bookingDetails.fullName} vào lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr} tại 98 Đông A, Nam Định. Em đã tự động ghi nhận lịch hẹn trên hệ thống! Chuyên viên đón tiếp sẽ liên hệ qua số ${bookingDetails.phone} để tiếp đón chu đáo nhất nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: true,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          suggestedQuestions: [
+            "Địa chỉ và bản đồ chỉ đường",
+            "Xem menu thực đơn tiệc cưới",
+            "Hotline hỗ trợ: 0228 6595 959",
+          ],
+        });
+      }
+
+      // 3.2. ĐÃ CÓ TÊN & NGÀY GIỜ, THIẾU SĐT (Như câu: "chị muốn đặt lịch tư vấn trực tiếp ngày 9/11 lúc 10h , c tên vân")
+      if (bookingDetails.fullName && bookingDetails.dateTimeIso && !bookingDetails.phone) {
+        return respond({
+          success: true,
+          reply: `Dạ ${brandName} đã ghi nhận thông tin đặt lịch của Quý khách ${bookingDetails.fullName} vào lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr} để ${bookingDetails.eventTypeName.toLowerCase()} tại 98 Đông A. Em đã tự động điền sẵn thông tin vào phiếu hẹn; ${bookingDetails.fullName} vui lòng cho em xin thêm Số điện thoại di động để bộ phận tiếp đón gửi tin nhắn xác nhận chu đáo nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: "phone",
+          suggestedQuestions: [
+            "Số điện thoại của em là: 0912 345 678",
+            "Đổi thời gian khác",
+            "Hotline tư vấn: 0228 6595 959",
+          ],
+        });
+      }
+
+      // 3.3. CHỈ NÓI ĐẶT LỊCH CHUNG CHUNG
+      return respond({
+        success: true,
+        reply: `Dạ ${brandName} trân trọng đón tiếp Quý khách tham quan sảnh và tư vấn trực tiếp (khung giờ vàng 8:00 đến 10:30 sáng hằng ngày) tại 98 Đông A, TP. Nam Định. Quý khách vui lòng cho em xin Tên, ngày giờ mong muốn và Số điện thoại (hoặc bấm nút "Điền thông tin đặt lịch" bên dưới) để chuyên viên chuẩn bị phòng tiếp đón chu đáo nhất nhé!`,
+        appointmentIntent: true,
+        autoBooked: false,
+        bookingDraft: bookingDetails,
+        visitType: bookingDetails.eventType,
+        suggestedQuestions: [
+          "Mai tôi qua xem sảnh lúc 9h sáng",
+          "Tôi muốn hẹn thử món cuối tuần",
+          "Hotline liên hệ trực tiếp",
+        ],
+      });
+    }
+
+    // 4. Nhận diện SĐT để tự động bóc tách Lead độc lập (khi không trong luồng đặt lịch)
     const phoneRegex = /(0[3|5|7|8|9][0-9]{8})\b/;
     const phoneMatch = trimmedMsg.match(phoneRegex);
     if (phoneMatch) {
@@ -109,29 +178,6 @@ export async function POST(req: NextRequest) {
           status: "N1_LEAD_THO",
           service: businessProfile?.serviceTypeName || "Gói tiệc & Sảnh cưới",
         },
-      });
-    }
-
-    // 4. Khách hẹn lịch xem sảnh / thử món / trải nghiệm dịch vụ
-    const visit =
-      visitIntent(trimmedMsg) ||
-      (/\b(đặt lịch|dat lich|muốn đặt|đặt hẹn|dat hen|hẹn lịch|hen lich|hẹn|xem sảnh|thử món|qua xem|ghé xem|đến xem)\b/i.test(
-        lower,
-      ) && !/\b(cọc|coc|giữ sảnh|giu sanh)\b/i.test(lower)
-        ? ("xem_sanh" as const)
-        : undefined);
-
-    if (visit) {
-      return respond({
-        success: true,
-        reply: `Dạ ${brandName} trân trọng đón tiếp Quý khách tham quan sảnh và tư vấn trực tiếp từ 8:00 đến 10:30 sáng hằng ngày tại 98 Đông A, TP. Nam Định. Quý khách vui lòng bấm nút "Điền thông tin đặt lịch" ngay bên dưới (hoặc để lại Tên và Số điện thoại) để chuyên viên chuẩn bị phòng tiếp đón chu đáo nhất nhé!`,
-        appointmentIntent: true,
-        visitType: visit,
-        suggestedQuestions: [
-          "Địa chỉ nhà hàng ở đâu?",
-          "Hotline liên hệ trực tiếp",
-          "Cho tôi xem ảnh không gian sảnh tiệc",
-        ],
       });
     }
 
