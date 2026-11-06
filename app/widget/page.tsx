@@ -19,6 +19,7 @@ import {
   Users,
   FileText,
   CheckCircle2,
+  RotateCcw,
 } from "lucide-react";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { getSmartBookingDefault, googleCalendarUrl } from "@/lib/crm/appointment";
@@ -92,6 +93,25 @@ function WebWidgetContent() {
       window.parent.postMessage({ type: "omnichat-close" }, "*");
     }
     setIsOpen(false);
+  };
+
+  const handleResetChat = () => {
+    setActiveBookingDraft(null);
+    setMessages([
+      {
+        id: "w-" + Date.now(),
+        sender: "bot",
+        text:
+          customGreeting ||
+          "Dạ em là trợ lý tư vấn tại Trung tâm Tiệc cưới & Sự kiện Golden Palace (98 Đông A, Nam Định). Em có thể hỗ trợ anh/chị thông tin về thực đơn, hình ảnh không gian sảnh hay xếp lịch ghé xem sảnh (8:00 - 10:30) ạ?",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Tôi muốn đặt lịch xem sảnh sáng mai",
+        ],
+      },
+    ]);
   };
 
   // Tự động chốt lịch hẹn trực tiếp khi đã đủ thông tin (không cần khách mở form)
@@ -405,6 +425,15 @@ function WebWidgetContent() {
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Đặt lịch</span>
+                </button>
+
+                <button
+                  type="button"
+                  title="Làm mới cuộc trò chuyện"
+                  onClick={handleResetChat}
+                  className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white"
+                >
+                  <RotateCcw className="w-4 h-4" />
                 </button>
 
                 <button
