@@ -17,6 +17,7 @@ import {
   saveCRMBooking,
   setCRMBookingStatus,
   deleteCRMBooking,
+  deleteCRMLead,
   type CRMState,
 } from "@/lib/crm/client";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -598,6 +599,12 @@ export function CRMDashboard() {
             mutate(
               () => deleteCRMBooking(b.id),
               "Đã xóa vĩnh viễn lịch hẹn khỏi hệ thống.",
+            )
+          }
+          onDeleteLead={(l) =>
+            mutate(
+              () => deleteCRMLead(l.id),
+              `Đã xóa vĩnh viễn khách hàng ${l.full_name} khỏi hệ thống.`,
             )
           }
         />

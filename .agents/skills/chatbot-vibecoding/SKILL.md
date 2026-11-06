@@ -362,5 +362,19 @@ app-root/
   - Sinh 2 file Excel mẫu tĩnh `.xlsx` phục vụ tải trực tiếp: `public/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx` và `knowledge-base/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx`.
 - **5. Kiểm thử:** 34/34 unit tests pass 100%, Next.js build 17/17 trang tĩnh đạt 100%.
 
+### Mốc Bổ Sung Nút Xóa Khách Hàng (Delete Lead) & Tối Ưu Hiển Thị Xóa Lịch Hẹn — 06/11/2026 (Chinh)
+
+- **1. Nâng cấp Modal Hồ Sơ Khách Hàng (`components/crm/lead-editor.tsx`):**
+  - Bổ sung nút màu đỏ **"🗑️ Xóa khách hàng này"** ở góc trái dưới form hồ sơ (kèm xác nhận `window.confirm` xóa vĩnh viễn khách và các lịch liên quan).
+  - Khắc phục hiểu lầm khi khách chưa có lịch hẹn: hiển thị thông báo hướng dẫn rõ ràng *"Khách hàng này hiện chưa có lịch hẹn nào. Bấm nút Tạo lịch hẹn ở trên để xếp lịch mới, hoặc bấm tab Lịch hẹn ở ngoài trang quản trị để xem và xóa các lịch hẹn của khách khác."*
+- **2. Hoàn thiện API và Tầng Lưu Trữ Xóa Khách Hàng (CRM Lead Deletion):**
+  - Bổ sung API `DELETE /api/crm/leads/[id]` (xóa các booking liên quan trước, sau đó xóa lead).
+  - Bổ sung hàm `deleteDemoLead` trong `lib/crm/demo-store.ts` và `deleteCRMLead` trong `lib/crm/client.ts`.
+  - Kết nối handler `onDeleteLead` từ `components/crm/crm-dashboard.tsx`.
+- **3. Kiểm thử tự động:**
+  - Bổ sung 2 test cases mới cho `deleteDemoLead` và API `DELETE /api/crm/leads/[id]`, nâng tổng số test lên **36/36 tests pass 100%**.
+  - Next.js production build 17/17 trang tĩnh thành công 100%.
+
+
 
 

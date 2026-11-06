@@ -264,3 +264,17 @@ export function deleteDemoBooking(
     bookings: snapshot.bookings.filter((b) => b.id !== id),
   };
 }
+
+export function deleteDemoLead(
+  snapshot: CRMSnapshot,
+  id: string,
+): CRMSnapshot {
+  const existing = snapshot.leads.find((l) => l.id === id);
+  if (!existing) throw new CRMError("Không tìm thấy khách hàng để xóa.", 404);
+  return {
+    ...snapshot,
+    leads: snapshot.leads.filter((l) => l.id !== id),
+    bookings: snapshot.bookings.filter((b) => b.lead_id !== id),
+  };
+}
+
