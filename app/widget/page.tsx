@@ -472,66 +472,40 @@ function WebWidgetContent() {
                       isUser={m.sender === "user"}
                     />
 
-                    {/* Thẻ Phiếu hẹn thông minh tự động điền (Smart Booking Preview Card) */}
-                    {m.bookingDraft && !m.bookingDraft.isComplete && (
-                      <div className="mt-2.5 p-3 bg-amber-50/90 border border-amber-200/90 rounded-2xl text-xs space-y-1.5 shadow-2xs">
-                        <div className="flex items-center justify-between font-bold text-amber-900 text-[11px] uppercase tracking-wider">
+                    {/* Thẻ tóm tắt phiếu hẹn nhỏ gọn - CHỈ HIỆN KHI KHÁCH ĐÃ CUNG CẤP TÊN HOẶC THỜI GIAN THẬT */}
+                    {m.bookingDraft && (m.bookingDraft.fullName || m.bookingDraft.timeStr) && !m.bookingDraft.isComplete && (
+                      <div className="mt-2 p-2.5 bg-blue-50/90 border border-blue-200/80 rounded-xl text-[11px] space-y-1">
+                        <div className="flex items-center justify-between font-semibold text-blue-900">
                           <span className="flex items-center gap-1">
-                            <CalendarCheck className="w-3.5 h-3.5 text-amber-600" />
-                            Phiếu hẹn thông minh (Đã điền tự động)
+                            <Clock className="w-3.5 h-3.5 text-blue-600" />
+                            <span>
+                              {m.bookingDraft.fullName ? `Khách: ${m.bookingDraft.fullName}` : ""}{" "}
+                              {m.bookingDraft.timeStr ? `· ${m.bookingDraft.timeStr} (${m.bookingDraft.dateStr})` : ""}
+                            </span>
                           </span>
-                          <span className="bg-amber-200/70 text-amber-900 font-semibold px-2 py-0.5 rounded-full text-[10px]">
-                            Chờ số điện thoại
+                          <span className="text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                            Chờ SĐT
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5 pt-1 text-slate-700 text-[11px]">
-                          <div>👤 Khách: <strong className="text-slate-900">{m.bookingDraft.fullName || "(Chưa có tên)"}</strong></div>
-                          <div>⏰ Thời gian: <strong className="text-slate-900">{m.bookingDraft.timeStr} · {m.bookingDraft.dateStr}</strong></div>
-                          <div className="col-span-2">🏛️ Nội dung: <strong className="text-slate-900">{m.bookingDraft.eventTypeName}</strong></div>
-                        </div>
-                        <div className="pt-2 border-t border-amber-200/70 flex items-center justify-between text-[11px]">
-                          <span className="text-amber-800 font-medium">
-                            👉 Chị chỉ cần nhắn SĐT vào chat để chốt lịch ngay
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => openBooking(m.bookingDraft?.eventType || "xem_sanh")}
-                            className="text-blue-600 font-semibold hover:underline"
-                          >
-                            Xem / sửa phiếu
-                          </button>
-                        </div>
+                        <p className="text-slate-600 text-[11px]">
+                          👉 Chị nhắn số điện thoại vào chat để em chốt lịch ngay nhé!
+                        </p>
                       </div>
                     )}
 
-                    {/* Khối Thao tác Đặt Lịch & Google Calendar (Điểm WOW chuẩn BTC) */}
-                    {(m.visitType || m.customCalendarUrl) && (
-                      <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-col gap-2">
-                        {/* Nút mở Form Đặt lịch nhanh */}
-                        {m.visitType && !m.customCalendarUrl && (
-                          <button
-                            type="button"
-                            onClick={() => openBooking(m.visitType)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer mt-1"
-                          >
-                            <CalendarCheck className="w-4 h-4 text-white" />
-                            <span>Điền thông tin đặt lịch ngay (8:00 - 10:30)</span>
-                          </button>
-                        )}
-
-                        {/* Nút Thêm vào Google Calendar */}
-                        {m.customCalendarUrl && (
-                          <a
-                            href={m.customCalendarUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer mt-1"
-                          >
-                            <Calendar className="w-4 h-4 text-blue-600" />
-                            <span>Thêm lịch hẹn vào Google Calendar</span>
-                            <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-60" />
-                          </a>
-                        )}
+                    {/* Nút Thêm vào Google Calendar 1-chạm khi đã chốt lịch thành công */}
+                    {m.customCalendarUrl && (
+                      <div className="mt-2 pt-2 border-t border-slate-100">
+                        <a
+                          href={m.customCalendarUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Thêm vào Google Calendar</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                        </a>
                       </div>
                     )}
                   </div>

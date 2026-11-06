@@ -119,24 +119,24 @@ export async function POST(req: NextRequest) {
       if (bookingDetails.isComplete) {
         return respond({
           success: true,
-          reply: `Dạ ${brandName} xin trân trọng xác nhận lịch ${bookingDetails.eventTypeName.toLowerCase()} của Quý khách ${bookingDetails.fullName} vào lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr} tại 98 Đông A, Nam Định. Em đã tự động ghi nhận lịch hẹn trên hệ thống! Chuyên viên đón tiếp sẽ liên hệ qua số ${bookingDetails.phone} để tiếp đón chu đáo nhất nhé ạ!`,
+          reply: `✅ Đã xác nhận lịch hẹn ${bookingDetails.eventTypeName.toLowerCase()} cho Quý khách ${bookingDetails.fullName} vào ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr} tại 98 Đông A. Nhà hàng sẽ liên hệ qua số ${bookingDetails.phone} để đón tiếp chu đáo ạ!`,
           appointmentIntent: true,
           autoBooked: true,
           bookingDraft: bookingDetails,
           visitType: bookingDetails.eventType,
           suggestedQuestions: [
-            "Địa chỉ và bản đồ chỉ đường",
             "Xem menu thực đơn tiệc cưới",
+            "Mở chỉ đường Google Maps",
             "Hotline hỗ trợ: 0228 6595 959",
           ],
         });
       }
 
-      // 3.2. ĐÃ CÓ TÊN & NGÀY GIỜ, THIẾU SĐT (Như câu: "chị muốn đặt lịch tư vấn trực tiếp ngày 9/11 lúc 10h , c tên vân")
+      // 3.2. ĐÃ CÓ TÊN & NGÀY GIỜ, THIẾU SĐT (Ví dụ: "chị muốn đặt lịch tư vấn trực tiếp ngày 9/11 lúc 10h , c tên vân")
       if (bookingDetails.fullName && bookingDetails.dateTimeIso && !bookingDetails.phone) {
         return respond({
           success: true,
-          reply: `Dạ ${brandName} đã ghi nhận thông tin đặt lịch của Quý khách ${bookingDetails.fullName} vào lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr} để ${bookingDetails.eventTypeName.toLowerCase()} tại 98 Đông A. Em đã tự động điền sẵn thông tin vào phiếu hẹn; ${bookingDetails.fullName} vui lòng cho em xin thêm Số điện thoại di động để bộ phận tiếp đón gửi tin nhắn xác nhận chu đáo nhé ạ!`,
+          reply: `Dạ em đã ghi nhận lịch của chị ${bookingDetails.fullName} vào ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr}. Chị cho em xin Số điện thoại để chốt lịch nhé ạ!`,
           appointmentIntent: true,
           autoBooked: false,
           bookingDraft: bookingDetails,
@@ -150,16 +150,34 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 3.3. CHỈ NÓI ĐẶT LỊCH CHUNG CHUNG
+      // 3.3. ĐÃ CÓ NGÀY GIỜ NHƯNG THIẾU TÊN VÀ SĐT (Ví dụ: "mai tôi qua xem sảnh lúc 10h")
+      if (bookingDetails.dateTimeIso && (!bookingDetails.fullName || !bookingDetails.phone)) {
+        return respond({
+          success: true,
+          reply: `Dạ em đã ghi nhận lịch hẹn lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr}. Anh/chị cho em xin Tên và Số điện thoại để hoàn tất phiếu hẹn nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: !bookingDetails.fullName ? "fullName" : "phone",
+          suggestedQuestions: [
+            "Tôi tên Dũng, SĐT 0987654321",
+            "Đổi sang giờ khác",
+            "Hotline hỗ trợ",
+          ],
+        });
+      }
+
+      // 3.4. CHỈ NÓI ĐẶT LỊCH CHUNG CHUNG (Ví dụ: "chị muốn đặt lịch xem sảnh" - Chưa có cả thời gian lẫn tên/SĐT)
       return respond({
         success: true,
-        reply: `Dạ ${brandName} trân trọng đón tiếp Quý khách tham quan sảnh và tư vấn trực tiếp (khung giờ vàng 8:00 đến 10:30 sáng hằng ngày) tại 98 Đông A, TP. Nam Định. Quý khách vui lòng cho em xin Tên, ngày giờ mong muốn và Số điện thoại (hoặc bấm nút "Điền thông tin đặt lịch" bên dưới) để chuyên viên chuẩn bị phòng tiếp đón chu đáo nhất nhé!`,
+        reply: `Dạ chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng), và em xin Tên cùng Số điện thoại của chị nhé ạ?`,
         appointmentIntent: true,
         autoBooked: false,
-        bookingDraft: bookingDetails,
+        bookingDraft: null, // KHÔNG BỊA THỜI GIAN ẢO!
         visitType: bookingDetails.eventType,
         suggestedQuestions: [
-          "Mai tôi qua xem sảnh lúc 9h sáng",
+          "Mai tôi qua lúc 9h sáng",
           "Tôi muốn hẹn thử món cuối tuần",
           "Hotline liên hệ trực tiếp",
         ],
@@ -192,7 +210,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ Golden Palace có cung cấp dịch vụ máy chụp ảnh Photobooth in lấy ngay tại sảnh tiệc với 3 gói lựa chọn tiện lợi:\n📸 Gói 1 (1.5 giờ): 3.400.000 VNĐ (In 200 ảnh nhỏ hoặc 100 ảnh to).\n📸 Gói 2 (2 giờ): 4.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n📸 Gói 3 (3 giờ): 5.000.000 VNĐ (KHÔNG GIỚI HẠN số lượng ảnh chụp & in).\n🎁 Tất cả các gói đều đã bao gồm 01 kỹ thuật viên trực máy, bàn giao toàn bộ file mềm gốc, phụ kiện check-in vui nhộn và sổ ký tên lưu giữ lời chúc cho dâu rể ạ!`,
+        reply: `Dạ bảng giá máy chụp ảnh Photobooth in ảnh lấy ngay tại sảnh gồm 3 gói:\n• Gói 1.5h: 3.400.000 VNĐ (in 200 ảnh nhỏ / 100 ảnh to)\n• Gói 2h: 4.000.000 VNĐ (in không giới hạn)\n• Gói 3h: 5.000.000 VNĐ (in không giới hạn)\nCác gói đều đã gồm kỹ thuật viên trực máy, file gốc và phụ kiện check-in ạ!`,
         suggestedQuestions: [
           "Thuê MC, ca sĩ và ban nhạc giá bao nhiêu?",
           "Nghi thức rót gạo, laser và flycam trao nhẫn giá bao nhiêu?",
@@ -218,7 +236,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ Golden Palace cung cấp đội ngũ nhân sự biểu diễn chuyên nghiệp với bảng giá niêm yết:\n🎤 MC tiệc cưới chuyên nghiệp: 800.000 VNĐ / người\n🎶 Ca sĩ biểu diễn (hát 3 bài): 800.000 VNĐ / ca sĩ\n🎹 Nhạc công Keyboard: 800.000 VNĐ / người\n👼 Thiên thần dẫn lối cô dâu (1 cặp): 1.000.000 VNĐ / cặp\n🎷 Ban nhạc Saxophone đón khách: 5.000.000 VNĐ / ban\n🎻 Ban nhạc Tứ tấu cổ điển hoàng gia: 14.000.000 VNĐ / ban\nQuý khách có thể tích chọn khi tính Dự toán Chi phí tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+        reply: `Dạ bảng giá nhân sự biểu diễn niêm yết tại Golden Palace:\n• MC tiệc cưới chuyên nghiệp: 800.000 VNĐ / người\n• Ca sĩ biểu diễn (3 bài): 800.000 VNĐ / ca sĩ\n• Nhạc công Keyboard: 800.000 VNĐ / người\n• Cặp thiên thần dẫn dâu: 1.000.000 VNĐ / cặp\n• Ban nhạc Saxophone đón khách: 5.000.000 VNĐ / ban\n• Ban nhạc Tứ tấu cổ điển: 14.000.000 VNĐ / ban\nQuý khách có thể xem và tính dự toán tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
         suggestedQuestions: [
           "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
           "Nghi thức rót gạo, laser và flycam trao nhẫn giá bao nhiêu?",
@@ -245,7 +263,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ nhà hàng có các gói nghi thức và hiệu ứng trao nhẫn cưới độc đáo với giá niêm yết:\n🌾 Rót gạo / Tranh cát thiêng liêng: 800.000 VNĐ / Hộp\n💍 Vòng laser trao nhẫn: 700.000 VNĐ / lần (🎁 TẶNG MIỄN PHÍ cho tiệc từ 400 khách trở lên)\n🛸 Flycam trao nhẫn cưới: 1.000.000 VNĐ / lần\n🦋 Bướm bay dẫn đường: 3.000.000 VNĐ / con\n🌳 Tưới cây hạnh phúc: 500.000 VNĐ / lần\n🎈 Bóng bay kích nổ: 900.000 VNĐ / quả (từ 4 quả)\nChi tiết tại: https://goldenpalacenamdinh.com/dich-vu ạ!`,
+        reply: `Dạ bảng giá hiệu ứng nghi thức cưới tại Golden Palace:\n• Rót gạo / Tranh cát: 800.000 VNĐ / hộp\n• Vòng laser trao nhẫn: 700.000 VNĐ (🎁 TẶNG MIỄN PHÍ cho tiệc từ 400 khách)\n• Flycam trao nhẫn cưới: 1.000.000 VNĐ / lần\n• Bướm bay dẫn đường: 3.000.000 VNĐ / con\n• Tưới cây hạnh phúc: 500.000 VNĐ / lần\n• Bóng bay kích nổ: 900.000 VNĐ / quả (từ 4 quả)\nChi tiết tại: https://goldenpalacenamdinh.com/dich-vu ạ!`,
         suggestedQuestions: [
           "Bảng giá dịch vụ Photobooth chụp ảnh lấy ngay?",
           "Thuê MC, ca sĩ và ban nhạc giá bao nhiêu?",
@@ -265,7 +283,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ các báo giá thực đơn và dịch vụ hiện tại của Golden Palace là GIÁ CHƯA BAO GỒM VAT ạ.\nKhi tính tổng bill hoặc xuất hóa đơn, thuế VAT được bóc tách theo quy định:\n• Thuế 8% VAT: Áp dụng cho Đồ ăn + Phí Hội trường (phí HT) + Nước lọc.\n• Thuế 10% VAT: Áp dụng cho Đồ uống (Nước ngọt + Bia + Rượu).\nQuý khách có thể tự tính dự toán tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+        reply: `Dạ giá thực đơn và dịch vụ chưa bao gồm VAT. Khi xuất hóa đơn:\n• 8% VAT: Áp dụng cho Đồ ăn, Phí Hội trường và Nước lọc.\n• 10% VAT: Áp dụng cho Đồ uống (Nước ngọt, Bia, Rượu).\nQuý khách có thể tự tính dự toán tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một mâm?",
           "Có được mang rượu bia từ ngoài vào không?",
@@ -285,7 +303,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ để đảm bảo tính đồng bộ và chất lượng phục vụ tiêu chuẩn yến tiệc số lượng lớn, hiện tại Golden Palace không áp dụng dịch vụ mâm thử món ạ.\nToàn bộ các món ăn đều do các đầu bếp chuyên nghiệp nhiều năm kinh nghiệm chế biến chuẩn vị tiệc cưới truyền thống và hiện đại, đã được hàng ngàn cặp đôi tại Nam Định tin chọn và đánh giá rất cao. Quý khách xem danh sách món ăn tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC ạ!`,
+        reply: `Dạ Golden Palace không phục vụ mâm ăn thử do đặc thù tiệc lớn. Quý khách có thể xem menu chi tiết các món tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC hoặc ghé nhà hàng để chuyên viên tư vấn trực tiếp nhé ạ!`,
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một mâm?",
           "Cho tôi xem ảnh không gian sảnh tiệc",
@@ -307,7 +325,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ Golden Palace có bãi đỗ xe ô tô và xe máy vô cùng rộng rãi ngay trước khuôn viên nhà hàng, có nhân viên bảo vệ điều phối chu đáo và HOÀN TOÀN MIỄN PHÍ 100% cho toàn bộ khách tham dự tiệc ạ! Quý khách xem thêm khuôn viên tại: https://goldenpalacenamdinh.com/khong-gian`,
+        reply: `Dạ Golden Palace có bãi đỗ xe ô tô và xe máy rộng rãi ngay trước sảnh (98 Đông A), bảo vệ điều phối chu đáo và MIỄN PHÍ 100% cho toàn bộ khách tham dự tiệc ạ!`,
         suggestedQuestions: [
           "Địa chỉ nhà hàng ở đâu?",
           "Nhà hàng đón khách tham quan sảnh lúc mấy giờ?",
@@ -327,7 +345,7 @@ export async function POST(req: NextRequest) {
     ) {
       return respond({
         success: true,
-        reply: `Dạ chính sách đồ uống tại Golden Palace rất minh bạch và linh hoạt:\n1. Đồ uống nhà hàng: Kiểm đếm số lượng thực tế sử dụng sau tiệc (uống bao nhiêu tính tiền bấy nhiêu).\n2. Đồ uống mang từ ngoài vào: Quý khách ĐƯỢC PHÉP mang rượu, bia từ ngoài vào, nhà hàng áp dụng mức phí phục vụ (phí nút chai, đá lạnh, ly cốc niêm yết theo quy định). Quý khách xem chi tiết tại: https://goldenpalacenamdinh.com/thuc-don?tab=DO_UONG ạ!`,
+        reply: `Dạ nhà hàng cho phép mang đồ uống từ ngoài vào và chỉ thu phí phục vụ (phí nút chai, đá lạnh, ly cốc). Nếu dùng đồ uống của nhà hàng thì dùng bao nhiêu tính bấy nhiêu sau tiệc ạ. Xem chi tiết tại: https://goldenpalacenamdinh.com/thuc-don?tab=DO_UONG ạ!`,
         suggestedQuestions: [
           "Báo giá đã gồm thuế VAT chưa?",
           "Thực đơn tiệc cưới bao nhiêu một mâm?",
@@ -532,7 +550,7 @@ export async function POST(req: NextRequest) {
         success: true,
         reply:
           datCocItem?.answer ||
-          `Dạ để giữ ngày đẹp và sảnh ưng ý, Quý khách đặt cọc lần 1 là 5.000.000 VNĐ ạ. Khoản cọc này được cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn chính thức. Quy trình gồm 3 giai đoạn:\n• GĐ 1: Khảo sát sảnh & Đặt cọc lần 1 là 5.000.000 VNĐ giữ ngày đẹp.\n• GĐ 2: Ký hợp đồng chính thức, chốt thực đơn & dịch vụ bổ sung (Đặt cọc 50%).\n• GĐ 3: Bàn giao kịch bản tiệc và chạy thử trước ngày diễn ra.\nQuý khách liên hệ Hotline 0228 659 5959 hoặc ghé 98 Đông A để được hỗ trợ chu đáo nhé!`,
+          `Dạ mức cọc giữ sảnh lần 1 là 5.000.000 VNĐ (cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn). Quy trình gồm 3 bước:\n• Bước 1: Khảo sát sảnh & cọc lần 1 là 5.000.000 VNĐ giữ ngày đẹp.\n• Bước 2: Ký hợp đồng, chốt thực đơn & dịch vụ (cọc 50%).\n• Bước 3: Bàn giao kịch bản và chạy thử trước ngày tiệc.\nQuý khách cần hỗ trợ thêm vui lòng liên hệ Hotline 0228 659 5959 hoặc ghé 98 Đông A nhé ạ!`,
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một bàn?",
           "Cho tôi xem ảnh không gian sảnh tiệc",
@@ -558,7 +576,7 @@ export async function POST(req: NextRequest) {
         success: true,
         reply:
           thucDonItem?.answer ||
-          `Dạ thực đơn tiệc cưới được thiết kế phong phú theo từng set món. Quý khách xem chi tiết menu tại: https://goldenpalacenamdinh.com/thuc-don hoặc tính dự toán trọn gói tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
+          `Dạ thực đơn tiệc cưới tại Golden Palace được thiết kế linh hoạt theo từng set món. Quý khách xem danh sách món ăn tại: https://goldenpalacenamdinh.com/thuc-don hoặc tự tính dự toán trọn gói tại: https://goldenpalacenamdinh.com/du-toan-chi-phi ạ!`,
         suggestedQuestions: [
           "Ưu đãi mùa cưới hiện nay có gì?",
           "Đặt cọc giữ sảnh bao nhiêu?",
@@ -580,7 +598,7 @@ export async function POST(req: NextRequest) {
         success: true,
         reply:
           uuDaiItem?.answer ||
-          `Dạ Golden Palace luôn có chính sách ưu đãi dành riêng cho tiệc cưới theo từng thời điểm. Đặc biệt tiệc từ 400 khách trở lên được TẶNG MIỄN PHÍ Vòng ánh sáng Laser trao nhẫn cưới độc đáo. Quý khách liên hệ Hotline 0228 659 5959 để được tư vấn gói ưu đãi chi tiết ạ!`,
+          `Dạ Golden Palace luôn có chính sách ưu đãi hấp dẫn theo mùa. Đặc biệt tiệc từ 400 khách trở lên được TẶNG MIỄN PHÍ Vòng ánh sáng Laser trao nhẫn cưới độc đáo. Quý khách liên hệ Hotline 0228 659 5959 để được tư vấn gói ưu đãi chi tiết ạ!`,
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một bàn?",
           "Đặt cọc giữ sảnh bao nhiêu?",

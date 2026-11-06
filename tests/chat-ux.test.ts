@@ -96,5 +96,5 @@ test("API chat identifies appointment intent when user says chị muốn đặt 
   assert.equal(data.appointmentIntent, true);
   assert.equal(data.visitType, "xem_sanh");
   assert.match(data.reply, /8:00 đến 10:30 sáng/);
-  assert.match(data.reply, /Điền thông tin đặt lịch/);
+  assert.match(data.reply, /Tên cùng Số điện thoại/);
 });

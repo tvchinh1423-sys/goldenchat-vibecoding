@@ -130,11 +130,13 @@ export function extractBookingDetails(
 
   // 5. Trích xuất Giờ hẹn (Time)
   // Các mẫu: "lúc 10h", "10:00", "10h sáng", "8h30", "14h", "2h chiều", "10 giờ"
-  let targetHour = 9;   // mặc định khung giờ vàng
+  let targetHour = 9;   // mặc định khi khách chỉ nói ngày
   let targetMinute = 0;
+  let hasExplicitTime = false;
 
   const timeMatch = clean.match(/(?:lúc|vào|khoảng)?\s*(\d{1,2})(?:h| giờ|:)(\d{2})?\s*(sáng|chiều|tối)?/i);
   if (timeMatch) {
+    hasExplicitTime = true;
     let hour = parseInt(timeMatch[1], 10);
     const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
     const period = timeMatch[3]?.toLowerCase();
@@ -145,9 +147,11 @@ export function extractBookingDetails(
     targetHour = hour;
     targetMinute = minute;
   } else if (/(?:sáng mai|buổi sáng)/i.test(lower)) {
+    hasExplicitTime = true;
     targetHour = 9;
     targetMinute = 0;
   } else if (/(?:chiều mai|buổi chiều)/i.test(lower)) {
+    hasExplicitTime = true;
     targetHour = 14;
     targetMinute = 30;
   }
@@ -162,17 +166,22 @@ export function extractBookingDetails(
     dateStr = `${pad(targetDay)}/${pad(targetMonth)}/${targetYear}`;
     timeStr = `${pad(targetHour)}:${pad(targetMinute)}`;
     dateTimeIso = `${targetYear}-${pad(targetMonth)}-${pad(targetDay)}T${timeStr}`;
-  } else if (existingContext?.dateTimeIso) {
-    dateTimeIso = existingContext.dateTimeIso;
-    dateStr = existingContext.dateStr || null;
-    timeStr = existingContext.timeStr || null;
-  } else {
-    // Nếu khách chỉ nói giờ mà chưa nói ngày, mặc định lấy ngày mai
+  } else if (hasExplicitTime) {
+    // Khách có nói giờ rõ ràng (ví dụ: "lúc 10h") nhưng chưa nói ngày -> mặc định lấy ngày mai
     const tmr = new Date(Date.now() + 86400000);
     const pad = (n: number) => n.toString().padStart(2, "0");
     dateStr = `${pad(tmr.getDate())}/${pad(tmr.getMonth() + 1)}/${tmr.getFullYear()}`;
     timeStr = `${pad(targetHour)}:${pad(targetMinute)}`;
     dateTimeIso = `${tmr.getFullYear()}-${pad(tmr.getMonth() + 1)}-${pad(tmr.getDate())}T${timeStr}`;
+  } else if (existingContext?.dateTimeIso) {
+    dateTimeIso = existingContext.dateTimeIso;
+    dateStr = existingContext.dateStr || null;
+    timeStr = existingContext.timeStr || null;
+  } else {
+    // KHÁCH CHƯA NÓI GÌ VỀ THỜI GIAN -> TUYỆT ĐỐI ĐỂ NULL, KHÔNG TỰ BỊA THỜI GIAN ẢO!
+    dateStr = null;
+    timeStr = null;
+    dateTimeIso = null;
   }
 
   // 7. Trích xuất số khách / bàn nếu có

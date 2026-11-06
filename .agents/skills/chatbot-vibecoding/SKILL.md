@@ -391,6 +391,21 @@ app-root/
   - Bổ sung bộ test `tests/nlp-booking.test.ts` (3 test cases kiểm tra bóc tách NLP, hội thoại đa lượt và auto-book 1 lượt).
   - Tổng số test: **39/39 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
 
+### Mốc Tinh Gọn Phản Hồi Chatbot & Chống Điền Thời Gian Ảo — 06/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để lỗi tự động điền thời gian ảo (`lib/chat/booking-extractor.ts`):**
+  - Trước đây: Nhánh fallback tự động gán ngày mai lúc 09:00 ngay cả khi khách chưa hề đề cập đến thời gian (như trong câu "chị muốn đặt lịch xem sảnh"), làm sinh thẻ hẹn ảo gây hiểu lầm cho khách.
+  - Khắc phục: Khi khách chưa nhắc đến từ khóa thời gian, `dateTimeIso`, `dateStr`, `timeStr` trả về `null` tuyệt đối; không đoán mò thời gian của khách.
+- **2. Rút ngắn và cô đọng câu trả lời chatbot (Concise & Focused Replies):**
+  - Khi khách chỉ nói đặt lịch chung chung: Bot chỉ hỏi 1 câu ngắn gọn, thân thiện: *"Dạ chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng), và em xin Tên cùng Số điện thoại của chị nhé ạ?"*, `bookingDraft` trả về `null`.
+  - Tinh gọn toàn bộ các câu trả lời về Photobooth, Nhân sự MC/ban nhạc, Nghi thức cưới, VAT, Thử món, Bãi xe, Đồ uống ngoài, Đặt cọc (5.000.000đ), Thực đơn, Ưu đãi... Cắt bỏ hoàn toàn câu chữ rườm rà, trình bày theo dạng gạch đầu dòng rõ ràng, trực quan, khách hàng đọc trên smartphone chỉ mất 3-5 giây.
+- **3. Tinh chỉnh giao diện Chat Widget (`app/widget/page.tsx`):**
+  - Bỏ nút bấm tím to đè lên khung chat khi bot đang hỏi thông tin; tránh rối mắt khách hàng.
+  - Thẻ preview phiếu hẹn chỉ hiển thị khi khách THỰC SỰ đã cung cấp Tên hoặc Ngày giờ (`bookingDraft.fullName || bookingDraft.timeStr`).
+- **4. Kiểm thử & Trạng thái:**
+  - 39/39 unit tests pass 100%. Next.js production build 17/17 trang tĩnh thành công.
+  - Khởi động lại server daemon cổng 3000 phục vụ trải nghiệm test mượt mà trên mobile.
+
 
 
 
