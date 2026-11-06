@@ -24,11 +24,10 @@ test("API chat provides concise answers without repeating assistant introduction
   const dataFallback = await resFallback.json();
   assert.equal(dataFallback.success, true);
   assert.equal(dataFallback.reply.includes("em là trợ lý tư vấn"), false);
-  assert.match(dataFallback.reply, /Quý khách cần hỗ trợ thêm thông tin cụ thể/);
   assert.equal(dataFallback.aiEnabled, false);
   assert.equal(dataFallback.handoff, true);
   assert.equal(dataFallback.requiresHuman, true);
-  assert.match(dataFallback.reply, /chuyển tiếp hội thoại ngay cho chuyên viên tư vấn/);
+  assert.match(dataFallback.reply, /chuyên viên tư vấn hỗ trợ mình ngay/);
 });
 
 test("API chat returns official Golden Palace URLs for menu, maps and spaces for 1-tap navigation", async () => {
@@ -116,7 +115,5 @@ test("API chat disables AI and initiates human handoff when question is out of s
   assert.equal(data.handoff, true);
   assert.equal(data.requiresHuman, true);
   assert.equal(data.triggeredRule, "out_of_scope_human_handoff");
-  assert.match(data.reply, /nằm ngoài phạm vi/);
-  assert.match(data.reply, /tạm ngắt AI/);
-  assert.match(data.reply, /chuyên viên tư vấn tiếp quản/);
+  assert.match(data.reply, /chuyên viên tư vấn hỗ trợ mình ngay/);
 });

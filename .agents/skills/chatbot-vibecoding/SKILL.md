@@ -443,7 +443,8 @@ app-root/
   - Đồng bộ cập nhật tài liệu `SPEC_GIAO_DIEN_TINH_NANG.md` và `handoff/SPEC_GIAO_DIEN_TINH_NANG.md`.
 - **2. Nâng cấp Bộ Phân Tích & Định Tuyến Chat (`app/api/simulator/chat/route.ts`):**
   - **Khắc phục lỗi bắt nhầm từ khóa (Stop words collision):** Ở Mục 6.7, trước đây từ dừng như `"không?"` bị đếm lặp khiến câu hỏi lạ ngoài phạm vi bị gán nhầm vào FAQ. Đã xây dựng bộ lọc `STOPWORDS` chuẩn hóa tiếng Việt, chỉ so khớp từ khóa nghiệp vụ thực sự có nghĩa.
-  - **Kích hoạt Human Handoff tại Mục 7:** Khi câu hỏi nằm ngoài phạm vi tri thức, bot tuyệt đối không trả lời lung tung mà phản hồi rõ ràng: *"Dạ câu hỏi này của Quý khách nằm ngoài phạm vi thông tin tự động của em hoặc cần kiểm tra thực tế. Em xin phép tạm ngắt AI và chuyển tiếp hội thoại ngay cho chuyên viên tư vấn tiếp quản hỗ trợ trực tiếp Quý khách nhé ạ!"*, đồng thời trả về cờ `aiEnabled: false`, `handoff: true`, `requiresHuman: true`.
+  - **Kích hoạt Human Handoff tại Mục 7:** Khi câu hỏi nằm ngoài phạm vi tri thức, bot tuyệt đối không trả lời lung tung và phản hồi siêu ngắn gọn, tinh tế: *"Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!"*, đồng thời tự động trả về cờ `aiEnabled: false`, `handoff: true`, `requiresHuman: true`.
+  - **Tối giản giao diện Widget:** Bỏ các câu giải thích kỹ thuật rườm rà ("ngắt AI", "phạm vi thông tin tự động"), chỉ giữ 1 nút bấm trực quan `[ 📞 Gọi Hotline 0228 659 5959 ]` để khách liên hệ nhanh khi cần gấp.
 - **3. Đồng bộ Trải Nghiệm Hộp Thư (Inbox) & Web Chat Widget:**
   - **Inbox Workspace (`components/inbox/inbox-workspace.tsx` & `chat-pane.tsx`):** Tự động gạt công tắc Switch AI sang vị trí TẮT (OFF) cho hội thoại đó, hiển thị thông báo toast cho nhân viên và huy hiệu trạng thái: `⚡ AI đã tạm ngắt · Chuyên viên tiếp quản`.
   - **Web Chat Widget (`app/widget/page.tsx`):**

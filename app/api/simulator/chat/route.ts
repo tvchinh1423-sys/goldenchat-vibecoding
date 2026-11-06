@@ -746,7 +746,7 @@ export async function POST(req: NextRequest) {
     // 7. Câu hỏi nằm ngoài phạm vi tri thức / không trả lời được -> Tự động tắt AI & Chuyển giao nhân viên thật tiếp quản (Human Handoff)
     return respond({
       success: true,
-      reply: `Dạ câu hỏi này của Quý khách nằm ngoài phạm vi thông tin tự động của em hoặc cần kiểm tra thực tế. Em xin phép tạm ngắt AI và chuyển tiếp hội thoại ngay cho chuyên viên tư vấn tiếp quản hỗ trợ trực tiếp Quý khách nhé ạ! Quý khách cần hỗ trợ thêm thông tin cụ thể có thể liên hệ trực tiếp Hotline/Zalo: 0228 659 5959.`,
+      reply: `Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!`,
       aiEnabled: false,
       handoff: true,
       requiresHuman: true,
