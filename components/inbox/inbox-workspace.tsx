@@ -324,8 +324,11 @@ export function InboxWorkspace() {
             (item: unknown): item is string => typeof item === "string",
           )
         : [];
+      const isAiTurnedOff = data.aiEnabled === false || data.handoff === true;
+
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
+        aiEnabled: isAiTurnedOff ? false : conversation.aiEnabled,
         messages: [
           ...conversation.messages,
           {
@@ -338,6 +341,10 @@ export function InboxWorkspace() {
         ],
       }));
       playChatTone();
+
+      if (isAiTurnedOff) {
+        notify("⚡ Câu hỏi ngoài phạm vi tri thức: Bot đã tự động ngắt AI để tư vấn viên tiếp quản (tránh trả lời lung tung).");
+      }
     } catch {
       notify("Chưa nhận được phản hồi của bot. Hãy bấm lại câu hỏi gợi ý.");
     } finally {

@@ -16,6 +16,7 @@ import {
   saveDemoBooking,
   saveDemoLead,
   deleteDemoBooking,
+  deleteDemoLead,
   writeDemoCRM,
 } from "./demo-store";
 export interface CRMState extends CRMSnapshot {
@@ -173,6 +174,14 @@ export async function deleteCRMBooking(id: string) {
     "DELETE",
     undefined,
     (data) => deleteDemoBooking(data, id),
+  );
+}
+export async function deleteCRMLead(id: string) {
+  return mutate(
+    `/leads/${encodeURIComponent(id)}`,
+    "DELETE",
+    undefined,
+    (data) => deleteDemoLead(data, id),
   );
 }
 export async function loginCRM(password: string) {

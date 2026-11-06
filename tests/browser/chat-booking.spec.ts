@@ -38,17 +38,20 @@ test("Widget saves the selected visit before offering Calendar and CRM can remov
   await page
     .getByRole("button", { name: /Tôi muốn đặt lịch xem sảnh sáng mai/ })
     .click();
+  await expect(page.getByText(/em xin Tên cùng Số điện thoại|cho em xin Tên và Số điện thoại/)).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Thêm lịch hẹn vào Google Calendar" }),
+    page.getByRole("link", { name: "Thêm vào Google Calendar" }),
   ).toHaveCount(0);
+  await page.getByTitle("Đặt lịch tư vấn & xem sảnh").click();
   await page
     .getByPlaceholder("Ví dụ: Trần Vân Chinh")
     .fill("Khách demo Widget");
   await page.getByPlaceholder("Ví dụ: 0912 345 678").fill("0901234567");
   const time = page.locator('input[type="datetime-local"]');
   await expect(time).toHaveValue(/T09:00$/);
-  const date = (await time.inputValue()).split("T")[0];
-  await time.fill(date + "T09:15");
+  const date = new Date(`${(await time.inputValue()).split("T")[0]}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 14);
+  await time.fill(`${date.toISOString().slice(0, 10)}T09:15`);
   await page
     .getByRole("button", { name: "Xác nhận đặt lịch", exact: true })
     .click();
@@ -56,7 +59,7 @@ test("Widget saves the selected visit before offering Calendar and CRM can remov
     page.getByText("Lịch demo đã lưu trên trình duyệt.", { exact: false }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Thêm lịch hẹn vào Google Calendar" }),
+    page.getByRole("link", { name: "Thêm vào Google Calendar" }),
   ).toHaveAttribute("href", /T021500Z%2F\d{8}T031500Z/);
   await page.goto("/leads");
   await page.getByRole("button", { name: "Lịch hẹn", exact: true }).click();

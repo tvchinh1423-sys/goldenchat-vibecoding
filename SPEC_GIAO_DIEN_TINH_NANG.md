@@ -85,7 +85,7 @@ Tài liệu này đặc tả chi tiết giao diện và luồng xử lý dựa t
    - `Câu hẹn ngoài giờ`: Textbox nhập câu trả lời khi ngoài giờ.
    - Nút `Lưu`.
 3. **Tab 2 - Bot biết gì:** Quản lý danh sách câu hỏi & câu trả lời FAQ.
-4. **Tab 3 - Bot không được làm gì:** Bộ nguyên tắc an toàn (Guardrails - cấm hứa hẹn giá sai, cấm cam kết ngoài chính sách).
+4. **Tab 3 - Bot không được làm gì:** Bộ nguyên tắc an toàn (Guardrails - cấm hứa hẹn giá sai, cấm cam kết ngoài chính sách, tuyệt đối không trả lời lung tung khi ngoài phạm vi tri thức mà tự động ngắt chế độ AI chuyển giao nhân viên thật tiếp quản).
 5. **Tab 4 - Bật bot trên kênh:** Bật/tắt riêng từng kênh (Zalo, Facebook, Web).
 
 ### 2.2. Cột "Thử bot" (Simulator trực quan bên phải)

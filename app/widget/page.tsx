@@ -19,6 +19,8 @@ import {
   Users,
   FileText,
   CheckCircle2,
+  RotateCcw,
+  Headset,
 } from "lucide-react";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { getSmartBookingDefault, googleCalendarUrl } from "@/lib/crm/appointment";
@@ -27,6 +29,7 @@ import { BOOKING_TYPES, formatAppointment } from "@/lib/crm/model";
 import { visitIntent } from "@/lib/chat/follow-ups";
 import { playChatTone } from "@/lib/chat/sound";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
+import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 
 interface Message {
   id: string;
@@ -36,6 +39,8 @@ interface Message {
   suggestedQuestions?: string[];
   visitType?: ReturnType<typeof visitIntent>;
   customCalendarUrl?: string;
+  bookingDraft?: BookingDraftInfo | null;
+  handoff?: boolean;
 }
 
 function WebWidgetContent() {
@@ -61,6 +66,10 @@ function WebWidgetContent() {
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  // State lưu thông tin bóc tách đặt lịch thông minh (NLP Smart Booking)
+  const [activeBookingDraft, setActiveBookingDraft] = useState<BookingDraftInfo | null>(null);
+  // Trạng thái AI tự động (sẽ tự tắt khi gặp câu hỏi ngoài phạm vi để chuyển giao nhân viên thật)
+  const [isAiActive, setIsAiActive] = useState(true);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -78,9 +87,6 @@ function WebWidgetContent() {
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const bookingTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => () => clearTimeout(bookingTimer.current), []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -89,11 +95,112 @@ function WebWidgetContent() {
   }, [messages, loading]);
 
   const handleCloseWidget = () => {
-    clearTimeout(bookingTimer.current);
     if (typeof window !== "undefined" && window.parent && window.parent !== window) {
       window.parent.postMessage({ type: "omnichat-close" }, "*");
     }
     setIsOpen(false);
+  };
+
+  const handleResetChat = () => {
+    setActiveBookingDraft(null);
+    setMessages([
+      {
+        id: "w-" + Date.now(),
+        sender: "bot",
+        text:
+          customGreeting ||
+          "Dạ em là trợ lý tư vấn tại Trung tâm Tiệc cưới & Sự kiện Golden Palace (98 Đông A, Nam Định). Em có thể hỗ trợ anh/chị thông tin về thực đơn, hình ảnh không gian sảnh hay xếp lịch ghé xem sảnh (8:00 - 10:30) ạ?",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Tôi muốn đặt lịch xem sảnh sáng mai",
+        ],
+      },
+    ]);
+  };
+
+  // Tự động chốt lịch hẹn trực tiếp khi đã đủ thông tin (không cần khách mở form)
+  const saveDirectBooking = async (draft: BookingDraftInfo) => {
+    const cleanPhone = (draft.phone || "").replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
+    if (!cleanPhone || !draft.fullName) return;
+
+    try {
+      const visit = {
+        appointment_time: (draft.dateTimeIso || getSmartBookingDefault()) + ":00+07:00",
+        event_type: draft.eventType,
+        guests_count: draft.guestsCount || 2,
+        assigned_staff: "Ngọc Khánh",
+        notes: draft.notes || "Khách đặt lịch tự động trong luồng chat",
+      };
+
+      const saved = await saveChatBooking({
+        full_name: draft.fullName,
+        phone: cleanPhone,
+        email: "",
+        notes: "Khách đặt lịch tự động trong luồng chat (NLP Smart Booking)",
+        source: "web",
+        stage: "N1",
+        assigned_to: visit.assigned_staff,
+        event_date: "",
+        table_count: null,
+        inbox_reference: null,
+      }, visit);
+
+      if (saved.mode === "supabase") {
+        void fetch("/api/telegram/alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "appointment",
+            data: {
+              name: draft.fullName,
+              phone: cleanPhone,
+              interest: BOOKING_TYPES[draft.eventType],
+              appointmentTime: formatAppointment(visit.appointment_time),
+              platform: "Web Widget (NLP Auto-Book)",
+            },
+          }),
+        }).catch(() => {});
+      }
+
+      const calUrl = googleCalendarUrl(visit);
+      const confirmation = saved.mode === "demo"
+        ? "Lịch hẹn đã tự động lưu thành công trên CRM."
+        : "Lịch hẹn đã được hệ thống ghi nhận thành công và chuyển tới tư vấn viên.";
+
+      if (soundEnabled) playChatTone();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `b-auto-${Date.now()}`,
+          sender: "bot",
+          text: `🎉 **ĐẶT LỊCH THÀNH CÔNG!**\n\n${confirmation}\n\n👤 **Khách hàng:** ${draft.fullName} (${cleanPhone})\n⏰ **Thời gian:** ${formatAppointment(visit.appointment_time)}\n🤝 **Nội dung:** ${BOOKING_TYPES[draft.eventType]} (${draft.guestsCount || 2} người)\n📍 **Địa điểm:** 98 Đông A, KĐT Hòa Vượng, TP. Nam Định.\n\n*Bộ phận lễ tân sẽ gọi điện đón tiếp chu đáo trước giờ hẹn ạ!*`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          customCalendarUrl: calUrl,
+          suggestedQuestions: [
+            "Xem menu thực đơn tiệc cưới",
+            "Mở chỉ đường Google Maps",
+            "Hotline tư vấn: 0228 6595 959",
+          ],
+        },
+      ]);
+      window.dispatchEvent(new Event("storage"));
+      setShowBookingModal(false);
+      setActiveBookingDraft(null);
+    } catch (e: any) {
+      console.error("Auto booking error:", e);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `b-err-${Date.now()}`,
+          sender: "bot",
+          text: `⚠️ Lưu ý: ${e?.message || "Chưa lưu được thông tin"}. Quý khách có thể bấm nút "Đặt lịch" ở góc trên hoặc liên hệ Hotline 0228 6595 959 để được hỗ trợ nhé ạ!`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    }
   };
 
   const sendMessageWithText = async (textToSend: string) => {
@@ -121,6 +228,7 @@ function WebWidgetContent() {
           channel: "web",
           isWorkingHours: true,
           messageCount: messages.length,
+          bookingDraftContext: activeBookingDraft,
           businessProfile: {
             name: "Trung tâm Tiệc cưới & Sự kiện Golden Palace",
             serviceTypeName: "Gói tiệc & Sảnh cưới",
@@ -136,23 +244,52 @@ function WebWidgetContent() {
         ? (data.visitType || visitIntent(userText) || "xem_sanh")
         : undefined;
 
+      // Tự động điền trước (Pre-fill) vào modal form từ NLP bóc tách
+      if (data.bookingDraft) {
+        setActiveBookingDraft(data.bookingDraft);
+        if (data.bookingDraft.fullName) setBookingName(data.bookingDraft.fullName);
+        if (data.bookingDraft.phone) setBookingPhone(data.bookingDraft.phone);
+        if (data.bookingDraft.dateTimeIso) setBookingTime(data.bookingDraft.dateTimeIso);
+        if (data.bookingDraft.eventType) setBookingType(data.bookingDraft.eventType);
+        if (data.bookingDraft.notes) setBookingNotes(data.bookingDraft.notes);
+        if (data.bookingDraft.guestsCount) setBookingGuests(data.bookingDraft.guestsCount);
+      }
+
+      const isHandoff = data.handoff || data.aiEnabled === false;
+      if (isHandoff) {
+        setIsAiActive(false);
+        void fetch("/api/telegram/alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "handover",
+            data: {
+              name: "Khách Web Widget",
+              message: userText,
+              platform: "Web Widget",
+            },
+          }),
+        }).catch(() => {});
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           id: `b-${Date.now()}`,
           sender: "bot",
-          text: data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
+          text: data.autoBooked && data.bookingDraft
+            ? "Dạ em đang lưu lịch hẹn cho anh/chị ạ."
+            : data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           suggestedQuestions: data.suggestedQuestions,
           visitType: resolvedVisitType,
+          bookingDraft: data.bookingDraft,
+          handoff: isHandoff,
         },
       ]);
 
-      if (data.appointmentIntent) {
-        clearTimeout(bookingTimer.current);
-        bookingTimer.current = setTimeout(() => {
-          openBooking(resolvedVisitType || "xem_sanh");
-        }, 400);
+      if (data.autoBooked && data.bookingDraft) {
+        await saveDirectBooking(data.bookingDraft);
       }
     } catch {
       setMessages((prev) => [
@@ -169,10 +306,11 @@ function WebWidgetContent() {
     }
   };
 
-  function openBooking(type: ReturnType<typeof visitIntent> = "xem_sanh") {
-    clearTimeout(bookingTimer.current);
+  function openBooking(type: "xem_sanh" | "thu_mon" | "tu_van_su_kien" = "xem_sanh") {
     setBookingType(type);
-    setBookingTime(getSmartBookingDefault());
+    if (!activeBookingDraft?.dateTimeIso) {
+      setBookingTime(getSmartBookingDefault());
+    }
     setBookingError("");
     setShowBookingModal(true);
   }
@@ -190,8 +328,8 @@ function WebWidgetContent() {
     setBookingError("");
 
     const cleanPhone = bookingPhone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
-    if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
-      setBookingError("Vui lòng nhập số di động Việt Nam hợp lệ (10 chữ số).");
+    if (!/^0[1-9]\d{7,10}$/.test(cleanPhone)) {
+      setBookingError("Vui lòng nhập số điện thoại hợp lệ (9 đến 11 chữ số).");
       return;
     }
     if (!bookingName.trim()) {
@@ -309,8 +447,16 @@ function WebWidgetContent() {
                     <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
-                    <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="truncate">98 Đông A · Đón tiếp 8:00 - 10:30</span>
+                    <span
+                      className={`w-2 h-2 shrink-0 rounded-full ${
+                        isAiActive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                      }`}
+                    />
+                    <span className="truncate">
+                      {isAiActive
+                        ? "98 Đông A · Đón tiếp 8:00 - 10:30"
+                        : "⚡ Đã ngắt AI · Tư vấn viên tiếp quản"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -325,6 +471,15 @@ function WebWidgetContent() {
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Đặt lịch</span>
+                </button>
+
+                <button
+                  type="button"
+                  title="Làm mới cuộc trò chuyện"
+                  onClick={handleResetChat}
+                  className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white"
+                >
+                  <RotateCcw className="w-4 h-4" />
                 </button>
 
                 <button
@@ -392,34 +547,53 @@ function WebWidgetContent() {
                       isUser={m.sender === "user"}
                     />
 
-                    {/* Khối Thao tác Đặt Lịch & Google Calendar (Điểm WOW chuẩn BTC) */}
-                    {(m.visitType || m.customCalendarUrl) && (
-                      <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-col gap-2">
-                        {/* Nút mở Form Đặt lịch nhanh */}
-                        {m.visitType && !m.customCalendarUrl && (
-                          <button
-                            type="button"
-                            onClick={() => openBooking(m.visitType)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer mt-1"
-                          >
-                            <CalendarCheck className="w-4 h-4 text-white" />
-                            <span>Điền thông tin đặt lịch ngay (8:00 - 10:30)</span>
-                          </button>
-                        )}
+                    {/* Thẻ tóm tắt phiếu hẹn nhỏ gọn - CHỈ HIỆN KHI KHÁCH ĐÃ CUNG CẤP TÊN HOẶC THỜI GIAN THẬT */}
+                    {m.bookingDraft && (m.bookingDraft.fullName || m.bookingDraft.timeStr) && !m.bookingDraft.isComplete && (
+                      <div className="mt-2 p-2.5 bg-blue-50/90 border border-blue-200/80 rounded-xl text-[11px] space-y-1">
+                        <div className="flex items-center justify-between font-semibold text-blue-900">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-blue-600" />
+                            <span>
+                              {m.bookingDraft.fullName ? `Khách: ${m.bookingDraft.fullName}` : ""}{" "}
+                              {m.bookingDraft.timeStr ? `· ${m.bookingDraft.timeStr} (${m.bookingDraft.dateStr})` : ""}
+                            </span>
+                          </span>
+                          <span className="text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                            Chờ SĐT
+                          </span>
+                        </div>
+                        <p className="text-slate-600 text-[11px]">
+                          👉 Chị nhắn số điện thoại vào chat để em chốt lịch ngay nhé!
+                        </p>
+                      </div>
+                    )}
 
-                        {/* Nút Thêm vào Google Calendar */}
-                        {m.customCalendarUrl && (
-                          <a
-                            href={m.customCalendarUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer mt-1"
-                          >
-                            <Calendar className="w-4 h-4 text-blue-600" />
-                            <span>Thêm lịch hẹn vào Google Calendar</span>
-                            <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-60" />
-                          </a>
-                        )}
+                    {/* Nút Thêm vào Google Calendar 1-chạm khi đã chốt lịch thành công */}
+                    {m.customCalendarUrl && (
+                      <div className="mt-2 pt-2 border-t border-slate-100">
+                        <a
+                          href={m.customCalendarUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Thêm vào Google Calendar</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Nút liên hệ trực tiếp khi chuyển giao chuyên viên tư vấn */}
+                    {m.handoff && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
+                        <a
+                          href="tel:02286595959"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition border border-red-200/70 shadow-2xs"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Gọi Hotline 0228 659 5959</span>
+                        </a>
                       </div>
                     )}
                   </div>

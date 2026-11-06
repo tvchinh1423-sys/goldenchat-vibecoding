@@ -17,6 +17,7 @@ import {
   saveCRMBooking,
   setCRMBookingStatus,
   deleteCRMBooking,
+  deleteCRMLead,
   type CRMState,
 } from "@/lib/crm/client";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -70,8 +71,13 @@ export function CRMDashboard() {
     const storage = (e: StorageEvent) => {
       if (e.key === CRM_STORAGE_KEY || e.key === null) void refresh();
     };
+    const crmChange = () => void refresh();
     window.addEventListener("storage", storage);
-    return () => window.removeEventListener("storage", storage);
+    window.addEventListener("omnichat-crm-change", crmChange);
+    return () => {
+      window.removeEventListener("storage", storage);
+      window.removeEventListener("omnichat-crm-change", crmChange);
+    };
   }, [refresh]);
   async function mutate(operation: () => Promise<CRMState>, message: string) {
     if (busy) throw new CRMError("Đang lưu thay đổi trước. Vui lòng chờ.");
@@ -598,6 +604,12 @@ export function CRMDashboard() {
             mutate(
               () => deleteCRMBooking(b.id),
               "Đã xóa vĩnh viễn lịch hẹn khỏi hệ thống.",
+            )
+          }
+          onDeleteLead={(l) =>
+            mutate(
+              () => deleteCRMLead(l.id),
+              `Đã xóa vĩnh viễn khách hàng ${l.full_name} khỏi hệ thống.`,
             )
           }
         />

@@ -1213,6 +1213,18 @@ export default function TrainingPage() {
 
             {openSection3 && (
               <div className="space-y-3 pt-4 border-t border-slate-100 mt-3">
+                <div className="p-3 bg-gradient-to-r from-red-50 to-amber-50 border border-red-200/80 rounded-xl text-xs flex items-start gap-2.5">
+                  <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-red-900">
+                      Nguyên tắc an toàn tối thượng (Human Handoff):
+                    </span>
+                    <p className="text-slate-700 mt-0.5 leading-relaxed">
+                      Khi gặp câu hỏi nằm ngoài phạm vi tri thức đã xác thực, bot <strong>tuyệt đối không trả lời lung tung</strong> hoặc suy đoán giá/chính sách. Hệ thống sẽ <strong>tự động ngắt chế độ AI</strong> của phiên chat và chuyển tiếp để nhân viên tư vấn thật tiếp quản tức thì.
+                    </p>
+                  </div>
+                </div>
+
                 <p className="text-xs text-slate-500">
                   Bộ quy tắc an toàn (Guardrails) ngăn bot cam kết sai chính sách, hứa hẹn giữ chỗ sai hoặc khiếu nại:
                 </p>

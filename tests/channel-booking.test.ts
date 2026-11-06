@@ -3,11 +3,12 @@ import { test } from "node:test";
 import { NextRequest } from "next/server";
 import { getSmartBookingDefault } from "../lib/crm/appointment";
 import { visitIntent } from "../lib/chat/follow-ups";
-import { seedCRM, deleteDemoBooking } from "../lib/crm/demo-store";
+import { seedCRM, deleteDemoBooking, deleteDemoLead } from "../lib/crm/demo-store";
 import { CRMError } from "../lib/crm/model";
 import { GET as getBotcakeWebhook, POST as postBotcakeWebhook } from "../app/api/webhook/botcake/route";
 import { POST as postTelegramAlert } from "../app/api/telegram/alert/route";
 import { DELETE as deleteBookingRoute } from "../app/api/crm/bookings/[id]/route";
+import { DELETE as deleteLeadRoute } from "../app/api/crm/leads/[id]/route";
 import { CRM_COOKIE, issueSession } from "../lib/crm/server";
 
 test("getSmartBookingDefault returns 09:00 formatted datetime string", () => {
@@ -137,3 +138,67 @@ test("DELETE /api/crm/bookings/[id] enforces UUID and session in supabase mode",
     global.fetch = originalFetch;
   }
 });
+
+test("deleteDemoLead removes lead and associated bookings, throws 404 if not found", () => {
+  const snapshot = seedCRM();
+  const initialLeads = snapshot.leads.length;
+  const leadWithBooking = snapshot.leads.find((l) =>
+    snapshot.bookings.some((b) => b.lead_id === l.id)
+  );
+  assert.ok(leadWithBooking);
+
+  const nextSnapshot = deleteDemoLead(snapshot, leadWithBooking.id);
+  assert.equal(nextSnapshot.leads.length, initialLeads - 1);
+  assert.equal(
+    nextSnapshot.bookings.some((b) => b.lead_id === leadWithBooking.id),
+    false
+  );
+
+  // Thử xóa lại lead đã mất -> ném CRMError 404
+  assert.throws(() => deleteDemoLead(nextSnapshot, leadWithBooking.id), CRMError);
+});
+
+test("DELETE /api/crm/leads/[id] enforces UUID and session in supabase mode", async () => {
+  const env = { ...process.env };
+  const originalFetch = global.fetch;
+  const calls: { url: string; method: string }[] = [];
+
+  try {
+    process.env.CRM_MODE = "supabase";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    process.env.CRM_ACCESS_PASSWORD = "test-password-longer-than-24-characters";
+
+    global.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push({ url: String(input), method: init?.method ?? "GET" });
+      return new Response(JSON.stringify([{ id: "12345678-1234-1234-1234-123456789abc" }]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    const token = issueSession();
+
+    const req = new NextRequest(
+      "http://localhost:3000/api/crm/leads/12345678-1234-1234-1234-123456789abc",
+      {
+        method: "DELETE",
+        headers: {
+          cookie: `${CRM_COOKIE}=${token}`,
+          origin: "http://localhost:3000",
+        },
+      }
+    );
+
+    const response = await deleteLeadRoute(req, {
+      params: { id: "12345678-1234-1234-1234-123456789abc" },
+    });
+    assert.equal(response.status, 200);
+    const deleteCalls = calls.filter((c) => c.method === "DELETE");
+    assert.equal(deleteCalls.length, 2); // 1 delete bookings, 1 delete leads
+  } finally {
+    process.env = env;
+    global.fetch = originalFetch;
+  }
+});
+

@@ -30,6 +30,7 @@ export function LeadEditor({
   onBooking,
   onStatus,
   onDeleteBooking,
+  onDeleteLead,
 }: {
   lead?: CRMLead;
   bookings: CRMBooking[];
@@ -42,6 +43,7 @@ export function LeadEditor({
     status: CRMBooking["status"],
   ) => Promise<void>;
   onDeleteBooking?: (booking: CRMBooking) => Promise<void>;
+  onDeleteLead?: (lead: CRMLead) => Promise<void>;
 }) {
   const [form, setForm] = useState<LeadInput>(
     lead ?? {
@@ -215,13 +217,45 @@ export function LeadEditor({
               {error}
             </p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={disabled} onClick={onClose}>
-              Đóng
-            </Button>
-            <Button type="submit" disabled={disabled}>
-              {saving ? "Đang lưu..." : "Lưu hồ sơ"}
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            {lead?.id && onDeleteLead && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={disabled}
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 text-xs h-9 px-3"
+                onClick={async () => {
+                  if (
+                    window.confirm(
+                      `Bạn có chắc chắn muốn XÓA VĨNH VIỄN khách hàng ${lead.full_name} khỏi hệ thống không? (Toàn bộ lịch hẹn liên quan cũng sẽ bị xóa)`,
+                    )
+                  ) {
+                    setError("");
+                    try {
+                      await onDeleteLead(lead);
+                      onClose();
+                    } catch (e) {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Chưa xóa được khách hàng.",
+                      );
+                    }
+                  }
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-600" />
+                Xóa khách hàng này
+              </Button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
+              <Button variant="outline" disabled={disabled} onClick={onClose}>
+                Đóng
+              </Button>
+              <Button type="submit" disabled={disabled}>
+                {saving ? "Đang lưu..." : "Lưu hồ sơ"}
+              </Button>
+            </div>
           </div>
         </form>
         {lead && (
@@ -342,7 +376,12 @@ export function LeadEditor({
               </div>
             ))}
             {!bookings.length && (
-              <p className="text-xs text-slate-500">Chưa có lịch hẹn.</p>
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-center text-xs text-slate-500 space-y-1">
+                <p className="font-medium text-slate-600">Khách hàng này hiện chưa có lịch hẹn nào.</p>
+                <p className="text-[11px] text-slate-400">
+                  Bấm nút <strong>Tạo lịch hẹn</strong> ở trên để xếp lịch mới, hoặc bấm tab <strong>Lịch hẹn</strong> ở ngoài trang quản trị để xem và xóa các lịch hẹn của khách khác.
+                </p>
+              </div>
             )}
             {lead.inbox_reference && (
               <Link

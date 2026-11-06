@@ -378,5 +378,101 @@ app-root/
 - Production build, lint, TypeScript, 34 test logic/API/SQL và 17 kịch bản Playwright đạt trên bản cục bộ.
 - Đã mở [PR #1](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/1) từ `hien/frontend-ai` vào `main` và tag Chinh để tiếp nhận hai mốc. Bước kế tiếp là tích hợp, thử bàn phím trên Safari iOS và Chrome Android thật, rồi xác minh bản Vercel.
 
+### Mốc Bổ Sung Nút Xóa Khách Hàng (Delete Lead) & Tối Ưu Hiển Thị Xóa Lịch Hẹn — 06/11/2026 (Chinh)
 
+- **1. Nâng cấp Modal Hồ Sơ Khách Hàng (`components/crm/lead-editor.tsx`):**
+  - Bổ sung nút màu đỏ **"🗑️ Xóa khách hàng này"** ở góc trái dưới form hồ sơ (kèm xác nhận `window.confirm` xóa vĩnh viễn khách và các lịch liên quan).
+  - Khắc phục hiểu lầm khi khách chưa có lịch hẹn: hiển thị thông báo hướng dẫn rõ ràng *"Khách hàng này hiện chưa có lịch hẹn nào. Bấm nút Tạo lịch hẹn ở trên để xếp lịch mới, hoặc bấm tab Lịch hẹn ở ngoài trang quản trị để xem và xóa các lịch hẹn của khách khác."*
+- **2. Hoàn thiện API và Tầng Lưu Trữ Xóa Khách Hàng (CRM Lead Deletion):**
+  - Bổ sung API `DELETE /api/crm/leads/[id]` (xóa các booking liên quan trước, sau đó xóa lead).
+  - Bổ sung hàm `deleteDemoLead` trong `lib/crm/demo-store.ts` và `deleteCRMLead` trong `lib/crm/client.ts`.
+  - Kết nối handler `onDeleteLead` từ `components/crm/crm-dashboard.tsx`.
+- **3. Kiểm thử tự động:**
+  - Bổ sung 2 test cases mới cho `deleteDemoLead` và API `DELETE /api/crm/leads/[id]`, nâng tổng số test lên **36/36 tests pass 100%**.
+  - Next.js production build 17/17 trang tĩnh thành công 100%.
 
+### Mốc Trích Xuất Thông Tin Đặt Lịch Tự Động (Smart Booking NLP) & Tự Động Chốt Lịch Không Cần Điền Lại — 06/11/2026 (Chinh)
+
+- **1. Xây dựng Bộ Bóc Tách NLP Thông Minh (`lib/chat/booking-extractor.ts`):**
+  - Tự động trích xuất Tên khách (hỗ trợ `c tên vân`, `chị tên Vân`, `em tên Chinh`, `tên Dũng`...), Ngày hẹn (`ngày 9/11`, `mai`, `thứ 7`, `hôm nay`...), Giờ hẹn (`lúc 10h`, `10:00`, `8h30`, `14h`...), Số điện thoại và Loại lịch hẹn (`tư vấn trực tiếp`, `xem sảnh`, `thử món`).
+- **2. Hội Thoại Thông Minh Đa Lượt (Multi-turn Contextual Dialogue) (`app/api/simulator/chat/route.ts`):**
+  - **Trường hợp 1 (Thiếu thông tin):** Ví dụ khách nhắn *"chị muốn đặt lịch tư vấn trực tiếp ngày 9/11 lúc 10h , c tên vân"* -> Bot tự động nhận diện đã có Tên Vân, 10:00 ngày 09/11/2026, tư vấn trực tiếp; ân cần hỏi thêm Số điện thoại để gửi xác nhận.
+  - **Trường hợp 2 (Bổ sung SĐT ở tin nhắn tiếp theo):** Khách chỉ cần nhắn *"0912345678"* hoặc *"sđt chị 0912345678"* -> Bot tự động kết hợp với context đã lưu và **TỰ ĐỘNG CHỐT LỊCH HẸN LUÔN**.
+  - **Trường hợp 3 (Đầy đủ thông tin trong 1 câu):** Tự động tạo lịch ngay lập tức.
+- **3. Trải nghiệm Tự Động Hóa Không Cần Điền Lại (`app/widget/page.tsx`):**
+  - Toàn bộ thông tin bóc tách được **TỰ ĐỘNG ĐIỀN SẴN (Pre-fill)** vào form đặt lịch.
+  - Hiển thị **Thẻ Phiếu Hẹn Thông Minh (Smart Booking Preview Card)** ngay dưới bong bóng chat để khách theo dõi trực quan.
+  - Khi đã đủ thông tin (`autoBooked: true`), hệ thống tự động gọi `saveChatBooking`, đẩy Lead N3 lên CRM, gửi Telegram alert, phát chuông "Ting" và hiển thị nút **Google Calendar 1-chạm** mà **KHÔNG BẮT KHÁCH TỰ ĐIỀN LẠI BẤT KỲ FORM NÀO**!
+- **4. Kiểm thử tự động:**
+  - Bổ sung bộ test `tests/nlp-booking.test.ts` (3 test cases kiểm tra bóc tách NLP, hội thoại đa lượt và auto-book 1 lượt).
+  - Tổng số test: **39/39 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
+
+### Mốc Tinh Gọn Phản Hồi Chatbot & Chống Điền Thời Gian Ảo — 06/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để lỗi tự động điền thời gian ảo (`lib/chat/booking-extractor.ts`):**
+  - Trước đây: Nhánh fallback tự động gán ngày mai lúc 09:00 ngay cả khi khách chưa hề đề cập đến thời gian (như trong câu "chị muốn đặt lịch xem sảnh"), làm sinh thẻ hẹn ảo gây hiểu lầm cho khách.
+  - Khắc phục: Khi khách chưa nhắc đến từ khóa thời gian, `dateTimeIso`, `dateStr`, `timeStr` trả về `null` tuyệt đối; không đoán mò thời gian của khách.
+- **2. Rút ngắn và cô đọng câu trả lời chatbot (Concise & Focused Replies):**
+  - Khi khách chỉ nói đặt lịch chung chung: Bot chỉ hỏi 1 câu ngắn gọn, thân thiện: *"Dạ chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng), và em xin Tên cùng Số điện thoại của chị nhé ạ?"*, `bookingDraft` trả về `null`.
+  - Tinh gọn toàn bộ các câu trả lời về Photobooth, Nhân sự MC/ban nhạc, Nghi thức cưới, VAT, Thử món, Bãi xe, Đồ uống ngoài, Đặt cọc (5.000.000đ), Thực đơn, Ưu đãi... Cắt bỏ hoàn toàn câu chữ rườm rà, trình bày theo dạng gạch đầu dòng rõ ràng, trực quan, khách hàng đọc trên smartphone chỉ mất 3-5 giây.
+- **3. Tinh chỉnh giao diện Chat Widget (`app/widget/page.tsx`):**
+  - Bỏ nút bấm tím to đè lên khung chat khi bot đang hỏi thông tin; tránh rối mắt khách hàng.
+  - Thẻ preview phiếu hẹn chỉ hiển thị khi khách THỰC SỰ đã cung cấp Tên hoặc Ngày giờ (`bookingDraft.fullName || bookingDraft.timeStr`).
+- **4. Kiểm thử & Trạng thái:**
+  - 39/39 unit tests pass 100%. Next.js production build 17/17 trang tĩnh thành công.
+  - Khởi động lại server daemon cổng 3000 phục vụ trải nghiệm test mượt mà trên mobile.
+
+### Mốc Khắc Phục Lỗi Nhận Diện Số Khách 8978 & Tối Ưu Bóc Tách Đặt Lịch Đa Lượt — 06/11/2026 (Chinh)
+
+- **1. Phân tích & Tự nhận định lỗi từ ảnh chụp thực tế:**
+  - Khách nhắn: *"9h ngày 12/11, tên Chi, số điện thoại 093488978"*.
+  - **Lỗi 1 (Mất Context):** Ở lượt trước, `bookingDraft` trả về null khiến client không lưu context. Khi sang lượt 2, tin nhắn không chứa từ khóa "đặt lịch" nên hệ thống bỏ qua nhánh booking.
+  - **Lỗi 2 (SĐT 9 chữ số):** Regex cũ chỉ nhận 10 số `0[35789]\d{8}`, bỏ qua số `093488978` (9 số) dù có tiền tố "số điện thoại".
+  - **Lỗi 3 (Thảm họa Regex parseCapacity):** Parser dung tích sảnh dùng `\d{2,4}\s*$` không có dấu neo `^` ở đầu câu, dẫn tới việc nuốt 4 chữ số cuối của SĐT (`8978`) và biến nó thành "quy mô đại lễ trên 8978 khách (khoảng 898 mâm)".
+- **2. Giải pháp khắc phục triệt để:**
+  - `parseCapacity` (`app/api/simulator/chat/route.ts`): Bổ sung chặn tuyệt đối các câu có chứa SĐT, ngày tháng, giờ hẹn; neo `^...$` để chỉ parse số khách khi toàn bộ tin nhắn chỉ là một con số đơn lẻ.
+  - `booking-extractor.ts`: Hỗ trợ bóc tách SĐT linh hoạt (9 đến 11 số, có tiền tố `số điện thoại`, `sđt`, `phone`, có dấu cách/chấm).
+  - Định tuyến ý định: Bổ sung `hasExplicitBookingDetails` tự động nhận diện tin nhắn chứa thông tin đặt lịch (Tên + Giờ/Ngày/SĐT), kết hợp với `awaitingInfo: true` từ lượt trước để tự động chốt lịch hẹn mà không bị rò rỉ sang các bộ phân tích khác.
+- **3. Kiểm thử tự động:**
+  - Bổ sung unit test case kiểm tra câu `"9h ngày 12/11, tên Chi, số điện thoại 093488978"` tự động chốt lịch và không bị nhầm 8978 khách.
+  - Tổng số test: **40/40 tests pass 100%**, Next.js build 17/17 trang tĩnh thành công 100%.
+
+### Mốc Sửa Lỗi Lưu Khách Hàng Vào CRM (Lead Validation & Auto-Sync) — 06/11/2026 (Chinh)
+
+- **1. Nguyên nhân Lead chưa lưu vào CRM:**
+  - Khách nhập SĐT `093488978` (9 chữ số). Trong khi đó, hàm `validateLead` (`lib/crm/model.ts`) áp đặt regex cứng `/^0[35789]\d{8}$/` (chỉ chấp nhận đúng 10 số).
+  - Khi bóc tách thành công ở chat, widget gọi `saveChatBooking` nhưng bị `validateLead` quăng lỗi `CRMError` ("Vui lòng nhập số di động Việt Nam hợp lệ (10 chữ số)") và bị catch ngầm, dẫn tới việc chưa kịp lưu vào `localStorage`/CRM.
+  - Ngoài ra, component `CRMDashboard` chỉ lắng nghe sự kiện `storage` (liên tab) mà không lắng nghe sự kiện nội bộ `omnichat-crm-change` do widget phát ra.
+- **2. Giải pháp khắc phục:**
+  - `lib/crm/model.ts`: Cập nhật regex SĐT trong `validateLead` thành `/^0[1-9]\d{7,10}$/` để hỗ trợ linh hoạt số điện thoại từ 9 đến 11 chữ số (chấp nhận cả số 9 số khách gõ vội, 10 số di động chuẩn và 11 số máy bàn).
+  - `components/crm/crm-dashboard.tsx`: Bổ sung event listener `omnichat-crm-change` để tự động làm mới danh sách Lead & Lịch hẹn ngay tức thì khi có booking mới từ chat widget.
+  - `app/widget/page.tsx`: Thêm thông báo phản hồi nếu có lỗi lưu dữ liệu, đồng thời kích hoạt sự kiện `storage` để đồng bộ đa màn hình.
+- **3. Kiểm thử & Trạng thái:**
+  - 40/40 unit tests pass 100%. Next.js build 17/17 trang tĩnh thành công.
+
+### Mốc Cập Nhật Cơ Chế Tự Động Ngắt AI & Chuyển Giao Nhân Viên Thật (Autonomous Human Handoff) — 06/11/2026 (Chinh)
+
+- **1. Cập nhật Bộ Nguyên Tắc An Toàn (Guardrails — "Bot không được làm gì"):**
+  - Bổ sung điều cấm cốt lõi vào toàn bộ các Preset (Golden Palace, OmniTech B2B, Aura Spa) và `DEFAULT_BOT_CONFIG` trong `lib/mock-service.ts`:
+    > *"Khi gặp câu hỏi nằm ngoài phạm vi tri thức hoặc chưa được xác thực: Tuyệt đối không suy đoán hay trả lời lung tung. Tự động tắt chế độ AI của hội thoại và chuyển giao cho nhân viên tư vấn thật tiếp quản ngay lập tức."*
+  - Tại Tab 3 "Bot không được làm gì" trên màn hình Huấn Luyện Bot (`/training`): Bổ sung Banner cảnh báo đỏ-vàng nổi bật thể hiện **Nguyên tắc an toàn tối thượng (Human Handoff)** và cơ chế ngắt AI tự động khi ngoài phạm vi.
+  - Đồng bộ cập nhật tài liệu `SPEC_GIAO_DIEN_TINH_NANG.md` và `handoff/SPEC_GIAO_DIEN_TINH_NANG.md`.
+- **2. Nâng cấp Bộ Phân Tích & Định Tuyến Chat (`app/api/simulator/chat/route.ts`):**
+  - **Khắc phục lỗi bắt nhầm từ khóa (Stop words collision):** Ở Mục 6.7, trước đây từ dừng như `"không?"` bị đếm lặp khiến câu hỏi lạ ngoài phạm vi bị gán nhầm vào FAQ. Đã xây dựng bộ lọc `STOPWORDS` chuẩn hóa tiếng Việt, chỉ so khớp từ khóa nghiệp vụ thực sự có nghĩa.
+  - **Kích hoạt Human Handoff tại Mục 7:** Khi câu hỏi nằm ngoài phạm vi tri thức, bot tuyệt đối không trả lời lung tung và phản hồi siêu ngắn gọn, tinh tế: *"Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!"*, đồng thời tự động trả về cờ `aiEnabled: false`, `handoff: true`, `requiresHuman: true`.
+  - **Tối giản giao diện Widget:** Bỏ các câu giải thích kỹ thuật rườm rà ("ngắt AI", "phạm vi thông tin tự động"), chỉ giữ 1 nút bấm trực quan `[ 📞 Gọi Hotline 0228 659 5959 ]` để khách liên hệ nhanh khi cần gấp.
+- **3. Đồng bộ Trải Nghiệm Hộp Thư (Inbox) & Web Chat Widget:**
+  - **Inbox Workspace (`components/inbox/inbox-workspace.tsx` & `chat-pane.tsx`):** Tự động gạt công tắc Switch AI sang vị trí TẮT (OFF) cho hội thoại đó, hiển thị thông báo toast cho nhân viên và huy hiệu trạng thái: `⚡ AI đã tạm ngắt · Chuyên viên tiếp quản`.
+  - **Web Chat Widget (`app/widget/page.tsx`):**
+    - Header chuyển sang trạng thái: `⚡ Đã ngắt AI · Tư vấn viên tiếp quản`.
+    - Dưới tin nhắn của Bot render thẻ hỗ trợ nhân viên thật với 2 nút 1-chạm: Gọi Hotline 0228 659 5959 và Nhắn Zalo tư vấn.
+    - Tự động kích hoạt gọi API Telegram Alert `type: "handover"` gửi thông báo tức thì cho ban quản lý.
+- **4. Kiểm thử tự động & Đóng gói:**
+  - Bổ sung unit test case kiểm tra cơ chế ngắt AI và Human Handoff trong `tests/chat-ux.test.ts`, nâng tổng số test lên **41/41 tests pass 100%**.
+  - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
+
+### Mốc hợp nhất Báo cáo, bàn phím mobile và đặt lịch qua chat — 06/11/2026
+
+- Tích hợp `origin/main` tại `bd2b176` vào `hien/frontend-ai` cho PR #1. Giữ Báo cáo và phần xử lý vùng nhìn khi mở bàn phím của Hiền, cùng luồng đặt lịch qua nhiều lượt và hiển thị chuyển giao cho tư vấn viên của Chinh.
+- Widget hỏi tiếp khi còn thiếu dữ liệu. Khách vẫn có thể mở form bằng nút Đặt lịch. Khi đủ thông tin, Widget chờ kết quả lưu trước khi xác nhận và hiện liên kết Calendar.
+- Production build có kiểm tra kiểu dữ liệu, lint và 41 kiểm thử logic/API/SQL đạt. Các kịch bản Playwright đạt sau khi chạy lại kiểm tra đặt lịch với khung giờ không trùng lịch mẫu và nhãn Calendar hiện tại.
