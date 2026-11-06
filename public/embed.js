@@ -94,7 +94,7 @@
       transform: translateY(20px) scale(0.95);
       transform-origin: ${position === "left" ? "bottom left" : "bottom right"};
       pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .omnichat-iframe-wrapper.open {
       opacity: 1;
@@ -109,14 +109,14 @@
     @media (max-width: 480px) {
       .omnichat-iframe-wrapper {
         position: fixed;
-        top: 0;
+        top: var(--omnichat-top, 0px);
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: auto;
         width: 100vw;
-        height: 100vh;
+        height: var(--omnichat-height, 100dvh);
         max-width: 100vw;
-        max-height: 100vh;
+        max-height: none;
         border-radius: 0;
         z-index: 1000000;
       }
@@ -165,9 +165,21 @@
   button.innerHTML = chatIcon;
 
   var isOpen = false;
+  var viewport = window.visualViewport;
+  function fitMobileFrame() {
+    if (!viewport || !isOpen) return;
+    iframeWrapper.style.setProperty("--omnichat-top", viewport.offsetTop + "px");
+    iframeWrapper.style.setProperty("--omnichat-height", viewport.height + "px");
+  }
+  if (viewport) {
+    viewport.addEventListener("resize", fitMobileFrame);
+    viewport.addEventListener("scroll", fitMobileFrame);
+  }
+
   function setChatOpen(open) {
     isOpen = open;
     if (isOpen) {
+      fitMobileFrame();
       iframeWrapper.classList.add("open");
       button.innerHTML = closeIcon;
     } else {

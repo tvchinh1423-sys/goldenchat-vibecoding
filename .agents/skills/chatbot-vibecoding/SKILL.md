@@ -370,5 +370,12 @@ app-root/
 - Tỷ lệ AI 82% và phễu 50 → 20 → 8 được ghi rõ là minh họa. Cần dữ liệu kết quả tự xử lý và lịch sử đổi giai đoạn để tính hai chỉ số thực tế.
 - Kiểm tra production build, lint/TypeScript và Playwright cho tab Báo cáo ở 360 px, số đếm Inbox/CRM, cách loại N0 và lịch hủy, tỷ trọng theo kênh và nhãn minh họa.
 
+### Mốc ô soạn tin trên mobile — 06/11/2026 (Hiền)
+
+- Inbox và Widget toàn màn hình bám kích thước/vị trí `VisualViewport`. Inbox thu gọn thanh điều hướng và phần tiêu đề phụ khi bàn phím chiếm chỗ. Hai ô nhập dùng cỡ chữ 16 px trên mobile. Script nhúng co iframe theo vùng nhìn của trang chủ.
+- Widget hủy bộ hẹn giờ tự mở form khi khách mở form bằng nút hoặc đóng Widget, tránh ghi đè giờ hẹn đang chỉnh. Giữ luồng tự mở form và kiểm tra lịch Google Calendar theo giờ khách đã chọn.
+- Kiểm tra Playwright với chiều rộng 360, 390 và 414 px, mô phỏng vùng nhìn còn 300 px, đóng bàn phím, gửi tin và iframe nhúng. Kiểm tra thêm kiểu thu nhỏ cả bố cục ở 360 px. Chưa kiểm tra bàn phím trên điện thoại thật.
+- Production build, lint, TypeScript, 34 test logic/API/SQL và 17 kịch bản Playwright đạt trên bản cục bộ.
+
 
 

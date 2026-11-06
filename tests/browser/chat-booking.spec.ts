@@ -39,11 +39,8 @@ test("Widget saves the selected visit before offering Calendar and CRM can remov
     .getByRole("button", { name: /Tôi muốn đặt lịch xem sảnh sáng mai/ })
     .click();
   await expect(
-    page.getByRole("link", { name: "Thêm vào Google Calendar" }),
+    page.getByRole("link", { name: "Thêm lịch hẹn vào Google Calendar" }),
   ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: /Điền thông tin đặt lịch ngay/ })
-    .click();
   await page
     .getByPlaceholder("Ví dụ: Trần Vân Chinh")
     .fill("Khách demo Widget");
@@ -59,7 +56,7 @@ test("Widget saves the selected visit before offering Calendar and CRM can remov
     page.getByText("Lịch demo đã lưu trên trình duyệt.", { exact: false }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Thêm vào Google Calendar" }),
+    page.getByRole("link", { name: "Thêm lịch hẹn vào Google Calendar" }),
   ).toHaveAttribute("href", /T021500Z%2F\d{8}T031500Z/);
   await page.goto("/leads");
   await page.getByRole("button", { name: "Lịch hẹn", exact: true }).click();

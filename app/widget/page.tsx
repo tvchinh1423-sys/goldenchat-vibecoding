@@ -26,6 +26,7 @@ import { saveChatBooking } from "@/lib/crm/client";
 import { BOOKING_TYPES, formatAppointment } from "@/lib/crm/model";
 import { visitIntent } from "@/lib/chat/follow-ups";
 import { playChatTone } from "@/lib/chat/sound";
+import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 
 interface Message {
   id: string;
@@ -38,6 +39,7 @@ interface Message {
 }
 
 function WebWidgetContent() {
+  const viewportRef = useVisualViewport<HTMLDivElement>();
   const searchParams = useSearchParams();
   const customColor = searchParams.get("color") || "#2563eb";
   const customTitle = searchParams.get("title") || "Golden Palace Assistant";
@@ -76,6 +78,9 @@ function WebWidgetContent() {
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bookingTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(bookingTimer.current), []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -84,6 +89,7 @@ function WebWidgetContent() {
   }, [messages, loading]);
 
   const handleCloseWidget = () => {
+    clearTimeout(bookingTimer.current);
     if (typeof window !== "undefined" && window.parent && window.parent !== window) {
       window.parent.postMessage({ type: "omnichat-close" }, "*");
     }
@@ -143,7 +149,8 @@ function WebWidgetContent() {
       ]);
 
       if (data.appointmentIntent) {
-        setTimeout(() => {
+        clearTimeout(bookingTimer.current);
+        bookingTimer.current = setTimeout(() => {
           openBooking(resolvedVisitType || "xem_sanh");
         }, 400);
       }
@@ -163,6 +170,7 @@ function WebWidgetContent() {
   };
 
   function openBooking(type: ReturnType<typeof visitIntent> = "xem_sanh") {
+    clearTimeout(bookingTimer.current);
     setBookingType(type);
     setBookingTime(getSmartBookingDefault());
     setBookingError("");
@@ -268,13 +276,18 @@ function WebWidgetContent() {
       )}
 
       {/* Floating Chat Widget Container - Tự động full màn hình trên mobile */}
-      <div className={`fixed ${isEmbedded ? "inset-0" : "inset-0 sm:inset-auto sm:bottom-6 sm:right-6"} z-50 flex flex-col items-end`}>
+      <div
+        ref={viewportRef}
+        className={`group/chat fixed inset-x-0 top-[var(--chat-top,0px)] z-50 flex h-[var(--chat-height,100dvh)] flex-col items-end ${
+          isEmbedded ? "" : "sm:inset-auto sm:bottom-6 sm:right-6 sm:h-auto"
+        }`}
+      >
         {isOpen ? (
           <div
             className={`${
               isEmbedded
                 ? "w-full h-full rounded-none border-0"
-                : "w-full h-full sm:w-[410px] sm:h-[600px] rounded-none sm:rounded-3xl border-0 sm:border"
+                : "w-full h-full sm:w-[410px] sm:h-[min(600px,calc(100dvh-3rem))] rounded-none sm:rounded-3xl border-0 sm:border"
             } bg-white shadow-2xl border-slate-200/80 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
           >
             {/* Header */}
@@ -282,27 +295,27 @@ function WebWidgetContent() {
               style={{
                 background: `linear-gradient(135deg, ${customColor}, #4338ca)`,
               }}
-              className="p-3.5 sm:p-4 text-white flex items-center justify-between shadow-xs select-none"
+              className="p-3.5 sm:p-4 text-white flex shrink-0 items-center justify-between gap-2 shadow-xs select-none"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-sm leading-tight max-w-[180px] truncate">
                       {customTitle}
                     </h3>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>98 Đông A · Đón tiếp 8:00 - 10:30</span>
+                    <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="truncate">98 Đông A · Đón tiếp 8:00 - 10:30</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 {/* Nút Đặt lịch nhanh trên header */}
                 <button
                   type="button"
@@ -352,7 +365,7 @@ function WebWidgetContent() {
             {/* Messages Body */}
             <div
               ref={scrollRef}
-              className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 bg-[#f8fafc]"
+              className="min-h-0 flex-1 p-3.5 sm:p-4 overflow-y-auto overscroll-contain space-y-3 bg-[#f8fafc]"
             >
               <div className="text-center my-1">
                 <span className="text-[10px] text-slate-400 font-medium bg-slate-200/60 px-2.5 py-0.5 rounded-full">
@@ -444,7 +457,7 @@ function WebWidgetContent() {
             </div>
 
             {/* Quick Chips Gợi ý nhanh */}
-            <div className="px-3 py-1.5 bg-slate-100/90 border-t border-slate-200/70 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+            <div className="px-3 py-1.5 bg-slate-100/90 border-t border-slate-200/70 flex shrink-0 items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar max-sm:group-data-[keyboard-open]/chat:hidden">
               <button
                 type="button"
                 onClick={() => openBooking()}
@@ -493,17 +506,18 @@ function WebWidgetContent() {
             {/* Input Footer */}
             <form
               onSubmit={handleSend}
-              className="p-2.5 sm:p-3 bg-white border-t border-slate-100 flex items-center gap-2"
+              className="p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:p-3 bg-white border-t border-slate-100 flex shrink-0 items-center gap-2 max-sm:group-data-[keyboard-open]/chat:pb-2.5"
             >
               <input
                 type="text"
                 placeholder="Nhập tin nhắn (thực đơn, sảnh cưới, hẹn xem sảnh...)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="min-w-0 flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 type="submit"
+                aria-label="Gửi tin nhắn"
                 disabled={!input.trim() || loading}
                 style={{ backgroundColor: customColor }}
                 className="p-2.5 hover:opacity-90 disabled:opacity-40 text-white rounded-xl shadow-xs transition"

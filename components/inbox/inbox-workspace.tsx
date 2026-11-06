@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, Check, Inbox, MessageCircle, Search, X } from "lucide-react";
+import { BarChart3, Bot, Check, Inbox, MessageCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { createDemoConversations } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
+import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import type { Attachment, Conversation, InboxFilters } from "@/lib/inbox/types";
 import { ConversationList } from "./conversation-list";
 import { ChatPane } from "./chat-pane";
@@ -42,6 +43,7 @@ const DEFAULT_FILTERS: InboxFilters = {
 };
 
 export function InboxWorkspace() {
+  const viewportRef = useVisualViewport<HTMLElement>();
   const [conversations, setConversations] = useState<Conversation[]>(
     createDemoConversations,
   );
@@ -481,8 +483,12 @@ export function InboxWorkspace() {
   }
 
   return (
-    <main className="flex h-dvh min-h-[360px] flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-      <header className="z-10 flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b bg-white px-4 py-3 sm:px-6 lg:px-7">
+    <main
+      ref={viewportRef}
+      data-chat-open={chatOpen ? "" : undefined}
+      className="group/chat flex h-dvh flex-col overflow-hidden max-md:fixed max-md:inset-x-0 max-md:top-[var(--chat-top,0px)] max-md:h-[var(--chat-height,100dvh)] max-md:pb-[calc(4rem+env(safe-area-inset-bottom))] max-md:data-[keyboard-open]:pb-0 max-md:[@media(max-height:420px)]:data-[chat-open]:pb-0"
+    >
+      <header className="z-10 flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b bg-white px-4 py-3 max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:group-data-[chat-open]/chat:hidden sm:px-6 lg:px-7">
         <div className="flex items-center gap-3">
           <div className="hidden h-9 w-9 items-center justify-center rounded-xl bg-primary text-white sm:flex">
             <MessageCircle className="h-5 w-5" />
@@ -529,6 +535,16 @@ export function InboxWorkspace() {
               <span className="hidden md:inline">Bot tư vấn khách</span>
             </Link>
           </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="hidden h-9 text-xs md:inline-flex"
+          >
+            <Link href="/dashboard">
+              <BarChart3 />
+              Báo cáo
+            </Link>
+          </Button>
           <div className="relative hidden w-44 xl:block 2xl:w-64">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -568,7 +584,7 @@ export function InboxWorkspace() {
       ) : (
         <div
           className={cn(
-            "grid min-h-0 flex-1 gap-4 p-3 sm:p-4 lg:p-5",
+            "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-4 p-3 sm:p-4 lg:p-5",
             expanded
               ? "grid-cols-1"
               : "grid-cols-1 md:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_280px] 2xl:grid-cols-[340px_minmax(0,1fr)_310px]",
@@ -736,7 +752,7 @@ export function InboxWorkspace() {
       </div>
 
       {/* Mobile Bottom Navigation Bar (Chuẩn Zalo) */}
-      <MobileBottomNav />
+      <MobileBottomNav className="absolute group-data-[keyboard-open]/chat:hidden [@media(max-height:420px)]:group-data-[chat-open]/chat:hidden" />
       {chatVisit && (
         <BookingEditor
           lead={{
