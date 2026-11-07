@@ -407,7 +407,7 @@ function WebWidgetContent() {
   };
 
   return (
-    <div className={`min-h-dvh ${isEmbedded ? "bg-transparent" : "bg-slate-900/10"}`}>
+    <div className={`widget-shell min-h-dvh ${isEmbedded ? "bg-transparent" : "bg-slate-900/10"}`}>
       {/* Background mô phỏng khi xem trực tiếp trên tab riêng (chỉ hiện trên desktop) */}
       {!isEmbedded && (
         <div className="hidden sm:block fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
@@ -684,7 +684,9 @@ function WebWidgetContent() {
             >
               <input
                 type="text"
-                placeholder="Nhập tin nhắn (thực đơn, sảnh cưới, hẹn xem sảnh...)"
+                aria-label="Nội dung tin nhắn"
+                placeholder="Nhập tin nhắn…"
+                enterKeyHint="send"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="min-w-0 flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"

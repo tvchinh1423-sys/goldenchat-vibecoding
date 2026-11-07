@@ -479,6 +479,13 @@ app-root/
   - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
 
 ### Mốc hợp nhất Báo cáo, bàn phím mobile và đặt lịch qua chat — 06/11/2026
+### Mốc Widget mobile cho URL công khai — 07/11/2026 (Hiền)
+
+- Tách bản phát hành `/widget` từ `origin/main`, đưa phần giao diện Widget đã thử trên iPhone/Android từ `94734cf` vào nhánh phát hành riêng. Phần Báo cáo và giao diện quản trị tiếp tục ở PR #1.
+- Widget chừa vùng an toàn, giữ nút Gửi phía trên bàn phím, tăng chữ ô nhập lên 16 px trên thiết bị cảm ứng, hiện phím Gửi khi bàn phím hỗ trợ và cho cuộn form đặt lịch. Widget đứng và xoay ngang đều dùng vùng nhìn khả dụng, gồm bản nhúng.
+- Production build, 41 test logic/API/SQL, 16 kịch bản Chrome và 2 kịch bản Widget WebKit đạt. Kiểm tra hiển thị mobile dùng mô phỏng trên máy tính.
+- [PR #2](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/2) đã hợp nhất vào `main` tại `beedb21`. Vercel báo triển khai thành công. URL công khai trả HTTP 200 trên WebKit iPhone 13 và Chrome Galaxy S9+ mô phỏng, với ô nhập 16 px, nút Gửi 44 px và không bị che khi mô phỏng bàn phím.
+
 
 - Tích hợp `origin/main` tại `bd2b176` vào `hien/frontend-ai` cho PR #1. Giữ Báo cáo và phần xử lý vùng nhìn khi mở bàn phím của Hiền, cùng luồng đặt lịch qua nhiều lượt và hiển thị chuyển giao cho tư vấn viên của Chinh.
 - Widget hỏi tiếp khi còn thiếu dữ liệu. Khách vẫn có thể mở form bằng nút Đặt lịch. Khi đủ thông tin, Widget chờ kết quả lưu trước khi xác nhận và hiện liên kết Calendar.
