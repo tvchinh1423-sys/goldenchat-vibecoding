@@ -28,6 +28,7 @@ import { saveChatBooking } from "@/lib/crm/client";
 import { BOOKING_TYPES, formatAppointment } from "@/lib/crm/model";
 import { visitIntent } from "@/lib/chat/follow-ups";
 import { playChatTone } from "@/lib/chat/sound";
+import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 
 interface Message {
@@ -43,6 +44,7 @@ interface Message {
 }
 
 function WebWidgetContent() {
+  const viewportRef = useVisualViewport<HTMLDivElement>();
   const searchParams = useSearchParams();
   const customColor = searchParams.get("color") || "#2563eb";
   const customTitle = searchParams.get("title") || "Golden Palace Assistant";
@@ -275,7 +277,9 @@ function WebWidgetContent() {
         {
           id: `b-${Date.now()}`,
           sender: "bot",
-          text: data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
+          text: data.autoBooked && data.bookingDraft
+            ? "Dạ em đang lưu lịch hẹn cho anh/chị ạ."
+            : data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           suggestedQuestions: data.suggestedQuestions,
           visitType: resolvedVisitType,
@@ -284,11 +288,8 @@ function WebWidgetContent() {
         },
       ]);
 
-      // NẾU ĐÃ ĐỦ THÔNG TIN -> TỰ ĐỘNG CHỐT LỊCH HẸN NGAY LẬP TỨC (KHÔNG BẮT KHÁCH MỞ FORM)!
       if (data.autoBooked && data.bookingDraft) {
-        setTimeout(() => {
-          void saveDirectBooking(data.bookingDraft);
-        }, 500);
+        await saveDirectBooking(data.bookingDraft);
       }
     } catch {
       setMessages((prev) => [
@@ -406,20 +407,25 @@ function WebWidgetContent() {
   };
 
   return (
-    <div className={`min-h-screen ${isEmbedded ? "bg-transparent p-0" : "bg-slate-900/10 sm:p-4"} flex items-center justify-center`}>
+    <div className={`widget-shell min-h-dvh ${isEmbedded ? "bg-transparent" : "bg-slate-900/10"}`}>
       {/* Background mô phỏng khi xem trực tiếp trên tab riêng (chỉ hiện trên desktop) */}
       {!isEmbedded && (
         <div className="hidden sm:block fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
       )}
 
       {/* Floating Chat Widget Container - Tự động full màn hình trên mobile */}
-      <div className={`fixed ${isEmbedded ? "inset-0" : "inset-0 sm:inset-auto sm:bottom-6 sm:right-6"} z-50 flex flex-col items-end`}>
+      <div
+        ref={viewportRef}
+        className={`group/chat fixed inset-x-0 top-[var(--chat-top,0px)] z-50 flex h-[var(--chat-height,100dvh)] flex-col items-end ${
+          isEmbedded ? "" : "widget-viewport sm:inset-auto sm:bottom-6 sm:right-6 sm:h-auto"
+        } ${isOpen ? "" : "pointer-events-none"}`}
+      >
         {isOpen ? (
           <div
             className={`${
               isEmbedded
                 ? "w-full h-full rounded-none border-0"
-                : "w-full h-full sm:w-[410px] sm:h-[600px] rounded-none sm:rounded-3xl border-0 sm:border"
+                : "widget-panel w-full h-full sm:w-[410px] sm:h-[min(600px,calc(100dvh-3rem))] rounded-none sm:rounded-3xl border-0 sm:border"
             } bg-white shadow-2xl border-slate-200/80 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
           >
             {/* Header */}
@@ -427,26 +433,26 @@ function WebWidgetContent() {
               style={{
                 background: `linear-gradient(135deg, ${customColor}, #4338ca)`,
               }}
-              className="p-3.5 sm:p-4 text-white flex items-center justify-between shadow-xs select-none"
+              className="widget-header flex shrink-0 flex-wrap items-center justify-between gap-x-2 bg-blue-600 pb-2 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[calc(0.75rem+var(--safe-top))] text-white shadow-xs select-none sm:p-3.5"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
+              <div className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-full sm:gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-sm leading-tight max-w-[180px] truncate">
                       {customTitle}
                     </h3>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
                     <span
-                      className={`w-2 h-2 rounded-full ${
+                      className={`w-2 h-2 shrink-0 rounded-full ${
                         isAiActive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                       }`}
                     />
-                    <span>
+                    <span className="truncate">
                       {isAiActive
                         ? "98 Đông A · Đón tiếp 8:00 - 10:30"
                         : "⚡ Đã ngắt AI · Tư vấn viên tiếp quản"}
@@ -455,13 +461,13 @@ function WebWidgetContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 flex-wrap items-center gap-1 max-sm:ml-auto group-data-[keyboard-open]/chat:hidden">
                 {/* Nút Đặt lịch nhanh trên header */}
                 <button
                   type="button"
                   title="Đặt lịch tư vấn & xem sảnh"
                   onClick={() => openBooking()}
-                  className="px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 transition text-white text-[11px] font-semibold flex items-center gap-1 border border-white/20 shadow-2xs"
+                  className="flex min-h-11 items-center gap-1 rounded-xl border border-white/20 bg-white/15 px-2.5 text-xs font-semibold text-white hover:bg-white/25 sm:min-h-8"
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Đặt lịch</span>
@@ -471,7 +477,7 @@ function WebWidgetContent() {
                   type="button"
                   title="Làm mới cuộc trò chuyện"
                   onClick={handleResetChat}
-                  className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white"
+                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -480,7 +486,7 @@ function WebWidgetContent() {
                   type="button"
                   title={soundEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
                   onClick={() => { if (!soundEnabled) playChatTone(); setSoundEnabled(!soundEnabled); }}
-                  className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white"
+                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
                 >
                   {soundEnabled ? (
                     <Volume2 className="w-4 h-4 text-emerald-300" />
@@ -494,7 +500,7 @@ function WebWidgetContent() {
                   <a
                     href="/leads"
                     title="Mở Quản lý Khách hàng & Lịch hẹn"
-                    className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white flex items-center gap-1"
+                    className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
                   >
                     <Users className="w-4 h-4 text-amber-300" />
                   </a>
@@ -504,7 +510,7 @@ function WebWidgetContent() {
                   type="button"
                   title="Đóng khung chat"
                   onClick={handleCloseWidget}
-                  className="p-1.5 rounded-xl hover:bg-white/20 transition text-white/80 hover:text-white"
+                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -514,7 +520,7 @@ function WebWidgetContent() {
             {/* Messages Body */}
             <div
               ref={scrollRef}
-              className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 bg-[#f8fafc]"
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#f8fafc] py-3.5 pl-[max(0.875rem,var(--safe-left))] pr-[max(0.875rem,var(--safe-right))]"
             >
               <div className="text-center my-1">
                 <span className="text-[10px] text-slate-400 font-medium bg-slate-200/60 px-2.5 py-0.5 rounded-full">
@@ -530,7 +536,7 @@ function WebWidgetContent() {
                   }`}
                 >
                   <div
-                    className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 text-xs shadow-2xs leading-relaxed ${
+                    className={`max-w-[90%] break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-2xs sm:max-w-[86%] sm:text-xs ${
                       m.sender === "user"
                         ? "bg-blue-600 text-white rounded-br-xs"
                         : "bg-white text-slate-800 border border-slate-200/70 rounded-bl-xs"
@@ -625,7 +631,7 @@ function WebWidgetContent() {
             </div>
 
             {/* Quick Chips Gợi ý nhanh */}
-            <div className="px-3 py-1.5 bg-slate-100/90 border-t border-slate-200/70 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+            <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-t border-slate-200/70 bg-slate-100/90 py-1.5 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] text-[11px] group-data-[keyboard-open]/chat:hidden max-sm:[@media(max-height:420px)]:hidden">
               <button
                 type="button"
                 onClick={() => openBooking()}
@@ -674,20 +680,23 @@ function WebWidgetContent() {
             {/* Input Footer */}
             <form
               onSubmit={handleSend}
-              className="p-2.5 sm:p-3 bg-white border-t border-slate-100 flex items-center gap-2"
+              className="flex shrink-0 items-center gap-2 border-t border-slate-100 bg-white pl-[max(0.625rem,var(--safe-left))] pr-[max(0.625rem,var(--safe-right))] pt-2.5 pb-[calc(0.625rem+var(--safe-bottom))] group-data-[keyboard-open]/chat:pb-2.5"
             >
               <input
                 type="text"
-                placeholder="Nhập tin nhắn (thực đơn, sảnh cưới, hẹn xem sảnh...)"
+                aria-label="Nội dung tin nhắn"
+                placeholder="Nhập tin nhắn…"
+                enterKeyHint="send"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="min-w-0 flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 type="submit"
+                aria-label="Gửi tin nhắn"
                 disabled={!input.trim() || loading}
                 style={{ backgroundColor: customColor }}
-                className="p-2.5 hover:opacity-90 disabled:opacity-40 text-white rounded-xl shadow-xs transition"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white shadow-xs transition hover:opacity-90 disabled:opacity-40"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>
@@ -695,8 +704,8 @@ function WebWidgetContent() {
 
             {/* ================= MODAL ĐẶT LỊCH NHANH TRỰC TIẾP (POPUP FORM) ================= */}
             {showBookingModal && (
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150">
-                <div className="w-full max-h-[92%] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-y-auto p-4 sm:p-5 flex flex-col space-y-3.5 animate-in slide-in-from-bottom-4 duration-200">
+              <div className="absolute inset-0 z-50 flex items-end justify-center bg-slate-900/60 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[max(0.75rem,var(--safe-top))] pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-xs sm:items-center">
+                <div className="max-h-full w-full space-y-3.5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
                   <div className="flex items-start justify-between border-b border-slate-100 pb-2.5">
                     <div>
                       <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase tracking-wider">
@@ -713,7 +722,8 @@ function WebWidgetContent() {
                     <button
                       type="button"
                       onClick={() => setShowBookingModal(false)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                      aria-label="Đóng form đặt lịch"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -798,8 +808,8 @@ function WebWidgetContent() {
                     </div>
 
                     {/* Số khách & Ghi chú */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-1">
+                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
+                      <div>
                         <label className="block text-slate-700 font-medium mb-1 flex items-center gap-1">
                           <Users className="w-3.5 h-3.5 text-slate-400" />
                           Số khách
@@ -813,7 +823,7 @@ function WebWidgetContent() {
                           className="w-full px-3 py-2 border border-slate-200 rounded-xl"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div>
                         <label className="block text-slate-700 font-medium mb-1 flex items-center gap-1">
                           <FileText className="w-3.5 h-3.5 text-slate-400" />
                           Ghi chú thêm
@@ -839,7 +849,7 @@ function WebWidgetContent() {
                         type="button"
                         disabled={bookingSubmitting}
                         onClick={() => setShowBookingModal(false)}
-                        className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
+                        className="min-h-11 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
                       >
                         Đóng
                       </button>
@@ -847,7 +857,7 @@ function WebWidgetContent() {
                         type="submit"
                         disabled={bookingSubmitting}
                         style={{ backgroundColor: customColor }}
-                        className="px-4 py-2 text-white font-semibold rounded-xl shadow-xs hover:opacity-95 transition disabled:opacity-50 flex items-center gap-1.5"
+                        className="flex min-h-11 items-center gap-1.5 rounded-xl px-4 py-2 font-semibold text-white shadow-xs transition hover:opacity-95 disabled:opacity-50"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {bookingSubmitting ? "Đang xếp lịch..." : "Xác nhận đặt lịch"}
@@ -861,9 +871,10 @@ function WebWidgetContent() {
         ) : (
           <button
             type="button"
+            aria-label="Mở khung chat"
             onClick={() => setIsOpen(true)}
             style={{ backgroundColor: customColor }}
-            className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 group"
+            className="widget-launcher pointer-events-auto group mt-auto mr-[max(1rem,var(--safe-right))] mb-[max(1rem,var(--safe-bottom))] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:m-0"
           >
             <MessageSquare className="w-6 h-6 group-hover:scale-110 transition" />
           </button>
