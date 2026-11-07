@@ -665,3 +665,30 @@ app-root/
   - Bổ sung file kiểm thử tự động `tests/browser/notifications.spec.ts`.
   - Kết quả kiểm thử: **48/48 unit tests pass 100%**, **29/29 Playwright browser tests pass 100%**.
   - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
+
+### Mốc Phân Quyền 3 Cấp (Admin, Quản Lý, Nhân Viên) & Chỉ Định Ca Trực — 07/11/2026 (Chinh)
+
+- **1. Phân Quyền 3 Cấp Tuyệt Đối (RBAC):**
+  - **👑 Admin (Toàn quyền):** Truy cập toàn bộ hệ thống, cấu hình kênh và kết nối Botcake/Telegram/Sheets, huấn luyện bot, quản lý người dùng, phân công chat.
+  - **💼 Quản lý:** Toàn quyền vận hành (trực chat, CRM, lịch hẹn, báo cáo), huấn luyện bot & tri thức, phân công phiên chat cho nhân viên, thêm/sửa/xóa người dùng. **Bị chặn tuyệt đối khỏi trang Cấu hình chung (`/settings`)** theo đúng yêu cầu đề bài.
+  - **🎧 Nhân viên:** Trực chat đa kênh, quản lý danh sách khách hàng & lịch hẹn tư vấn, xem/thử bot. **Không được cấu hình hệ thống, không được quản lý người dùng, không được tự chỉ định phiên chat cho người khác**.
+- **2. Chỉ Định Phiên Chat Cho Nhân Viên Cụ Thể (Chat Assignment):**
+  - Quản lý và Admin có thể chỉ định phiên chat cho nhân viên cụ thể từ Chat Pane hoặc Info Panel.
+  - Nhân viên có tab lọc "Của tôi" để theo dõi các phiên chat được giao.
+  - Hệ thống tự động ghi nhật ký hệ thống vào cuộc hội thoại khi có người chỉ định/thay đổi người phụ trách.
+
+### Mốc Quản Lý Mật Khẩu & Xác Thực Đăng Nhập Người Dùng — 07/11/2026 (Chinh)
+
+- **1. Thêm Trường Mật Khẩu Vào Quản Lý Người Dùng (`AppUser`):**
+  - Bổ sung trường `password?: string` vào giao diện người dùng `AppUser` và kho lưu trữ `lib/auth/store.ts`.
+  - Mật khẩu mặc định hệ thống: `goldenpalace2026` (hỗ trợ thêm `admin123` cho Admin).
+  - Khi tạo tài khoản mới: bắt buộc nhập mật khẩu (tối thiểu 6 ký tự).
+  - Khi chỉnh sửa tài khoản: cho phép đổi mật khẩu mới (nếu để trống sẽ giữ nguyên mật khẩu hiện tại).
+- **2. Nút Ẩn/Hiện Mắt Xem Mật Khẩu (`Eye` / `EyeOff`):**
+  - Tích hợp nút con mắt toggle hiển thị/ẩn mật khẩu trực quan cả trong modal "Quản lý Người Dùng & Phân Quyền" (`components/users/user-management-modal.tsx`), trang toàn màn hình `/users`, và Dialog Đăng nhập (`components/auth/login-dialog.tsx`).
+- **3. Hiển Thị Huy Hiệu Mật Khẩu & Xác Thực Đăng Nhập:**
+  - Danh sách tài khoản hiển thị chỉ báo trạng thái mật khẩu kèm icon ổ khóa `Lock`.
+  - Hàm `login(username, password)` trong `lib/auth/auth-context.tsx` kiểm tra chính xác mật khẩu của từng user, đưa ra thông báo lỗi chi tiết khi mật khẩu không khớp.
+- **4. Kiểm Thử & Kiểm Duyệt:**
+  - Bổ sung kiểm thử đơn vị trong `tests/rbac-assignment.test.ts` xác thực tạo user kèm mật khẩu tùy chỉnh, kiểm tra độ dài tối thiểu 6 ký tự, và cập nhật mật khẩu thành công.
+  - **48/48 unit tests pass 100%**, Next.js build **20/20 trang tĩnh thành công 100%**.

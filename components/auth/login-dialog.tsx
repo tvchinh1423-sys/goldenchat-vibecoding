@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   X,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,7 @@ export function LoginDialog({
   const { login, quickSwitch, users } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedDemoRole, setSelectedDemoRole] = useState<UserRole>("admin");
@@ -249,19 +252,35 @@ export function LoginDialog({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-              <span>Mật khẩu</span>
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                <span>Mật khẩu</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                Mặc định: goldenpalace2026
+              </span>
             </label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="Mật khẩu mặc định: goldenpalace2026"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="text-xs rounded-xl bg-slate-50 focus:bg-white"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                placeholder="Nhập mật khẩu..."
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="text-xs rounded-xl bg-slate-50 focus:bg-white pr-9"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                tabIndex={-1}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           {error && (
