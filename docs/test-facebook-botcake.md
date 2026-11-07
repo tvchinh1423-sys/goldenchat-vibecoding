@@ -14,4 +14,6 @@ Bài thử chạy một câu hỏi mẫu qua luồng Messenger → Botcake → O
 
 Nếu **Test Request** có `reply` nhưng Messenger không phản hồi, kiểm tra block gửi tin đã lấy đúng Custom Field, từ khóa đã bật, đúng Page và quyền nhắn tin của Botcake. Nếu **Test Request** lỗi, kiểm tra URL, phương thức và JSON trước.
 
+Nếu Botcake báo không tìm thấy Page nào đang quản lý, vào [hồ sơ Pancake](https://account.pancake.vn/profile) và chọn **Liên kết với tài khoản Facebook**. Nếu đang liên kết nhầm tài khoản hoặc cần cấp lại quyền cho Page, dùng **Đổi Facebook**. Chọn tài khoản có quyền quản lý đúng Page, sau đó đăng nhập lại Botcake. Xem [hướng dẫn xử lý của Botcake](https://docs.pancake.biz/botcake/st-f6/st-p5/st-s7?lang=en).
+
 Webhook `/api/webhook/botcake` hiện trả nội dung ở `data.botReply` trong JSON và không gọi API gửi Messenger. `GET` trả `ready`, nút ping, hoặc mô phỏng `POST` thành công không xác nhận Botcake đã nhận/gửi tin thật. Bài thử JSON API trên dùng kho câu hỏi mẫu của Simulator. Đồng bộ Inbox và tạo lead thật cần kiểm thử riêng sau khi có cấu hình lưu trữ và luồng nhận sự kiện thật.

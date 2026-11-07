@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -91,13 +92,16 @@ export default function DashboardLayout({
       {/* Top Navigation Bar theo chuẩn UI Mẫu */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 pb-2.5 pt-[calc(0.625rem+var(--safe-top))] md:px-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 md:gap-6">
-          <Link href="/inbox" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 group-hover:bg-blue-700 flex items-center justify-center text-white font-bold text-sm shadow-sm transition">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span className="font-semibold text-slate-900 tracking-tight text-base group-hover:text-blue-600 transition">
-              OmniChat AI
-            </span>
+          <Link href="/inbox" className="flex items-center gap-2 group py-0.5" title="OmniChat AI — Trang chủ Hộp thư">
+            <Image
+              src="/logo-ngang.png"
+              alt="OmniChat AI"
+              width={160}
+              height={44}
+              className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+              priority
+            />
+            <span className="sr-only">OmniChat AI</span>
           </Link>
 
           {/* Navigation Tabs */}

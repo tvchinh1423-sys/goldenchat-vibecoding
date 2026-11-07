@@ -228,7 +228,7 @@ export function ChatPane({
       className="panel flex h-full flex-col"
       aria-label={`Hội thoại với ${conversation.name}`}
     >
-      <header className="flex min-h-20 shrink-0 items-center justify-between gap-2 border-b px-3 py-3 sm:px-5">
+      <header className="flex min-h-20 shrink-0 items-center justify-between gap-2 border-b px-3 py-3 sm:px-5 max-md:group-data-[keyboard-open]/chat:min-h-11 max-md:[@media(max-height:420px)]:min-h-11 max-md:group-data-[keyboard-open]/chat:py-1 max-md:[@media(max-height:420px)]:py-1">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
@@ -386,7 +386,7 @@ export function ChatPane({
 
       {/* Pinned Message Banner (Chuẩn Meta Business Suite) */}
       {pinnedMessage && (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-amber-50/90 px-4 py-2 text-xs text-amber-900 border-amber-200/90 shadow-2xs animate-in slide-in-from-top-2">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-amber-50/90 px-4 py-2 text-xs text-amber-900 border-amber-200/90 shadow-2xs animate-in slide-in-from-top-2 max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:hidden">
           <div
             className="flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-80 flex-1"
             onClick={() => scrollToMessage(pinnedMessage.id)}
@@ -442,7 +442,7 @@ export function ChatPane({
           </span>
         )}
       </div>
-      <div className="flex shrink-0 justify-end gap-3 border-b px-4 py-2 text-[10px] text-muted-foreground sm:hidden">
+      <div className="flex shrink-0 justify-end gap-3 border-b px-4 py-2 text-[10px] text-muted-foreground sm:hidden max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:hidden">
         <button
           disabled={isArchived}
           className="disabled:opacity-40"
@@ -757,7 +757,7 @@ export function ChatPane({
           </div>
         )}
       </div>
-      <footer className="relative shrink-0 border-t bg-white p-3 sm:p-4">
+      <footer className="relative shrink-0 border-t bg-white p-3 sm:p-4 max-md:group-data-[keyboard-open]/chat:p-1.5 max-md:[@media(max-height:420px)]:p-1">
         {isArchived ? (
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-muted-foreground">
@@ -802,7 +802,7 @@ export function ChatPane({
                 conversation.aiEnabled && lastMsg?.sender === "customer";
               if (!isCustomerWaiting) return null;
               return (
-                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 px-3 py-2 text-xs text-blue-900 shadow-2xs animate-in fade-in">
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 px-3 py-2 text-xs text-blue-900 shadow-2xs animate-in fade-in max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:hidden">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -842,7 +842,7 @@ export function ChatPane({
               onChange={(event) => onDraft(event.target.value)}
               onKeyDown={onComposerKeyDown}
               maxLength={6000}
-              className="mb-3 min-h-[62px] border-0 p-1 text-base shadow-none focus-visible:ring-0 max-md:group-data-[keyboard-open]/chat:mb-1 max-md:group-data-[keyboard-open]/chat:min-h-10 md:text-[13px]"
+              className="mb-3 min-h-[62px] border-0 p-1 text-base shadow-none focus-visible:ring-0 max-md:group-data-[keyboard-open]/chat:mb-1 max-md:[@media(max-height:420px)]:mb-0.5 max-md:group-data-[keyboard-open]/chat:min-h-10 max-md:[@media(max-height:420px)]:min-h-9 md:text-[13px]"
             />
             <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative">
@@ -984,7 +984,7 @@ export function ChatPane({
                 </Button>
               </div>
             </div>
-            <p className="mt-2.5 text-[9px] text-muted-foreground max-md:group-data-[keyboard-open]/chat:hidden">
+            <p className="mt-2.5 text-[9px] text-muted-foreground max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:hidden">
               Enter để gửi · Shift + Enter xuống dòng · Bản nháp cần được duyệt
               trước khi gửi
             </p>

@@ -35,6 +35,7 @@ description: >-
 | **Khung Simulator Thử bot** | Test thực đơn, xem sảnh, guardrail, bóc tách SĐT | ✅ Hoàn thành (Chinh) |
 | **Trang Cấu hình Kênh & SLA** | `/settings` quản lý Botcake, Telegram, Web Widget, SLA | ✅ Hoàn thành (Chinh) |
 | **Web Chat Widget nhúng** | `/widget` Khung chat nhúng cho website doanh nghiệp | ✅ Hoàn thành (Chinh) |
+| **Giao diện Chat Meta Business Suite** | Reactions, Ghim tin nhắn, Lightbox media, Quick Like 👍, Emoji Picker | ✅ Hoàn thành 100% (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
@@ -569,8 +570,72 @@ app-root/
   - Kết quả kiểm thử: **45/45 unit tests pass 100%**.
   - Production build Next.js: **20/20 trang tĩnh thành công 100%**, không có lỗi TypeScript hay ESLint.
 
+### Mốc Trải Nghiệm Chat Web Widget Chuẩn Zalo & Messenger (Đính Kèm Ảnh Cross-Platform, Thả Cảm Xúc Reaction, Lightbox Phóng To & Link 1-Chạm) — 07/11/2026 (Chinh)
+
+- **1. Chức năng Đính Kèm Ảnh Đa Kênh Tương Thích 100% Mọi Hệ Điều Hành (`lib/chat/image-utils.ts` & `app/widget/page.tsx`):**
+  - Tuân thủ quy chuẩn bắt buộc của `cross-platform-sync`:
+    + Sử dụng Canvas HTML5 client-side (`compressImageToJpeg`) tự động nén và resize ảnh tỷ lệ tối đa 1600px, chất lượng JPEG 0.85 (~150KB - 300KB), giải quyết triệt để vấn đề file `.heic`/`.heif` từ iPhone/iPad và ảnh camera dung lượng lớn >10MB trên Android/Windows.
+    + Kích hoạt nút tải ảnh qua Native Label `<label htmlFor="widget-image-upload">` và `<input type="file" accept="image/*,image/heic,image/heif,.heic,.heif">` ẩn, không bị Safari/Android WebView chặn `.click()` bất đồng bộ.
+    + Hỗ trợ dán ảnh trực tiếp từ Clipboard (`Ctrl+V` / `Cmd+V`) và kéo & thả ảnh (Drag & Drop) vào khung chat với overlay hiệu ứng "Thả hình ảnh vào đây".
+    + Thanh Thumbnail Preview trước khi gửi: Xem trước danh sách ảnh đã chọn, nút xóa từng ảnh `[x]`, badge dung lượng (KB/MB), loading spinner khi đang nén.
+    + Cho phép gửi tin nhắn chỉ có ảnh (không cần text) hoặc kèm lời nhắn.
+- **2. Thả Cảm Xúc Tin Nhắn (Message Reactions Chuẩn Zalo & Facebook Messenger):**
+  - Tích hợp 6 biểu cảm kinh điển phong cách Messenger & Zalo: ❤️ (Yêu thích), 👍 (Thích), 😆 (Haha), 😮 (Wow), 😢 (Buồn), 😡 (Phẫn nộ).
+  - Hover hoặc chạm vào nút icon thả cảm xúc bên cạnh bong bóng chat -> Hiển thị thanh Floating Reaction Bar nổi với hiệu ứng nảy (scale/bounce) khi chọn.
+  - Áp dụng thả cảm xúc cho cả tin nhắn của Bot VÀ tin nhắn của User.
+  - Huy hiệu Reaction (Reaction Badge) hiển thị ghim ở góc dưới của bong bóng tin nhắn (nền trắng bo tròn, viền mỏng, đổ bóng nhẹ, đếm số lượng) đúng phong cách Zalo/Messenger. Nhấp lại vào huy hiệu để gỡ hoặc đổi cảm xúc.
+- **3. Trình Xem Ảnh Toàn Màn Hình (Image Lightbox / Modal Phóng To):**
+  - Khi nhấp vào bất kỳ ảnh nào trong luồng chat (ảnh khách gửi hoặc ảnh không gian sảnh, thực đơn do Bot gửi):
+    + Mở ngay Modal Lightbox toàn màn hình phủ tối sang trọng (`bg-black/95 backdrop-blur-md z-[100]`).
+    + Thanh công cụ đầy đủ: Nút Phóng to / Thu nhỏ (`ZoomIn` / `ZoomOut`), Nút Tải ảnh về máy (`Download`), Nút Mở tab mới (`ExternalLink`), Nút Đóng `[X]`.
+    + Đóng nhanh bằng phím `Escape` hoặc nhấp vào vùng tối bên ngoài.
+- **4. Giao Diện & Trải Nghiệm Chat Thân Thiện Người Dùng Phổ Thông:**
+  - Header chuẩn Fanpage / Zalo OA: Avatar tròn kèm chấm xanh Online đang nhấp nháy, dòng trạng thái "Đang hoạt động · 98 Đông A", các nút tiện ích Đặt lịch, Âm thanh "Ting", Reset chat, Đóng widget.
+  - Bong bóng chat mềm mại: Tin nhắn Bot nền trắng viền mỏng, tin nhắn User màu gradient xanh mượt mà, tick trạng thái gửi `✓✓ Đã nhận`.
+  - Khay Emoji Picker Nhanh: Popover chọn nhanh emoji theo 3 nhóm (Cảm xúc, Cử chỉ, Tiệc cưới & F&B).
+  - Nút Like nhanh 👍 (Thumbs Up) kinh điển của Facebook Messenger: Khi ô nhập rỗng, nút gửi hiển thị biểu tượng Like 👍 màu xanh to rõ; khi có text hoặc ảnh tự động chuyển thành nút Gửi ✈️.
+  - Hiển thị đường link sắc nét qua `FormattedMessage`: Markdown link, URL, Hotline điện thoại chạm là gọi ngay `tel:`, các nút Action Chips 1-chạm (Menu Thực đơn, Google Maps, Xem sảnh Tầng 2/3/4, Tính dự toán...).
+- **5. Nâng cấp API Chat Simulator (`app/api/simulator/chat/route.ts`):**
+  - Tiếp nhận tham số `attachments`, nhận diện khi khách gửi ảnh và phản hồi ngữ cảnh thông minh, khen ngợi mẫu ảnh của khách và gợi ý tư vấn tiệc cưới/sự kiện.
+- **6. Kiểm Thử Tự Động & Đóng Gói Toàn Diện:**
+  - Unit tests: Bổ sung `tests/widget-chat-ux.test.ts`, nâng tổng số unit test từ 45 lên **48/48 tests pass 100%**.
+  - Playwright browser tests: Bổ sung `tests/browser/widget-meta-ux.spec.ts` kiểm thử toàn bộ luồng đính kèm ảnh, reaction, lightbox, emoji picker và Like button. Toàn bộ kịch bản Playwright (desktop và mobile landscape/portrait) đạt 100%.
+  - Production build Next.js: **20/20 static pages & dynamic endpoints build thành công 100%**.
+
+### Mốc Nâng Cấp Giao Diện Chat Hộp Thư Chuẩn Meta Business Suite (Reactions, Ghim Tin Nhắn, Media Lightbox, Quick Like & Tối Ưu Bàn Phím Ảo Di Động) — 07/11/2026 (Chinh)
+
+- **1. Giao Diện Khung Chat Chuẩn Meta Business Suite (Messenger / Page Inbox):**
+  - Màu sắc và phong cách bong bóng chat đồng bộ nhận diện Meta:
+    + Tin nhắn khách hàng: Nền xám `#f0f2f5`, chữ đen `#050505`, bo góc `rounded-bl-xs`.
+    + Tin nhắn tư vấn viên / Page: Nền xanh Meta `#0084ff`, chữ trắng, bo góc `rounded-br-xs`.
+  - Nút Thích nhanh 👍 (Quick Like): Khi ô soạn thảo rỗng, hiển thị nút Thích 👍 màu xanh Messenger; bấm 1-chạm gửi ngay biểu tượng Like cho khách. Nút Gửi luôn sẵn sàng, tự kích hoạt khi có nội dung.
+- **2. Tương Tác Cảm Xúc (Meta Reactions) & Reaction Badges:**
+  - Tích hợp 6 biểu cảm kinh điển chuẩn Meta: ❤️ (Yêu thích), 👍 (Thích), 😆 (Haha), 😮 (Wow), 😢 (Buồn), 😡 (Phẫn nộ).
+  - Thanh Floating Meta Reaction Bar nổi bật khi hover hoặc click nút Smile bên cạnh từng tin nhắn với hiệu ứng chuyển động mượt mà.
+  - Huy hiệu cảm xúc (Reaction Badge) hiển thị cố định ở chân tin nhắn, cho phép nhấp để đổi hoặc gỡ cảm xúc.
+- **3. Ghim Tin Nhắn Quan Trọng (Pin / Unpin Messages) & Pinned Banner:**
+  - Nút ghim 📌 trên từng tin nhắn cho phép đánh dấu các mốc thỏa thuận quan trọng (đặt cọc, số lượng mâm cỗ, yêu cầu đặc biệt của khách).
+  - Huy hiệu `📌 Đã ghim` màu vàng hổ phách nổi bật trên bong bóng tin nhắn.
+  - Thanh **Pinned Message Banner** cố định ở đỉnh khung chat (phong cách Meta Page Inbox): hiển thị trích dẫn tin nhắn đã ghim, nút "Xem" tự động cuộn mượt đến vị trí tin nhắn và hiệu ứng highlight màu vàng, kèm nút "Bỏ ghim".
+- **4. Hiển Thị Media, Image Lightbox & Đường Link Tương Tác:**
+  - Hiển thị media dạng gallery gọn gàng, sắc nét.
+  - Khi nhấp vào ảnh trong đoạn chat: Mở ngay Dialog Modal Lightbox phóng to chất lượng cao, kèm nút "Mở ảnh gốc / Tải về".
+  - Đường link clickable qua `FormattedMessage`, nhận diện hotline điện thoại chạm là gọi ngay `tel:`, các nút Action Chips 1-chạm (Thực đơn mẫu, Bản đồ Google Maps chỉ đường đến 98 Đông A, Khảo sát sảnh tiệc...).
+- **5. Khay Emoji Phân Nhóm Phong Phú:**
+  - Popover chọn emoji phân chia theo 3 tab trực quan: Cảm xúc, Cử chỉ, Tiệc cưới & F&B (phù hợp đặc thù nhà hàng tiệc cưới).
+- **6. Tối Ưu Bàn Phím Ảo & Viewport Di Động:**
+  - Xử lý triệt để xung đột khi mở bàn phím ảo trên mobile hoặc thu nhỏ layout viewport (`@media(max-height:420px)` và `data-keyboard-open`):
+    + Co gọn header chat, giảm padding footer, ẩn các banner phụ và chỉ dẫn phím tắt.
+    + Đảm bảo ô nhập tin nhắn và nút gửi luôn hiển thị hoàn toàn bên trên bàn phím ảo (`<= 330px` và `<= 300px`).
+  - Khắc phục lỗi hydration SSR trong `CRMDashboard` bằng cách đồng bộ `sessionStorage` trong `useEffect`.
+  - Căn chỉnh tab bar `MobileBottomNav` với `items-start pt-1` để các liên kết nằm an toàn trên thanh `safe-bottom` (đáy `<= 810px`).
+- **7. Kết Quả Kiểm Thử Toàn Diện:**
+  - **48/48 unit tests pass 100%**.
+  - **28/28 Playwright browser tests pass 100%** (bao gồm cả desktop, mobile portrait, mobile landscape, keyboard viewport, PWA mobile).
+  - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
+
 ### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
 
-- Đã nhận `origin/main` tại `47cb8be`, giữ nguyên schema và các file chạy cục bộ chưa commit.
+- Đã nhận `origin/main` tại `47cb8be` và tích hợp tiếp giao diện Widget/Inbox của Chinh tại `8b32ba3`, giữ nguyên schema và các file chạy cục bộ chưa commit.
 - Kiểm tra Vercel: `GET /api/webhook/botcake` trả HTTP 200 `ready`; `POST /api/simulator/chat` với kênh `facebook` và câu hỏi mẫu về hotline trả đúng nội dung. Kiểm thử cục bộ xác nhận webhook đọc được payload Facebook dạng custom và `entry[].messaging[]`, trả JSON có `data.botReply`; tổng 49 test đạt. Webhook không tự gửi nội dung đó lên Messenger.
-- Chuẩn bị bài thử có từ khóa riêng và JSON API trong [docs/test-facebook-botcake.md](../../../docs/test-facebook-botcake.md). Dùng câu hỏi cố định, không gửi dữ liệu khách và không ghi Inbox/CRM. Tab Botcake cần người dùng đăng nhập bằng tài khoản quản trị Page; chưa cấu hình flow hoặc xác minh tin nhắn Facebook thật. Bước kế tiếp: chọn Page, chạy flow và đối chiếu phản hồi trực tiếp trong Messenger; kiểm thử đồng bộ Inbox/CRM riêng.
+- Chuẩn bị bài thử có từ khóa riêng và JSON API trong [docs/test-facebook-botcake.md](../../../docs/test-facebook-botcake.md). Dùng câu hỏi cố định, không gửi dữ liệu khách và không ghi Inbox/CRM. Đã đăng nhập Botcake nhưng onboarding Messenger báo không tìm thấy Page đang quản lý; hồ sơ Pancake hiện nút **Liên kết với tài khoản Facebook**. Chưa cấu hình flow hoặc xác minh tin nhắn Facebook thật. Bước kế tiếp: người quản trị liên kết Facebook và chọn đúng Page, chạy flow rồi đối chiếu phản hồi trong Messenger; kiểm thử đồng bộ Inbox/CRM riêng.

@@ -35,20 +35,24 @@ import {
 export function CRMDashboard() {
   const [data, setData] = useState<CRMState | null>(null);
   const [auth, setAuth] = useState(false);
-  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const authVal = sessionStorage.getItem("omnichat_staff_auth");
-    if (authVal === "true") return true;
-    if (authVal === "false") return false;
-    // Mặc định nhân viên trực Golden Palace mở phiên sẵn sàng, không bắt đăng nhập lại trừ khi đã bấm Đăng xuất
-    sessionStorage.setItem("omnichat_staff_auth", "true");
-    sessionStorage.setItem("omnichat_staff_name", "Ngọc Khánh");
-    return true;
-  });
-  const [staffName, setStaffName] = useState<string>(() => {
-    if (typeof window === "undefined") return "Ngọc Khánh";
-    return sessionStorage.getItem("omnichat_staff_name") || "Ngọc Khánh";
-  });
+  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState<boolean>(true);
+  const [staffName, setStaffName] = useState<string>("Ngọc Khánh");
+
+  useEffect(() => {
+    try {
+      const authVal = sessionStorage.getItem("omnichat_staff_auth");
+      if (authVal === "false") {
+        setIsStaffLoggedIn(false);
+      } else {
+        sessionStorage.setItem("omnichat_staff_auth", "true");
+        sessionStorage.setItem("omnichat_staff_name", "Ngọc Khánh");
+      }
+      const savedName = sessionStorage.getItem("omnichat_staff_name");
+      if (savedName) setStaffName(savedName);
+    } catch {
+      // Bỏ qua lỗi truy cập sessionStorage nếu có sandbox chặn
+    }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
