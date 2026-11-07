@@ -125,6 +125,12 @@ export function parseCRM(raw: string): CRMSnapshot {
 export function readDemoCRM(storage: StorageLike): CRMSnapshot {
   const raw = storage.getItem(CRM_STORAGE_KEY);
   if (raw) return parseCRM(raw);
+  const isProduction = storage.getItem("omnichat.production_mode") === "true";
+  if (isProduction) {
+    const clean: CRMSnapshot = { leads: [], bookings: [] };
+    writeDemoCRM(storage, clean);
+    return clean;
+  }
   const snapshot = seedCRM();
   const old = storage.getItem(OLD_STAGE_KEY);
   if (old) {

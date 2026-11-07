@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus, Search, Trash2, CheckCircle2, XCircle, LogOut, ShieldCheck, User, Phone, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { triggerHaptic } from "@/lib/mobile/haptics";
+import { playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
 import { CRMAccessPanel } from "./access-panel";
 import { BookingEditor } from "./booking-editor";
 import { LeadEditor } from "./lead-editor";
@@ -22,6 +23,7 @@ import {
   type CRMState,
 } from "@/lib/crm/client";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
+import { autoCleanupIfDemo } from "@/lib/clean-data";
 import {
   CRMError,
   BOOKING_TYPES,
@@ -75,6 +77,9 @@ export function CRMDashboard() {
     setLoading(true);
     setError("");
     try {
+      if (typeof window !== "undefined") {
+        autoCleanupIfDemo();
+      }
       setData(await loadCRM());
       setAuth(false);
     } catch (e) {
@@ -596,12 +601,14 @@ export function CRMDashboard() {
                             type="button"
                             title="Xác nhận lịch hẹn"
                             disabled={busy}
-                            onClick={() =>
+                            onClick={() => {
+                              triggerHaptic("success");
+                              playBookingSuccessCelebrationTone();
                               mutate(
                                 () => setCRMBookingStatus(b, "confirmed"),
                                 "Đã xác nhận lịch hẹn.",
-                              ).catch(reportBookingError)
-                            }
+                              ).catch(reportBookingError);
+                            }}
                             className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-md font-medium transition"
                           >
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -673,12 +680,16 @@ export function CRMDashboard() {
           onBooking={(lead, booking) =>
             setBookingEditor({ leadId: lead.id, booking })
           }
-          onStatus={(b, status) =>
-            mutate(
+          onStatus={async (b, status) => {
+            if (status === "confirmed") {
+              triggerHaptic("success");
+              playBookingSuccessCelebrationTone();
+            }
+            await mutate(
               () => setCRMBookingStatus(b, status),
               "Đã cập nhật trạng thái lịch hẹn.",
-            )
-          }
+            );
+          }}
           onDeleteBooking={(b) =>
             mutate(
               () => deleteCRMBooking(b.id),

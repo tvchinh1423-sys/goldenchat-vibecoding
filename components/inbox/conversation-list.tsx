@@ -10,6 +10,7 @@ import {
   SearchX,
   X,
   RefreshCw,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -350,6 +351,16 @@ export function ConversationList({
               </button>
             );
           })
+        ) : conversations.length === 0 ? (
+          <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-2xs">
+              <MessageSquare className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-semibold text-slate-800">Hộp thư sẵn sàng</p>
+            <p className="max-w-[210px] text-xs leading-relaxed text-muted-foreground">
+              Chưa có hội thoại mới. Tin nhắn từ Facebook, Zalo hoặc Web Widget sẽ tự động xuất hiện tại đây khi khách liên hệ.
+            </p>
+          </div>
         ) : (
           <div className="flex h-full min-h-52 flex-col items-center justify-center gap-3 px-6 text-center">
             <SearchX className="h-9 w-9 text-slate-300" />
@@ -363,9 +374,12 @@ export function ConversationList({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 border-t bg-[#fcfcff] px-4 py-3 text-[10px] text-muted-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-        Dữ liệu mẫu · Lưu trên trình duyệt
+      <div className="flex items-center gap-2 border-t bg-[#fcfcff] px-4 py-3 text-[11px] text-muted-foreground">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+        </span>
+        <span className="font-medium text-slate-600">Hệ thống trực tuyến · Sẵn sàng tiếp nhận</span>
       </div>
     </section>
   );

@@ -725,6 +725,21 @@ app-root/
   - Toàn bộ commit đã push lên `origin/main`.
   - Kiểm tra thực tế trên Vercel live: `https://goldenchat-vibecoding.vercel.app/logo-ngang.png`, `https://goldenchat-vibecoding.vercel.app/logo-doc.png`, `https://goldenchat-vibecoding.vercel.app/icon-192.png`, `/inbox`, `/download` đều phản hồi **HTTP/2 200 OK**.
 
+### Mốc Hiệu Ứng Âm Thanh Báo Thành Công Chúc Mừng Đặt Lịch & Triển Khai Production — 07/11/2026 (Chinh)
+
+- **1. Thiết kế Âm thanh Chúc mừng Đặt lịch Thành công (`playBookingSuccessCelebrationTone`):**
+  - Hàm âm thanh `playBookingSuccessCelebrationTone()` trong `lib/chat/sound.ts`:
+  - Sử dụng Web Audio API tổng hợp chuỗi hợp âm arpeggio thăng hoa vút cao: Đô 5 (523.25Hz) ➔ Mi 5 (659.25Hz) ➔ Sol 5 (783.99Hz) ➔ Đô 6 (1046.5Hz) kèm âm bội lấp lánh (Sparkle harmonics Mi 6 1318.5Hz ngân vang dài 0.9s).
+  - Mang âm hưởng hoan ca chúc mừng tiệc cưới sang trọng, hoàn toàn khác biệt và nổi bật so với tiếng pop tin nhắn ngắn (0.2s) và chuông đôi Ding-Dong thông báo thông thường.
+- **2. Tích hợp đồng bộ vào tất cả các điểm chạm xác nhận lịch hẹn:**
+  - **Web Chat Widget (`/widget`):** Phát âm thanh chúc mừng khi khách hoàn tất gửi form đặt lịch hoặc chốt lịch hẹn qua NLP Smart Booking.
+  - **Hộp thư đa kênh (`components/inbox/inbox-workspace.tsx`):** Phát âm thanh chúc mừng khi lễ tân/khách xác nhận lịch hẹn từ khung chat.
+  - **Quản trị CRM & Lịch hẹn (`components/crm/crm-dashboard.tsx`):** Phát âm thanh chúc mừng kèm rung Haptic Success khi bấm nút "Xác nhận lịch hẹn" (`setCRMBookingStatus(b, "confirmed")`).
+  - **Hệ thống Thông báo (`lib/notifications.ts`):** Tự động phát chuông chúc mừng khi thông báo thuộc loại `type: "booking"`.
+  - **Trung tâm Thông báo Dropdown (`NotificationBell`):** Tích hợp nút nghe thử âm chuông đặt lịch `🎉` ngay trên thanh Header để tiện kiểm tra.
+- **3. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
+  - Commit và push thẳng lên `origin/main` để kích hoạt Vercel Production Deploy tự động.
+
 ### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
 
 - Đã nhận `origin/main` tại `47cb8be` và tích hợp tiếp giao diện Widget/Inbox của Chinh tại `8b32ba3`, giữ nguyên schema và các file chạy cục bộ chưa commit.

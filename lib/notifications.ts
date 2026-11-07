@@ -3,7 +3,10 @@
  * Đồng bộ chuông thông báo, âm thanh Chime, số lượng badge trên App PWA và Web
  */
 
-import { playNotificationChime } from "@/lib/chat/sound";
+import {
+  playNotificationChime,
+  playBookingSuccessCelebrationTone,
+} from "@/lib/chat/sound";
 import { triggerHaptic } from "./mobile/haptics";
 
 export interface InAppNotification {
@@ -60,9 +63,9 @@ export function updateAppBadge(count: number) {
 }
 
 /**
- * Danh sách thông báo mẫu thực tế của Golden Palace cho demo
+ * Danh sách thông báo mẫu thực tế của Golden Palace cho demo (dùng khi cần khôi phục đào tạo)
  */
-const SEED_NOTIFICATIONS: InAppNotification[] = [
+export const SEED_NOTIFICATIONS: InAppNotification[] = [
   {
     id: "notif-seed-1",
     title: "Tin nhắn mới từ Dũ Chanh",
@@ -101,23 +104,33 @@ const SEED_NOTIFICATIONS: InAppNotification[] = [
   },
 ];
 
-const STORAGE_KEY = "omnichat_notifications_v1";
+export const NOTIFICATIONS_STORAGE_KEY = "omnichat_notifications_v1";
+const STORAGE_KEY = NOTIFICATIONS_STORAGE_KEY;
 
 /**
- * Lấy danh sách thông báo từ Storage hoặc khởi tạo seed
+ * Lấy danh sách thông báo từ Storage (mặc định rỗng khi chạy thật)
  */
 export function getStoredNotifications(): InAppNotification[] {
-  if (typeof window === "undefined") return SEED_NOTIFICATIONS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_NOTIFICATIONS));
-      return SEED_NOTIFICATIONS;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : SEED_NOTIFICATIONS;
+    if (Array.isArray(parsed)) {
+      // Tự động loại bỏ thông báo seed demo cũ nếu có
+      const filtered = parsed.filter((n: any) => !n.id?.startsWith("notif-seed-"));
+      if (filtered.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        return filtered;
+      }
+      return parsed;
+    }
+    return [];
   } catch {
-    return SEED_NOTIFICATIONS;
+    return [];
   }
 }
 
@@ -190,10 +203,14 @@ export function sendOmniNotification(options: {
   const current = getStoredNotifications();
   saveStoredNotifications([notification, ...current]);
 
-  // 2. Phát hiệu ứng âm thanh chuông đôi Ding-Dong
+  // 2. Phát hiệu ứng âm thanh: chuông chúc mừng cho booking, chuông Ding-Dong cho tin nhắn thông thường
   if (options.playSound !== false) {
     try {
-      playNotificationChime();
+      if (options.type === "booking") {
+        playBookingSuccessCelebrationTone();
+      } else {
+        playNotificationChime();
+      }
     } catch {
       // AudioContext requires user gesture
     }

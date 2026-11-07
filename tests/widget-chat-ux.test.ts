@@ -69,3 +69,12 @@ test("API chat simulator responds with consultation when user attaches photo wit
   assert.ok(typeof json.reply === "string");
   assert.ok(json.reply.length > 20);
 });
+
+test("playBookingSuccessCelebrationTone executes safely in node/SSR without crashing", async () => {
+  const { playBookingSuccessCelebrationTone, playChatTone, playNotificationChime } = await import("@/lib/chat/sound");
+  assert.doesNotThrow(() => {
+    playBookingSuccessCelebrationTone();
+    playChatTone();
+    playNotificationChime();
+  });
+});

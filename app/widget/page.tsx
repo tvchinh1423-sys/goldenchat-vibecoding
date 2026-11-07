@@ -38,7 +38,7 @@ import { getSmartBookingDefault, googleCalendarUrl } from "@/lib/crm/appointment
 import { saveChatBooking } from "@/lib/crm/client";
 import { BOOKING_TYPES, formatAppointment } from "@/lib/crm/model";
 import { visitIntent } from "@/lib/chat/follow-ups";
-import { playChatTone } from "@/lib/chat/sound";
+import { playChatTone, playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 import { compressImageToJpeg, formatFileSize, type CompressedImageResult } from "@/lib/chat/image-utils";
@@ -365,7 +365,8 @@ function WebWidgetContent() {
         ? "Lịch hẹn đã tự động lưu thành công trên CRM."
         : "Lịch hẹn đã được hệ thống ghi nhận thành công và chuyển tới tư vấn viên.";
 
-      if (soundEnabled) playChatTone();
+      // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
+      if (soundEnabled) playBookingSuccessCelebrationTone();
 
       setMessages((prev) => [
         ...prev,
@@ -590,7 +591,8 @@ function WebWidgetContent() {
         ? "Lịch demo đã lưu trên trình duyệt."
         : "Lịch đã được ghi nhận và đang chờ tư vấn viên xác nhận.";
 
-      if (soundEnabled) playChatTone();
+      // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
+      if (soundEnabled) playBookingSuccessCelebrationTone();
 
       setMessages((prev) => [
         ...prev,
