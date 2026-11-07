@@ -455,6 +455,12 @@ app-root/
   - Bổ sung unit test case kiểm tra cơ chế ngắt AI và Human Handoff trong `tests/chat-ux.test.ts`, nâng tổng số test lên **41/41 tests pass 100%**.
   - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
 
+### Mốc Widget mobile cho URL công khai — 07/11/2026 (Hiền)
+
+- Tách bản phát hành `/widget` từ `origin/main`, đưa phần giao diện Widget đã thử trên iPhone/Android từ `94734cf` vào nhánh phát hành riêng. Phần Báo cáo và giao diện quản trị tiếp tục ở PR #1.
+- Widget chừa vùng an toàn, giữ nút Gửi phía trên bàn phím, tăng chữ ô nhập lên 16 px trên thiết bị cảm ứng, hiện phím Gửi khi bàn phím hỗ trợ và cho cuộn form đặt lịch. Widget đứng và xoay ngang đều dùng vùng nhìn khả dụng, gồm bản nhúng.
+- Production build, 41 test logic/API/SQL, 16 kịch bản Chrome và 2 kịch bản Widget WebKit đạt. Kiểm tra hiển thị mobile dùng mô phỏng trên máy tính.
+
 
 
 
