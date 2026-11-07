@@ -41,36 +41,14 @@ export function extractBookingDetails(
   const clean = text.trim();
   const lower = clean.toLowerCase();
 
-  // 1. Trích xuất Tên (Name)
-  let extractedName = existingContext?.fullName || null;
-
-  const namePatterns = [
-    // "c tên vân", "chị tên vân", "em tên minh", "mình tên chinh", "tôi tên dũng"
-    /(?:(?:c|chị|em|anh|mình|tôi|bác|chú|cô)\s+(?:tên(?:\s*là)?|la))\s*([a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]{2,30}?)(?=[,.;!\n]|$|\s+(?:sđt|sdt|số|lúc|ngày|ở|đến|bàn|khách))/iu,
-    // "tên chị là vân", "tên Dũng", "tên: Văn", "tên là Chinh"
-    /(?:tên\s*(?:của\s*)?(?:chị|em|anh|mình|tôi)?\s*(?:là|:)?)\s+([a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]{2,30}?)(?=[,.;!\n]|$|\s+(?:sđt|sdt|số|lúc|ngày|ở|đến))/iu,
-    // "chị vân", "anh dũng" ở đầu hoặc cuối câu khi có ngữ cảnh đặt lịch
-    /(?:^|[,;]\s*)(?:chị|anh|em|c|a)\s+([a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]{2,15})(?=[,.;!\n]|$)/iu,
-  ];
-
-  for (const pattern of namePatterns) {
-    const match = clean.match(pattern);
-    if (match && match[1]) {
-      const rawName = match[1].trim();
-      // Loại trừ các từ nhầm lẫn
-      if (!/^(đặt lịch|tư vấn|xem sảnh|thực đơn|nhà hàng|golden palace|bàn|khách|tiệc|menu)$/i.test(rawName)) {
-        extractedName = capitalizeWords(rawName);
-        break;
-      }
-    }
-  }
-
-  // 2. Trích xuất Số điện thoại (Phone)
-  // Hỗ trợ số điện thoại 9 - 11 chữ số, có dấu cách, dấu chấm, hoặc sau từ khóa 'sđt', 'số điện thoại'
+  // 1. Trích xuất Số điện thoại (Phone) trước
+  // Hỗ trợ số điện thoại 9 - 11 chữ số, có tiền tố 'sđt', 'số điện thoại', 'phone', 'tel', hoặc icon [📞📱☎️📲]
   let extractedPhone = existingContext?.phone || null;
 
-  // 2.1. Có tiền tố chỉ định: "số điện thoại", "sđt", "phone", "tel"
-  const explicitPhoneMatch = clean.match(/(?:số\s*điện\s*thoại|sđt|sdt|đt|phone|tel)\s*[:=]?\s*([0-9\s.-]{8,15})/i);
+  // 1.1. Có tiền tố chỉ định: "số điện thoại", "sđt", "phone", "tel", "call", icon [📞📱☎️📲]
+  const explicitPhoneMatch = clean.match(
+    /(?:số\s*điện\s*thoại|sđt|sdt|đt|phone|tel|call|[📞📱☎️📲])\s*[:=]?\s*([0-9\s.-]{8,15})/i
+  );
   if (explicitPhoneMatch) {
     const raw = explicitPhoneMatch[1].replace(/[\s.-]/g, "");
     if (/^0?[0-9]{8,11}$/.test(raw)) {
@@ -78,15 +56,67 @@ export function extractBookingDetails(
     }
   }
 
-  // 2.2. Nhận diện số điện thoại tự nhiên trong câu (bắt đầu bằng 0, độ dài 9-11 số)
+  // 1.2. Nhận diện số điện thoại tự nhiên trong câu (bắt đầu bằng 0, +84, hoặc 84, độ dài 9-11 số)
   if (!extractedPhone) {
-    const phoneMatches = clean.match(/\b(0[1-9][0-9\s.-]{7,12})\b/g);
+    const phoneMatches = clean.match(/(?:(?:\+84|84|0)[1-9][0-9\s.-]{7,11})/g);
     if (phoneMatches) {
       for (const m of phoneMatches) {
-        const raw = m.replace(/[\s.-]/g, "");
+        let raw = m.replace(/[\s.-]/g, "");
+        if (raw.startsWith("+84")) raw = "0" + raw.slice(3);
+        else if (raw.startsWith("84")) raw = "0" + raw.slice(2);
         if (/^0[1-9][0-9]{7,10}$/.test(raw)) {
           extractedPhone = raw;
           break;
+        }
+      }
+    }
+  }
+
+  // 2. Làm sạch văn bản để bóc tách Tên (loại bỏ phần SĐT và icon điện thoại)
+  let textWithoutPhone = clean;
+  if (extractedPhone) {
+    textWithoutPhone = textWithoutPhone
+      .replace(/(?:số\s*điện\s*thoại|sđt|sdt|đt|phone|tel|call|[📞📱☎️📲])\s*[:=]?\s*[0-9\s.-]{8,15}/gi, " ")
+      .replace(new RegExp(extractedPhone, "g"), " ")
+      .replace(/[📞📱☎️📲]/g, " ")
+      .replace(/[-–—,:;]/g, " ")
+      .trim();
+  }
+
+  // 3. Trích xuất Tên (Name)
+  let extractedName = existingContext?.fullName || null;
+
+  // 3.1. Có từ khóa chỉ định tên: "tên Chi", "tên: Chi", "tên là Chi", "tôi tên Chinh", "c tên vân", "chị tên Trang"
+  const nameKeywordPattern =
+    /(?:(?:c|chị|em|anh|mình|tôi|bác|chú|cô)\s+(?:tên(?:\s*là)?|la)|tên\s*(?:của\s*)?(?:chị|em|anh|mình|tôi)?\s*(?:là|:)?)\s+([a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]{2,30})/iu;
+
+  const matchKw = textWithoutPhone.match(nameKeywordPattern) || clean.match(nameKeywordPattern);
+  if (matchKw && matchKw[1]) {
+    const rawName = matchKw[1].trim();
+    if (!/^(đặt lịch|tư vấn|xem sảnh|thực đơn|nhà hàng|golden palace|bàn|khách|tiệc|menu)$/i.test(rawName)) {
+      extractedName = capitalizeWords(rawName);
+    }
+  }
+
+  // 3.2. Mẫu "chị Vân", "anh Dũng" khi đứng đầu câu hoặc sau dấu phẩy
+  if (!extractedName) {
+    const pronounMatch = textWithoutPhone.match(/(?:^|[,;]\s*)(?:chị|anh|em|c|a)\s+([a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]{2,15})(?=[,.;!\n]|$|\s)/iu);
+    if (pronounMatch && pronounMatch[1]) {
+      const rawName = pronounMatch[1].trim();
+      if (!/^(đặt lịch|tư vấn|xem sảnh|thực đơn|nhà hàng|golden palace|bàn|khách|tiệc|menu|cho|hỏi|muốn|cần|qua|đến)$/i.test(rawName)) {
+        extractedName = capitalizeWords(rawName);
+      }
+    }
+  }
+
+  // 3.3. Khách chỉ nhắn gọn Tên (1 đến 4 từ chữ cái) sau khi đã tách SĐT (ví dụ: "Chi", "Chi 0933847772", "Trần Vân Chinh")
+  if (!extractedName) {
+    const cleanedWords = textWithoutPhone.trim().split(/\s+/).filter(Boolean);
+    if (cleanedWords.length >= 1 && cleanedWords.length <= 4) {
+      const candidate = cleanedWords.join(" ");
+      if (/^[a-zA-Zàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]{2,30}$/iu.test(candidate)) {
+        if (!/^(đặt lịch|tư vấn|xem sảnh|thực đơn|nhà hàng|golden palace|bàn|khách|tiệc|menu|mai|hôm nay|cuối tuần|sáng|chiều|tối|alo|dạ|vâng|ok|oke|okie|sđt|sdt|phone|tôi|chị|anh|em|mình)$/i.test(candidate)) {
+          extractedName = capitalizeWords(candidate);
         }
       }
     }

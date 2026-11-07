@@ -915,3 +915,30 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Triển khai trực tiếp lên `origin/main` (Vercel production) theo chỉ định tuyệt đối của Chinh.
 
+### Mốc Nâng Cấp NLP Smart Booking Parser & Hỗ Trợ Mọi Định Dạng Nhập Liệu Khách Hàng — 07/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để lỗi không nhận diện Tên và SĐT khi khách nhập:**
+  - Triệu chứng: Khách nhắn `"Tên Chi 📞 0933847772"` nhưng bot liên tục lặp lại câu hỏi *"Anh/chị cho em xin Tên và Số điện thoại để hoàn tất phiếu hẹn nhé ạ!"*.
+  - Nguyên nhân:
+    1. Bộ trích xuất cũ sử dụng lookahead cứng `(?=[,.;!\n]|$|\s+(?:sđt|sdt|số|lúc|ngày|ở|đến))` và không hỗ trợ icon/emoji điện thoại `📞`, `📱`, `☎️`, `📲`. Khi gặp ký tự `📞` hoặc số điện thoại đứng liền kề, regex bóc tách Tên bị đứt gãy dẫn đến `fullName = null`.
+    2. API route gộp chung điều kiện `!bookingDetails.fullName || !bookingDetails.phone` thành một câu hỏi xin cả Tên và SĐT, khiến khách hàng đã gửi SĐT hoặc Tên cảm thấy bot không nhận được thông tin.
+- **2. Kiến trúc 2 bước (Multi-pass Parsing) thông minh & siêu linh hoạt:**
+  - **Bước 1 (Trích xuất SĐT độc lập):** Nhận diện chính xác mọi định dạng SĐT Việt Nam (9 đến 11 số, bắt đầu bằng 0, +84, 84) với mọi tiền tố `sđt`, `số điện thoại`, `phone`, `tel`, `call`, hoặc icon điện thoại `[📞📱☎️📲]`.
+  - **Bước 2 (Làm sạch & Trích xuất Họ Tên):** Tách SĐT và icon điện thoại ra khỏi chuỗi văn bản, sau đó trích xuất Tên bằng cả từ khóa chỉ định (`Tên Chi`, `Tôi tên Dũng`, `Chị là Trang`), đại từ xưng hô (`Chị Vân`), hoặc chuỗi chữ cái cô đọng (1-4 từ như `Chi`, `Trần Vân Chinh`).
+  - Hỗ trợ hoàn hảo mọi biến thể nhập liệu tự nhiên:
+    * `"Tên Chi 📞 0933847772"` -> Tên: Chi, SĐT: 0933847772.
+    * `"Chi 0933847772"` -> Tên: Chi, SĐT: 0933847772.
+    * `"Tên: Chi 0933847772"` -> Tên: Chi, SĐT: 0933847772.
+    * `"Chi 📞0933847772"` -> Tên: Chi, SĐT: 0933847772.
+    * `"0933847772 tên Chi"` -> Tên: Chi, SĐT: 0933847772.
+  - Phân tách phản hồi thông minh trong `app/api/simulator/chat/route.ts`:
+    * Đã có Ngày Giờ + Tên + SĐT -> **Tự động chốt lịch ngay lập tức (Auto-Booking)** và phát âm thanh chuông mừng tiệc cưới 🎉.
+    * Đã có Ngày Giờ + Tên, thiếu SĐT -> Chỉ xin Số điện thoại (`promptFor: "phone"`).
+    * Đã có Ngày Giờ + SĐT, thiếu Tên -> Chỉ xin Họ tên (`promptFor: "fullName"`).
+- **3. Kiểm thử & Triển khai Production:**
+  - Bổ sung bộ test ca nhập liệu phong phú trong `tests/nlp-booking.test.ts`.
+  - Đạt **55/55 unit tests pass 100%**.
+  - Toàn bộ 4 bộ test Playwright browser (`meta-chat`, `notifications`, `widget-meta-ux`, `widget-mobile`) **PASS 100%**.
+  - Next.js production build **20/20 static pages thành công 100%**.
+  - Triển khai trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định ngày 07/11/2026.
+

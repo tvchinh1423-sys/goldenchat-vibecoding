@@ -177,8 +177,26 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 3.3. ĐÃ CÓ NGÀY GIỜ NHƯNG THIẾU TÊN VÀ SĐT (Ví dụ: "mai tôi qua xem sảnh lúc 10h")
-      if (bookingDetails.dateTimeIso && (!bookingDetails.fullName || !bookingDetails.phone)) {
+      // 3.3. ĐÃ CÓ SĐT & NGÀY GIỜ, THIẾU TÊN
+      if (bookingDetails.phone && bookingDetails.dateTimeIso && !bookingDetails.fullName) {
+        return respond({
+          success: true,
+          reply: `Dạ em đã ghi nhận số điện thoại ${bookingDetails.phone} và lịch hẹn lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr}. Anh/chị cho em xin Họ tên của mình để hoàn tất phiếu hẹn nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: "fullName",
+          suggestedQuestions: [
+            "Tên mình là Chi",
+            "Tôi tên Dũng",
+            "Đổi sang giờ khác",
+          ],
+        });
+      }
+
+      // 3.4. ĐÃ CÓ NGÀY GIỜ NHƯNG THIẾU CẢ TÊN VÀ SĐT (Ví dụ: "mai tôi qua xem sảnh lúc 10h")
+      if (bookingDetails.dateTimeIso && !bookingDetails.fullName && !bookingDetails.phone) {
         return respond({
           success: true,
           reply: `Dạ em đã ghi nhận lịch hẹn lúc ${bookingDetails.timeStr} ngày ${bookingDetails.dateStr}. Anh/chị cho em xin Tên và Số điện thoại để hoàn tất phiếu hẹn nhé ạ!`,
@@ -186,9 +204,10 @@ export async function POST(req: NextRequest) {
           autoBooked: false,
           bookingDraft: bookingDetails,
           visitType: bookingDetails.eventType,
-          promptFor: !bookingDetails.fullName ? "fullName" : "phone",
+          promptFor: "both",
           suggestedQuestions: [
             "Tôi tên Dũng, SĐT 0987654321",
+            "Tên Chi 📞 0933847772",
             "Đổi sang giờ khác",
             "Hotline hỗ trợ",
           ],

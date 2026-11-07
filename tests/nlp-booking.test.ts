@@ -123,3 +123,70 @@ test("Chat Simulator correctly books when customer provides time, name, and phon
   assert.doesNotMatch(data.reply, /8978\s*khách/i);
   assert.doesNotMatch(data.reply, /quy mô đại lễ/i);
 });
+
+test("Chat Simulator successfully auto-books when customer sends 'Tên Chi 📞 0933847772' with phone emoji and pre-selected time", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "Tên Chi 📞 0933847772",
+      channel: "web",
+      bookingDraftContext: {
+        fullName: null,
+        phone: null,
+        dateTimeIso: "2026-11-08T09:00",
+        dateStr: "08/11/2026",
+        timeStr: "09:00",
+        eventType: "xem_sanh",
+        eventTypeName: "Tham quan & Xem sảnh tiệc",
+        guestsCount: 2,
+        notes: "09:00 ngày 08/11/2026",
+        isComplete: false,
+        missingFields: ["fullName", "phone"],
+      },
+    }),
+  });
+
+  const res = await postChatSimulator(req);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+
+  assert.equal(data.success, true);
+  assert.equal(data.appointmentIntent, true);
+  assert.equal(data.autoBooked, true);
+  assert.equal(data.bookingDraft.fullName, "Chi");
+  assert.equal(data.bookingDraft.phone, "0933847772");
+  assert.equal(data.bookingDraft.isComplete, true);
+  assert.match(data.reply, /xác nhận lịch/i);
+  assert.match(data.reply, /Chi/);
+  assert.match(data.reply, /0933847772/);
+});
+
+test("extractBookingDetails handles variations of name and phone with emoji and spaces", () => {
+  const ctx = {
+    dateTimeIso: "2026-11-08T09:00",
+    dateStr: "08/11/2026",
+    timeStr: "09:00",
+    eventType: "xem_sanh" as const,
+  };
+
+  const case1 = extractBookingDetails("Tên Chi 📞 0933847772", ctx);
+  assert.equal(case1.fullName, "Chi");
+  assert.equal(case1.phone, "0933847772");
+  assert.equal(case1.isComplete, true);
+
+  const case2 = extractBookingDetails("Chi 0933847772", ctx);
+  assert.equal(case2.fullName, "Chi");
+  assert.equal(case2.phone, "0933847772");
+  assert.equal(case2.isComplete, true);
+
+  const case3 = extractBookingDetails("Chi 📞0933847772", ctx);
+  assert.equal(case3.fullName, "Chi");
+  assert.equal(case3.phone, "0933847772");
+  assert.equal(case3.isComplete, true);
+
+  const case4 = extractBookingDetails("Trần Vân Chinh - 0912345678", ctx);
+  assert.equal(case4.fullName, "Trần Vân Chinh");
+  assert.equal(case4.phone, "0912345678");
+  assert.equal(case4.isComplete, true);
+});
