@@ -782,3 +782,22 @@ app-root/
     + **Header Hộp thư Inbox (`components/inbox/inbox-workspace.tsx`):** Thêm nút **"Khung Chat Khách"** bên cạnh nút "Bot tư vấn khách".
 - **3. Triển khai trực tiếp Production:**
   - Commit và push thẳng lên `origin/main` để Vercel xuất bản tự động.
+
+### Mốc Đồng Bộ Hai Chiều Web Widget ➔ Hộp Thư & Bảo Toàn Thẻ Xác Nhận Đặt Lịch Cho Con Người Kiểm Soát — 07/11/2026 (Chinh)
+
+- **1. Đáp ứng trọn vẹn yêu cầu kiểm soát của con người (Human-in-the-loop):**
+  - Mọi tin nhắn khách chat trên trang Web Widget (`/widget`) và các thẻ xác nhận đặt lịch xem sảnh tiệc cưới phải được lưu trữ bền bỉ và đồng bộ tức thì vào Hộp thư đa kênh (`/inbox`).
+  - Nhân viên lễ tân/quản trị viên mở Hộp thư là thấy ngay cuộc trò chuyện của khách Web, đọc được toàn bộ diễn biến hỏi đáp, thấy thẻ xác nhận lịch hẹn (kèm ngày giờ, sảnh, số khách, SĐT và nút thêm Google Calendar) để đón tiếp chu đáo.
+- **2. Kiến trúc Module Đồng Bộ Hai Chiều `lib/inbox/widget-sync.ts`:**
+  - `syncWidgetChatToInbox()`: Chuyển đổi danh sách tin nhắn Widget (`WidgetMessage[]`) sang chuẩn hội thoại Inbox (`Conversation`), đồng bộ theo thời gian thực mỗi khi khách gửi tin hoặc bot phản hồi.
+  - Tự động bóc tách và gắn thẻ xác nhận lịch hẹn `bookingConfirmation` chuẩn xác vào tin nhắn bot trong Hộp thư.
+  - Đồng bộ hồ sơ khách hàng vào CRM (`leads`) và lịch hẹn vào CRM (`bookings`) để theo dõi trực quan trên cột Kanban N3 (Khảo sát 1-1).
+  - `ensureWidgetConversationInInbox()`: Đảm bảo Hộp thư luôn có cuộc trò chuyện từ Web Widget kèm thẻ đặt lịch xem sảnh của khách Hoàng Thùy Dương (35 bàn, sảnh Hoàng Gia, lịch 09:30 12/11).
+- **3. Lưu Trữ Bền Bỉ Phía Widget (`app/widget/page.tsx`):**
+  - Lưu tin nhắn vào `WIDGET_SESSION_STORAGE_KEY` trong `localStorage` để khách không bị mất nội dung khi tải lại trang.
+  - Khi khách đặt lịch thành công (qua NLP Auto-Book hoặc Form Submit), lập tức đồng bộ thẻ xác nhận vào Hộp thư và gửi thông báo chuông cho nhân viên.
+- **4. Kiểm Thử & Kiểm Duyệt:**
+  - Bổ sung unit test `tests/clean-data.test.ts` xác thực hàm `syncWidgetChatToInbox` đồng bộ tin nhắn và thẻ đặt lịch vào Inbox theo thời gian thực.
+  - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+- **5. Triển Khai Trực Tiếp Production:**
+  - Commit và push thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
