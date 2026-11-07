@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Plus, Search, Trash2, CheckCircle2, XCircle, LogOut, ShieldCheck, User, Phone, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { triggerHaptic } from "@/lib/mobile/haptics";
-import { playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
+import { playBookingSuccessCelebrationTone, unlockAudioContext } from "@/lib/chat/sound";
 import { CRMAccessPanel } from "./access-panel";
 import { BookingEditor } from "./booking-editor";
 import { LeadEditor } from "./lead-editor";
@@ -602,8 +602,9 @@ export function CRMDashboard() {
                             title="Xác nhận lịch hẹn"
                             disabled={busy}
                             onClick={() => {
+                              unlockAudioContext();
                               triggerHaptic("success");
-                              playBookingSuccessCelebrationTone();
+                              void playBookingSuccessCelebrationTone(true);
                               mutate(
                                 () => setCRMBookingStatus(b, "confirmed"),
                                 "Đã xác nhận lịch hẹn.",
@@ -682,8 +683,9 @@ export function CRMDashboard() {
           }
           onStatus={async (b, status) => {
             if (status === "confirmed") {
+              unlockAudioContext();
               triggerHaptic("success");
-              playBookingSuccessCelebrationTone();
+              void playBookingSuccessCelebrationTone(true);
             }
             await mutate(
               () => setCRMBookingStatus(b, status),
@@ -710,12 +712,14 @@ export function CRMDashboard() {
           lead={bookingLead}
           booking={bookingEditor.booking}
           onClose={() => setBookingEditor(null)}
-          onSave={(input, id) =>
-            mutate(
+          onSave={async (input, id) => {
+            unlockAudioContext();
+            await mutate(
               () => saveCRMBooking(input, id),
               "Đã lưu lịch hẹn tư vấn; chưa giữ chỗ sảnh tiệc.",
-            )
-          }
+            );
+            void playBookingSuccessCelebrationTone(true);
+          }}
         />
       )}
         </>

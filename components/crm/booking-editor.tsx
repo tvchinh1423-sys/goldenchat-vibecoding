@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { getSmartBookingDefault } from "@/lib/crm/appointment";
+import { playBookingSuccessCelebrationTone, unlockAudioContext } from "@/lib/chat/sound";
 import {
   BOOKING_TYPES,
   validateBooking,
@@ -84,6 +85,7 @@ export function BookingEditor({
           className="mt-5 space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
+            unlockAudioContext();
             setError("");
             setBusy(true);
             try {
@@ -97,6 +99,7 @@ export function BookingEditor({
                 booking?.id,
                 collectContact !== undefined ? contact : undefined,
               );
+              void playBookingSuccessCelebrationTone(true);
               onClose();
             } catch (e) {
               setError(
@@ -218,13 +221,27 @@ export function BookingEditor({
               {error}
             </p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={busy} onClick={onClose}>
-              Hủy
-            </Button>
-            <Button type="submit" disabled={busy}>
-              {busy ? "Đang lưu..." : "Lưu lịch hẹn"}
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                unlockAudioContext();
+                void playBookingSuccessCelebrationTone(true);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-md font-medium transition active:scale-95"
+              title="Nghe thử âm chuông tiệc cưới hân hoan khi đặt lịch thành công"
+            >
+              <span aria-hidden="true">🎉</span>
+              <span>Nghe thử âm chúc mừng</span>
+            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button variant="outline" disabled={busy} onClick={onClose}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={busy}>
+                {busy ? "Đang lưu..." : "Lưu lịch hẹn"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
