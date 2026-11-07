@@ -25,7 +25,7 @@ description: >-
 |-----|-------|:----------:|
 | **Cuộc thi** | VibeCoding 2026 — AI × Mini App (Bảng B) | Đang diễn ra |
 | **Đề số** | 04 — Chatbot FAQ & Đặt lịch tư vấn | Đã chốt phạm vi |
-| **Deadline** | 08/11/2026 (Asia/Saigon; tính thời gian còn lại theo ngày hiện tại) | Gấp |
+| **Deadline** | 23:59 ngày 09/11/2026 (giờ Việt Nam, theo BTC) | Gấp |
 | **Tên sản phẩm** | **OmniChat AI (SaaS Multi-Industry)** | Đã chốt |
 | **Dự án mẫu thực chiến** | **Golden Palace (Tiệc cưới, Hội nghị & F&B)** | ✅ Showcase Client chuẩn |
 | **GitHub Repo** | `https://github.com/tvchinh1423-sys/goldenchat-vibecoding` | ✅ Đã tạo & push origin/main |
@@ -40,6 +40,15 @@ description: >-
 | **Chuông Thông Báo & Âm Thanh** | Chuông web dropdown, hiệu ứng Chime đôi, App Badging PWA & Title badge | ✅ Hoàn thành 100% (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
+
+---
+
+### Rà soát tổng thể trước khi nộp — 07/11/2026
+
+- [Báo cáo, bằng chứng và danh sách ưu tiên](../../../docs/project-audit-2026-11-07.md). PR #1 và #2 đã merge; Vercel báo thành công cho main e51d386. Các trang chính trả 200; CRM và Soạn nháp AI trả chế độ demo, webhook trả ready. Build 20/20 trang tĩnh, 49/49 test logic/API/SQL và 29/29 ca Playwright Chrome trên nhánh Hiền sau tích hợp main đạt.
+- Ưu tiên trước khi nộp: mời đặt lịch ngay khi bot không trả lời được, thống nhất cách nói về khung giờ xem sảnh, ghi rõ chế độ AI mô phỏng, kiểm tra luồng Widget → CRM trên trình duyệt sạch và điện thoại thật. Source ZIP sạch, video ≤2 phút, minh chứng AI và bảng kiểm thử vẫn cần chốt. Bảng B cho phép mô phỏng minh bạch và lưu lịch trong trình duyệt.
+- Facebook Messenger còn vướng quyền Page tại Pancake/Botcake; chưa xác minh Zalo, Telegram, Supabase cloud hoặc Gemini/9Router thật. Chỉ bật với dữ liệu thật sau khi bảo vệ webhook, xử lý lỗi ghi DB và có phân quyền phía máy chủ.
+- Hạn chính thức theo [BTC](https://vibecoding.info.vn/bai-viet/yeu-cau-dau-ra-va-huong-dan-nop-bai-vibe-coding-2026): 23:59 ngày 09/11/2026 (giờ Việt Nam).
 
 ---
 
