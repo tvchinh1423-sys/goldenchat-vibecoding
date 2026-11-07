@@ -207,7 +207,7 @@ export function sendOmniNotification(options: {
   if (options.playSound !== false) {
     try {
       if (options.type === "booking") {
-        playBookingSuccessCelebrationTone();
+        void playBookingSuccessCelebrationTone(true);
       } else {
         playNotificationChime();
       }
