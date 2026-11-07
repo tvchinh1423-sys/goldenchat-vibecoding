@@ -97,7 +97,7 @@ export function databaseError(error: { code?: string } | null) {
     );
   if (error.code === "23P01")
     throw new CRMError(
-      "Nhân viên đã có lịch trong khung 60 phút này. Hãy chọn giờ hoặc người phụ trách khác.",
+      "Nhân viên tư vấn đã có tối đa 2 lịch hẹn trong khung 30 phút này (tối đa 2 lịch 1 lúc). Hãy chọn giờ hoặc người phụ trách khác.",
       409,
     );
   if (error.code === "P0002")

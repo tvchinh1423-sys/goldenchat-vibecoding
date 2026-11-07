@@ -163,26 +163,30 @@ export function validateBooking(
 export function isActiveBooking(b: Pick<CRMBooking, "status">) {
   return b.status === "pending" || b.status === "confirmed";
 }
+export const APPOINTMENT_DURATION_MS = 30 * 60 * 1000; // Mỗi lượt tư vấn 30 phút
+export const MAX_CONCURRENT_BOOKINGS_PER_STAFF = 2; // Tối đa 2 lịch 1 lúc
+
 export function assertBookingAvailable(
   bookings: CRMBooking[],
   next: BookingInput,
   exceptId?: string,
 ) {
   const start = Date.parse(next.appointment_time);
-  if (
-    bookings.some(
-      (b) =>
-        b.id !== exceptId &&
-        isActiveBooking(b) &&
-        b.assigned_staff.toLocaleLowerCase("vi") ===
-          next.assigned_staff.toLocaleLowerCase("vi") &&
-        Math.abs(Date.parse(b.appointment_time) - start) < 60 * 60 * 1000,
-    )
-  )
+  const targetStaff = next.assigned_staff.toLocaleLowerCase("vi").trim();
+  const overlapping = bookings.filter(
+    (b) =>
+      b.id !== exceptId &&
+      isActiveBooking(b) &&
+      b.assigned_staff.toLocaleLowerCase("vi").trim() === targetStaff &&
+      Math.abs(Date.parse(b.appointment_time) - start) < APPOINTMENT_DURATION_MS,
+  );
+
+  if (overlapping.length >= MAX_CONCURRENT_BOOKINGS_PER_STAFF) {
     throw new CRMError(
-      "Nhân viên đã có lịch trong khung 60 phút này. Hãy chọn giờ hoặc người phụ trách khác.",
+      "Nhân viên tư vấn đã có tối đa 2 lịch hẹn trong khung 30 phút này (tối đa 2 lịch 1 lúc). Hãy chọn khung giờ hoặc người phụ trách khác.",
       409,
     );
+  }
 }
 export function formatAppointment(time: string) {
   return new Intl.DateTimeFormat("vi-VN", {

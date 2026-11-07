@@ -154,38 +154,54 @@ test("booking promotes N1/N2 to N3 atomically and enforces staff overlap, not ha
   const first = saveDemoBooking(before, booking());
   assert.equal(first.leads.find((l) => l.id === "trang")?.stage, "N3");
   assert.equal(before.leads.find((l) => l.id === "trang")?.stage, "N2");
-  const time = new Date(
-    Date.parse(first.bookings.at(-1)!.appointment_time) + 30 * 60000,
-  ).toISOString();
+
+  const baseTime = Date.parse(first.bookings.at(-1)!.appointment_time);
+  const sameSlotTime = new Date(baseTime + 10 * 60000).toISOString();
+
+  // Lịch thứ 2 cùng khung giờ 30 phút cho cùng nhân viên: CHO PHÉP (tối đa 2 lịch 1 lúc)
+  const second = saveDemoBooking(first, {
+    ...booking(),
+    lead_id: "menu",
+    assigned_staff: " ngọc khánh ",
+    appointment_time: sameSlotTime,
+  });
+  assert.equal(second.bookings.length, 3);
+
+  // Lịch thứ 3 cùng khung giờ 30 phút cho cùng nhân viên: BỊ TỪ CHỐI (vượt quá tối đa 2 lịch 1 lúc)
   assert.throws(
     () =>
-      saveDemoBooking(first, {
+      saveDemoBooking(second, {
         ...booking(),
         lead_id: "menu",
         assigned_staff: " ngọc khánh ",
-        appointment_time: time,
+        appointment_time: sameSlotTime,
       }),
-    /đã có lịch/,
+    /tối đa 2 lịch/,
   );
+
+  // Khác nhân viên tư vấn trong cùng khung giờ: CHO PHÉP
   assert.equal(
-    saveDemoBooking(first, {
+    saveDemoBooking(second, {
       ...booking(),
       lead_id: "menu",
       assigned_staff: "Chị Hiền",
-      appointment_time: time,
+      appointment_time: sameSlotTime,
     }).bookings.length,
-    3,
+    4,
   );
+
+  // Lịch sau 30 phút (slot tiếp theo, vì mỗi lần tư vấn chỉ mất 30 phút): CHO PHÉP
+  const nextSlotTime = new Date(baseTime + 30 * 60000).toISOString();
   assert.equal(
-    saveDemoBooking(first, {
+    saveDemoBooking(second, {
       ...booking(),
       lead_id: "menu",
-      appointment_time: new Date(
-        Date.parse(first.bookings.at(-1)!.appointment_time) + 3600000,
-      ).toISOString(),
+      assigned_staff: " ngọc khánh ",
+      appointment_time: nextSlotTime,
     }).bookings.length,
-    3,
+    4,
   );
+
   const advanced = saveDemoBooking(seedCRM(), {
     ...booking(),
     lead_id: "linh",

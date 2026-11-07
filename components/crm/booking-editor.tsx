@@ -77,8 +77,8 @@ export function BookingEditor({
           {booking ? "Đổi lịch hẹn" : "Tạo lịch hẹn"}
         </DialogTitle>
         <DialogDescription className="mt-2 text-xs leading-5 text-muted-foreground">
-          {lead.full_name} · Giờ Việt Nam (UTC+7). Mỗi lượt tư vấn 60 phút. Lịch
-          này chưa giữ chỗ sảnh tiệc.
+          {lead.full_name} · Giờ Việt Nam (UTC+7). Mỗi lượt tư vấn 30 phút
+          (tối đa 2 lịch 1 lúc). Lịch này chưa giữ chỗ sảnh tiệc.
         </DialogDescription>
         <form
           className="mt-5 space-y-4"

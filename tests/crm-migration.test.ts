@@ -88,12 +88,28 @@ test("Postgres booking transaction enforces overlap, rollback, cancellation and 
       ).rows[0].stage,
       "N3",
     );
+    // Lịch thứ 2 cùng nhân viên trong khung 30 phút: CHO PHÉP (tối đa 2 lịch 1 lúc)
+    const id2 = await save({
+      ...input,
+      lead_id: rows[1].id,
+      assigned_staff: " ngọc khánh ",
+      appointment_time: new Date(Date.parse(time) + 10 * 60000).toISOString(),
+    });
+    assert.equal(
+      (
+        await db.query<{ count: number }>(
+          "SELECT count(*)::int AS count FROM bookings",
+        )
+      ).rows[0].count,
+      2,
+    );
+    // Lịch thứ 3 cùng nhân viên trong khung 30 phút: BỊ TỪ CHỐI với mã 23P01 (vượt quá 2 lịch 1 lúc)
     await assert.rejects(
       save({
         ...input,
         lead_id: rows[1].id,
         assigned_staff: " ngọc khánh ",
-        appointment_time: new Date(Date.parse(time) + 30 * 60000).toISOString(),
+        appointment_time: new Date(Date.parse(time) + 15 * 60000).toISOString(),
       }),
       (e: unknown) => (e as { code: string }).code === "23P01",
     );
@@ -103,7 +119,7 @@ test("Postgres booking transaction enforces overlap, rollback, cancellation and 
           "SELECT count(*)::int AS count FROM bookings",
         )
       ).rows[0].count,
-      1,
+      2,
     );
     assert.equal(
       (
@@ -114,13 +130,16 @@ test("Postgres booking transaction enforces overlap, rollback, cancellation and 
       ).rows[0].stage,
       "N4",
     );
+    // Lịch sau 30 phút (slot tiếp theo, mỗi lượt tư vấn 30 phút): CHO PHÉP
     await save({
       ...input,
       lead_id: rows[1].id,
       appointment_time: new Date(Date.parse(time) + 3600000).toISOString(),
     });
+    // Hủy 1 lịch (id), sau đó lưu lịch thứ 3 (thay thế slot của id):
     await db.query("UPDATE bookings SET status='cancelled' WHERE id=$1", [id]);
     await save({ ...input, lead_id: rows[1].id });
+    // Lúc này đã có 2 lịch active trong khung (id2 và lịch mới), nếu khôi phục lại id -> 3 lịch -> reject 23P01:
     await assert.rejects(
       db.query("UPDATE bookings SET status='confirmed' WHERE id=$1", [id]),
       (e: unknown) => (e as { code: string }).code === "23P01",

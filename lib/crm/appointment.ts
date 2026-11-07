@@ -1,4 +1,8 @@
-import { BOOKING_TYPES, type BookingInput } from "./model";
+import {
+  BOOKING_TYPES,
+  APPOINTMENT_DURATION_MS,
+  type BookingInput,
+} from "./model";
 
 export function getSmartBookingDefault(now = Date.now()) {
   const vietnam = new Date(now + 7 * 60 * 60 * 1000);
@@ -10,7 +14,7 @@ export function googleCalendarUrl(
   booking: Pick<BookingInput, "appointment_time" | "event_type">,
 ) {
   const start = new Date(booking.appointment_time);
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const end = new Date(start.getTime() + APPOINTMENT_DURATION_MS);
   const format = (date: Date) =>
     date.toISOString().replace(/[-:]|\.\d{3}/g, "");
   const params = new URLSearchParams({

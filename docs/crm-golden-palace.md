@@ -11,10 +11,10 @@ N2 Tiềm năng, N3 Khảo sát 1-1, N4 Chính thức, N5 Nuôi dưỡng, N0 Đ�
 4. Tạo lịch **Xem sảnh**, **Thử món** hoặc **Tư vấn sự kiện** ở thời gian tương lai.
 5. Tải lại trang; kiểm tra hồ sơ, Kanban, danh sách/phễu và lịch hẹn.
 
-Mỗi lịch kéo dài 60 phút, theo giờ Việt Nam (UTC+7), tối đa 50 khách tham gia.
-Hai lịch đang chờ/đã xác nhận của cùng người tiếp đón không được chồng nhau.
+Mỗi lịch kéo dài 30 phút, theo giờ Việt Nam (UTC+7), tối đa 50 khách tham gia.
+Mỗi nhân viên tư vấn có thể tiếp tối đa 2 lịch 1 lúc trong cùng khung giờ 30 phút (cho phép tối đa 2 lịch đồng thời). Khi có từ 3 lịch trùng trở lên mới chặn trùng lịch.
 Tên nhân viên được so không phân biệt hoa/thường, bỏ khoảng trắng ở hai đầu.
-Hai lịch liền kề được phép; đổi người tiếp đón hoặc hủy lịch sẽ giải phóng khung giờ.
+Hai lịch liền kề (cách nhau 30 phút) được phép; đổi người tiếp đón hoặc hủy lịch sẽ giải phóng khung giờ.
 Đổi lịch đưa trạng thái về **Chờ xác nhận**. Lịch đã qua phải đổi giờ trước khi mở lại.
 Tạo/đổi lịch chuyển N1/N2 sang N3; giữ N4/N5/N0 hiện có. Hủy lịch không tự lùi giai đoạn.
 Đây là lịch tư vấn, **không phải** kiểm tra tồn sảnh, đặt giữ sảnh hoặc xác nhận cọc.

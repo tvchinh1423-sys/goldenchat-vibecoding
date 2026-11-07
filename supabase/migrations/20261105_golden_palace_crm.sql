@@ -61,12 +61,12 @@ ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS notes text,
   ADD COLUMN IF NOT EXISTS status varchar(20) DEFAULT 'pending',
   ADD COLUMN IF NOT EXISTS appointment_end timestamptz;
-UPDATE public.bookings SET appointment_end=appointment_time + interval '1 hour' WHERE appointment_end IS NULL;
+UPDATE public.bookings SET appointment_end=appointment_time + interval '30 minutes' WHERE appointment_end IS NULL;
 ALTER TABLE public.bookings ALTER COLUMN appointment_end SET NOT NULL;
 CREATE OR REPLACE FUNCTION public.crm_booking_period() RETURNS trigger
 LANGUAGE plpgsql SET search_path=public AS $$
 BEGIN
-  NEW.appointment_end := NEW.appointment_time + interval '1 hour';
+  NEW.appointment_end := NEW.appointment_time + interval '30 minutes';
   IF NEW.status IN ('pending','confirmed') AND NEW.appointment_time <= now() THEN
     IF TG_OP='INSERT' THEN RAISE EXCEPTION 'Appointment must be in the future' USING ERRCODE='22023';
     ELSIF NEW.appointment_time IS DISTINCT FROM OLD.appointment_time OR NEW.status IS DISTINCT FROM OLD.status THEN
@@ -79,13 +79,33 @@ DROP TRIGGER IF EXISTS crm_booking_period ON public.bookings;
 CREATE TRIGGER crm_booking_period BEFORE INSERT OR UPDATE ON public.bookings
 FOR EACH ROW EXECUTE FUNCTION public.crm_booking_period();
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='crm_staff_no_overlap' AND conrelid='public.bookings'::regclass) THEN
-    ALTER TABLE public.bookings ADD CONSTRAINT crm_staff_no_overlap EXCLUDE USING gist (
-      lower(btrim(assigned_staff)) WITH =,
-      tstzrange(appointment_time, appointment_end, '[)') WITH &&
-    ) WHERE (status IN ('pending','confirmed') AND assigned_staff IS NOT NULL AND assigned_staff <> '');
-  END IF;
+  -- Bỏ ràng buộc đơn nhất cũ để hỗ trợ tối đa 2 lịch đồng thời cho 1 nhân viên tư vấn
+  ALTER TABLE public.bookings DROP CONSTRAINT IF EXISTS crm_staff_no_overlap;
 END $$;
+CREATE OR REPLACE FUNCTION public.crm_check_staff_concurrency() RETURNS trigger
+LANGUAGE plpgsql SET search_path=public AS $$
+DECLARE v_count integer;
+BEGIN
+  IF NEW.status IN ('pending','confirmed') AND NEW.assigned_staff IS NOT NULL AND btrim(NEW.assigned_staff) <> '' THEN
+    SELECT count(*) INTO v_count
+    FROM public.bookings
+    WHERE id IS DISTINCT FROM NEW.id
+      AND status IN ('pending','confirmed')
+      AND lower(btrim(assigned_staff)) = lower(btrim(NEW.assigned_staff))
+      AND tstzrange(appointment_time, appointment_end, '[)') && tstzrange(NEW.appointment_time, NEW.appointment_end, '[)');
+    IF v_count >= 2 THEN
+      RAISE EXCEPTION 'Staff maximum 2 overlapping bookings reached' USING ERRCODE='23P01';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS crm_check_staff_concurrency ON public.bookings;
+CREATE TRIGGER crm_check_staff_concurrency BEFORE INSERT OR UPDATE ON public.bookings
+FOR EACH ROW EXECUTE FUNCTION public.crm_check_staff_concurrency();
+CREATE INDEX IF NOT EXISTS crm_bookings_staff_time ON public.bookings USING gist (
+  lower(btrim(assigned_staff)),
+  tstzrange(appointment_time, appointment_end, '[)')
+) WHERE (status IN ('pending','confirmed') AND assigned_staff IS NOT NULL AND assigned_staff <> '');
 CREATE INDEX IF NOT EXISTS crm_bookings_lead ON public.bookings(lead_id);
 
 CREATE OR REPLACE FUNCTION public.crm_save_booking(p_input jsonb, p_id uuid DEFAULT NULL)

@@ -40,7 +40,7 @@ import { getSmartBookingDefault, googleCalendarUrl } from "@/lib/crm/appointment
 import { saveChatBooking } from "@/lib/crm/client";
 import { BOOKING_TYPES, formatAppointment } from "@/lib/crm/model";
 import { visitIntent } from "@/lib/chat/follow-ups";
-import { playChatTone, playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
+import { playChatTone, playBookingSuccessCelebrationTone, unlockAudioContext } from "@/lib/chat/sound";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 import { compressImageToJpeg, formatFileSize, type CompressedImageResult } from "@/lib/chat/image-utils";
@@ -411,7 +411,8 @@ function WebWidgetContent() {
         : "Lịch hẹn đã được hệ thống ghi nhận thành công và chuyển tới tư vấn viên.";
 
       // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
-      if (soundEnabled) playBookingSuccessCelebrationTone();
+      unlockAudioContext();
+      void playBookingSuccessCelebrationTone(true);
 
       const autoBookMsg: WidgetMessage = {
         id: `b-auto-${Date.now()}`,
@@ -631,6 +632,7 @@ function WebWidgetContent() {
   // Submit Form Đặt lịch trực tiếp trong chat
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    unlockAudioContext();
     if (bookingSubmitting) return;
     if (soundEnabled) playChatTone();
     setBookingError("");
@@ -690,7 +692,8 @@ function WebWidgetContent() {
         : "Lịch đã được ghi nhận và đang chờ tư vấn viên xác nhận.";
 
       // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
-      if (soundEnabled) playBookingSuccessCelebrationTone();
+      unlockAudioContext();
+      void playBookingSuccessCelebrationTone(true);
 
       const confirmMsg: WidgetMessage = {
         id: `b-confirm-${Date.now()}`,
@@ -1604,24 +1607,39 @@ function WebWidgetContent() {
                       </div>
                     )}
 
-                    <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
                       <button
                         type="button"
-                        disabled={bookingSubmitting}
-                        onClick={() => setShowBookingModal(false)}
-                        className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
+                        onClick={() => {
+                          unlockAudioContext();
+                          void playBookingSuccessCelebrationTone(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-xl border border-amber-200 transition active:scale-95"
+                        title="Nghe thử âm chuông tiệc cưới hân hoan khi đặt lịch thành công"
                       >
-                        Đóng
+                        <span aria-hidden="true">🎉</span>
+                        <span>Nghe thử âm chúc mừng</span>
                       </button>
-                      <button
-                        type="submit"
-                        disabled={bookingSubmitting}
-                        style={{ backgroundColor: customColor }}
-                        className="flex items-center gap-1.5 rounded-xl px-4 py-2 font-semibold text-white shadow-xs transition hover:opacity-95 disabled:opacity-50"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {bookingSubmitting ? "Đang xếp lịch..." : "Xác nhận đặt lịch"}
-                      </button>
+
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          type="button"
+                          disabled={bookingSubmitting}
+                          onClick={() => setShowBookingModal(false)}
+                          className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
+                        >
+                          Đóng
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={bookingSubmitting}
+                          style={{ backgroundColor: customColor }}
+                          className="flex items-center gap-1.5 rounded-xl px-4 py-2 font-semibold text-white shadow-xs transition hover:opacity-95 disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {bookingSubmitting ? "Đang xếp lịch..." : "Xác nhận đặt lịch"}
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </div>
