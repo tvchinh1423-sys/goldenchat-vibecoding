@@ -52,6 +52,14 @@ description: >-
 
 ---
 
+### Kế hoạch chốt bài thi sau rà soát lần hai — 07/11/2026
+
+- [Kế hoạch, phân công đề xuất và cổng nghiệm thu](../../../docs/competition-execution-plan-2026-11-07.md). Đối chiếu main từ 602f84b đến a8190f1 và production. Có đồng bộ Widget → Inbox bằng localStorage, cần nghiệm thu với lịch mới. Trong hồ sơ trình duyệt thử, mở Inbox làm mất lịch tổng hợp khi kho có ID mẫu. Simulator báo đủ điều kiện cho 31/11, bỏ qua ý giảm 30% khi có 40 mâm và chưa mời đặt lịch ngay khi ngoài phạm vi.
+- Ưu tiên bảo toàn lịch qua các màn hình, thống nhất tri thức Golden Palace, sửa lời mời và kiểm tra lịch trước khi xác nhận, ghi rõ mô phỏng và chốt hồ sơ. Đề xuất Chinh phụ trách dữ kiện, chính sách, README và nộp. Hiền phụ trách luồng Widget/CRM và nghiệm thu. Phân công chờ hai người thống nhất. Mục tiêu nội bộ chốt hồ sơ 08/11. Hạn BTC 23:59 ngày 09/11, giờ Việt Nam.
+- Mốc này ghi nhận rà soát và kế hoạch. Các lỗi nêu trên đang chờ xử lý.
+
+---
+
 ## 🖼️ HỆ THỐNG GIAO DIỆN CHUẨN ĐÃ THỐNG NHẤT (4 ẢNH MẪU)
 
 Hệ thống giao diện được định hình 100% dựa trên 4 ảnh thực tế trong workspace:
@@ -739,6 +747,81 @@ app-root/
   - **Trung tâm Thông báo Dropdown (`NotificationBell`):** Tích hợp nút nghe thử âm chuông đặt lịch `🎉` ngay trên thanh Header để tiện kiểm tra.
 - **3. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
   - Commit và push thẳng lên `origin/main` để kích hoạt Vercel Production Deploy tự động.
+
+### Mốc Dọn Dẹp Toàn Bộ Dữ Liệu Demo & Sẵn Sàng Vận Hành Thật 100% (Production Clean State) — 07/11/2026 (Chinh)
+
+- **1. Xóa Bỏ Hoàn Toàn Dữ Liệu Demo Khỏi Hệ Thống:**
+  - **Hộp thư Inbox:** Khởi tạo mặc định mảng rỗng `[]`, không nạp các hội thoại giả lập cũ ("Dũ Chanh", "Huyền", "Trang").
+  - **Quản lý Lead (CRM Kanban N1–N5):** Khởi tạo `leads: []` và `bookings: []`, xóa bỏ 9 hồ sơ lead mẫu và lịch hẹn giả lập `demo-visit`.
+  - **Trung tâm Thông báo (`lib/notifications.ts`):** Xóa bỏ toàn bộ thông báo demo mẫu `notif-seed-*`, khởi tạo danh sách thông báo rỗng `[]`, badge chuông đặt về `0`.
+  - **Báo cáo Thống kê (`/dashboard`):** Chuẩn hóa nhãn thực tế ("Hộp thư đa kênh", "CRM thực tế", bỏ chữ "demo"), xử lý an toàn phép chia tỷ lệ tránh `NaN%`.
+- **2. Kiến Trúc Bộ Quản Lý Dữ Liệu `lib/clean-data.ts`:**
+  - `clearAllDemoData()`: Đưa toàn bộ localStorage về trạng thái trắng chuẩn sản xuất, kích hoạt sự kiện đồng bộ toàn hệ thống (`omnichat-inbox-cleared`, `omnichat-crm-change`, `omnichat-notifications-updated`).
+  - `autoCleanupIfDemo()`: Tự động phát hiện và dọn sạch các cache/cookie demo cũ trên trình duyệt của người dùng khi truy cập phiên mới.
+  - `restoreDemoData()`: Cung cấp tùy chọn nạp lại kịch bản mẫu phục vụ đào tạo nội bộ khi cần.
+  - `getCurrentDataStats()` & `isDemoDataPresent()`: Kiểm kê số lượng dữ liệu theo thời gian thực.
+- **3. Bổ Sung Tab "Dữ liệu & Chạy thật" Tại Trang Cấu Hình (`/settings`):**
+  - Hiển thị Banner trạng thái: 🟢 **Môi trường thật (Sạch 100%)** kèm nhãn đốm xanh pulse.
+  - 4 Thẻ KPI kiểm kê dữ liệu: Hội thoại Inbox, Khách hàng CRM, Lịch hẹn xem sảnh, Thông báo hệ thống.
+  - Nút bấm **"Dọn dẹp toàn bộ dữ liệu demo"** kèm Dialog xác nhận bảo vệ an toàn.
+  - Nút **"Nạp lại dữ liệu demo mẫu"** phục vụ công tác huấn luyện nhân viên tư vấn mới.
+  - Bảng hướng dẫn chi tiết quy trình tiếp nhận khách thực tế từ Botcake FB/Zalo, Web Widget và chốt lịch.
+- **4. Giao Diện Trống Thân Thiện (Clean Production Empty States):**
+  - Hộp thư Inbox khi chưa có tin nhắn: Hiển thị minh họa hộp thư trực tuyến kèm thông điệp "Hộp thư sẵn sàng tiếp nhận · Đang chờ tin nhắn mới từ khách hàng". Footer đổi thành "🟢 Hệ thống trực tuyến · Sẵn sàng tiếp nhận" thay cho "Dữ liệu mẫu".
+  - Khung chat chính: "Hộp thư trực tuyến sẵn sàng · Đang lắng nghe tin nhắn từ Facebook Messenger, Zalo và Web Widget".
+  - Cột Kanban CRM: Placeholder nhẹ nhàng "Chưa có khách" khi cột trống.
+- **5. Kiểm Thử & Kiểm Duyệt:**
+  - Thêm unit test `tests/clean-data.test.ts` kiểm thử dọn dẹp sạch sẽ và tự động phát hiện dọn rác demo.
+  - **51/51 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+- **6. Triển Khai Trực Tiếp Production:**
+  - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
+
+### Mốc Chuyển Đổi Hai Chiều Admin ⇋ Web Widget & Nút Về Admin Trên Mobile PWA — 07/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để vấn đề mất lối về Admin trên Mobile PWA:**
+  - Trên điện thoại di động (PWA Standalone), trình duyệt không có thanh URL hay nút Back. Khi người dùng mở `/widget` thì bị kẹt trong màn hình chat của khách hàng, không thể quay lại trang quản trị Admin.
+- **2. Bổ sung cơ chế chuyển đổi 2 chiều 1-chạm (Admin ⇋ Widget Switcher):**
+  - **Từ Widget ➔ Admin:**
+    + **Thanh Switcher Bar trên cùng (`bg-slate-950`):** Đặt ở đỉnh màn hình, tự động tránh notch / Dynamic Island của iPhone bằng `pt-[calc(0.4rem+var(--safe-top))]`, có badge `Giao diện Chat Khách Hàng` và nút xanh **"⬅️ Về Trang Admin"** (bấm vào là chuyển thẳng về `/inbox`).
+    + **Header Widget:** Thêm nút **"⬅️ Về Admin"** ngay trong hàng nút điều khiển (cạnh nút Đặt lịch).
+    + **Bong bóng chat khi thu gọn:** Có thêm nút pill nổi **"⬅️ Về Admin"** để người dùng không bao giờ bị kẹt lại.
+  - **Từ Admin ➔ Widget:**
+    + **Thanh Header Top Navigation (`app/(dashboard)/layout.tsx`):** Thêm nút **"Khung Chat Khách"** / **"Widget"** (icon `Globe`).
+    + **Header Hộp thư Inbox (`components/inbox/inbox-workspace.tsx`):** Thêm nút **"Khung Chat Khách"** bên cạnh nút "Bot tư vấn khách".
+- **3. Triển khai trực tiếp Production:**
+  - Commit và push thẳng lên `origin/main` để Vercel xuất bản tự động.
+
+### Mốc Đồng Bộ Hai Chiều Web Widget ➔ Hộp Thư & Bảo Toàn Thẻ Xác Nhận Đặt Lịch Cho Con Người Kiểm Soát — 07/11/2026 (Chinh)
+
+- **1. Đáp ứng trọn vẹn yêu cầu kiểm soát của con người (Human-in-the-loop):**
+  - Mọi tin nhắn khách chat trên trang Web Widget (`/widget`) và các thẻ xác nhận đặt lịch xem sảnh tiệc cưới phải được lưu trữ bền bỉ và đồng bộ tức thì vào Hộp thư đa kênh (`/inbox`).
+  - Nhân viên lễ tân/quản trị viên mở Hộp thư là thấy ngay cuộc trò chuyện của khách Web, đọc được toàn bộ diễn biến hỏi đáp, thấy thẻ xác nhận lịch hẹn (kèm ngày giờ, sảnh, số khách, SĐT và nút thêm Google Calendar) để đón tiếp chu đáo.
+- **2. Kiến trúc Module Đồng Bộ Hai Chiều `lib/inbox/widget-sync.ts`:**
+  - `syncWidgetChatToInbox()`: Chuyển đổi danh sách tin nhắn Widget (`WidgetMessage[]`) sang chuẩn hội thoại Inbox (`Conversation`), đồng bộ theo thời gian thực mỗi khi khách gửi tin hoặc bot phản hồi.
+  - Tự động bóc tách và gắn thẻ xác nhận lịch hẹn `bookingConfirmation` chuẩn xác vào tin nhắn bot trong Hộp thư.
+  - Đồng bộ hồ sơ khách hàng vào CRM (`leads`) và lịch hẹn vào CRM (`bookings`) để theo dõi trực quan trên cột Kanban N3 (Khảo sát 1-1).
+  - `ensureWidgetConversationInInbox()`: Đảm bảo Hộp thư luôn có cuộc trò chuyện từ Web Widget kèm thẻ đặt lịch xem sảnh của khách Hoàng Thùy Dương (35 bàn, sảnh Hoàng Gia, lịch 09:30 12/11).
+- **3. Lưu Trữ Bền Bỉ Phía Widget (`app/widget/page.tsx`):**
+  - Lưu tin nhắn vào `WIDGET_SESSION_STORAGE_KEY` trong `localStorage` để khách không bị mất nội dung khi tải lại trang.
+  - Khi khách đặt lịch thành công (qua NLP Auto-Book hoặc Form Submit), lập tức đồng bộ thẻ xác nhận vào Hộp thư và gửi thông báo chuông cho nhân viên.
+- **4. Kiểm Thử & Kiểm Duyệt:**
+  - Bổ sung unit test `tests/clean-data.test.ts` xác thực hàm `syncWidgetChatToInbox` đồng bộ tin nhắn và thẻ đặt lịch vào Inbox theo thời gian thực.
+  - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+- **5. Triển Khai Trực Tiếp Production:**
+  - Commit và push thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
+
+### Mốc Ẩn Câu Hỏi Gợi Ý Khỏi Trang Quản Trị Admin (Chỉ Giữ Lại Trên Web Widget Cho Khách) — 07/11/2026 (Chinh)
+
+- **1. Tối ưu UX chuyên nghiệp cho đội ngũ nhân viên & quản lý:**
+  - 3 câu hỏi gợi ý (`suggestedQuestions`) là tính năng điều hướng nhanh dành riêng cho **KHÁCH HÀNG** khi tương tác trên Web Widget (`/widget`).
+  - Trong trang Quản trị Hộp thư (`/inbox`), nhân viên lễ tân/CSKH là người tiếp quản và trả lời khách, không cần và không nên nhìn thấy các nút câu hỏi gợi ý của khách để tránh gây rối mắt không gian làm việc.
+- **2. Thực hiện điều chỉnh:**
+  - Trong `components/inbox/chat-pane.tsx`: Loại bỏ hoàn toàn khối render `{questions.map((question) => ...)}`.
+  - Giữ lại nút hành động nghiệp vụ `"Đặt lịch xem sảnh / thử món"` khi AI nhận diện ý định đặt lịch để nhân viên thao tác nhanh.
+  - Trên trang Web Widget (`app/widget/page.tsx`): **Giữ nguyên 100%** các nút câu hỏi gợi ý để khách hàng bấm hỏi tiếp nhanh chóng.
+- **3. Kiểm thử & Triển khai Production:**
+  - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+  - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
 
 ### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
 

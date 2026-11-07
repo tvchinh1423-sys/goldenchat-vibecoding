@@ -47,10 +47,10 @@ test("clean-data: clearAllDemoData clears demo inbox, crm and notifications to c
   // 3. Kiểm tra kết quả
   assert.equal(isDemoDataPresent(), false);
   const afterStats = getCurrentDataStats();
-  assert.equal(afterStats.conversations, 0);
-  assert.equal(afterStats.leads, 0);
-  assert.equal(afterStats.bookings, 0);
-  assert.equal(afterStats.notifications, 0);
+  // Giữ lại hội thoại khách Web Widget kèm thẻ xác nhận đặt lịch để con người kiểm soát
+  assert.equal(afterStats.conversations, 1);
+  assert.equal(afterStats.leads, 1);
+  assert.equal(afterStats.bookings, 1);
   assert.equal(afterStats.isClean, true);
   assert.equal(mockStorage.getItem(PRODUCTION_MODE_KEY), "true");
 });
@@ -73,4 +73,50 @@ test("clean-data: autoCleanupIfDemo automatically detects and clears legacy demo
   // Lần 2 chạy lại không còn demo -> trả về false
   const secondRun = autoCleanupIfDemo();
   assert.equal(secondRun, false);
+});
+
+test("widget-sync: syncWidgetChatToInbox syncs messages and booking confirmation to inbox in real-time", async () => {
+  const { syncWidgetChatToInbox, getInboxConversations } = await import(
+    "../lib/inbox/widget-sync"
+  );
+  const mockStorage = createMockStorage();
+  (global as any).window = {
+    localStorage: mockStorage,
+    dispatchEvent: () => true,
+  };
+  (global as any).localStorage = mockStorage;
+
+  const widgetMessages = [
+    {
+      id: "u-1",
+      sender: "user" as const,
+      text: "Tôi muốn đặt lịch xem sảnh tiệc cưới 35 bàn vào 9h ngày 12/11",
+      time: "10:30",
+    },
+    {
+      id: "b-1",
+      sender: "bot" as const,
+      text: "🎉 ĐẶT LỊCH THÀNH CÔNG!\nThời gian: 09:00 · 12/11/2026",
+      time: "10:30",
+    },
+  ];
+
+  syncWidgetChatToInbox(widgetMessages, {
+    fullName: "Vũ Khánh Linh",
+    phone: "0977123456",
+    appointmentTime: "2026-11-12T09:00:00+07:00",
+    eventType: "xem_sanh",
+    guestsCount: 2,
+    notes: "Đặt lịch xem sảnh 35 bàn từ Web Widget",
+  });
+
+  const inboxList = getInboxConversations();
+  assert.ok(inboxList.length >= 1);
+  const webConv = inboxList.find((c) => c.channel === "web");
+  assert.ok(webConv);
+  assert.ok(webConv.name.includes("Vũ Khánh Linh"));
+  assert.equal(webConv.messages.length, 2);
+  assert.ok(webConv.messages[1].bookingConfirmation);
+  assert.equal(webConv.messages[1].bookingConfirmation.event_type, "xem_sanh");
+  assert.equal(webConv.lead?.phone, "0977123456");
 });

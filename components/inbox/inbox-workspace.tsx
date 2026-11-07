@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Bot, Check, Inbox, MessageCircle, Search, X } from "lucide-react";
+import { BarChart3, Bot, Check, Inbox, MessageCircle, Search, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { autoCleanupIfDemo } from "@/lib/clean-data";
+import { ensureWidgetConversationInInbox } from "@/lib/inbox/widget-sync";
 import { createDemoConversations } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
@@ -99,6 +100,7 @@ export function InboxWorkspace() {
     let initialConversations: Conversation[] = [];
     if (typeof window !== "undefined") {
       autoCleanupIfDemo();
+      ensureWidgetConversationInInbox();
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) initialConversations = parseSnapshot(saved);
@@ -144,13 +146,24 @@ export function InboxWorkspace() {
         }
       } catch {}
     };
+    const onInboxUpdated = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const list = parseSnapshot(saved);
+          setConversations(list);
+        }
+      } catch {}
+    };
     window.addEventListener("omnichat-inbox-cleared", onCleared);
     window.addEventListener("omnichat-demo-restored", onRestored);
+    window.addEventListener("omnichat-inbox-updated", onInboxUpdated);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("omnichat-inbox-cleared", onCleared);
       window.removeEventListener("omnichat-demo-restored", onRestored);
+      window.removeEventListener("omnichat-inbox-updated", onInboxUpdated);
     };
   }, []);
 
@@ -716,6 +729,20 @@ export function InboxWorkspace() {
             >
               <Bot />
               <span className="hidden md:inline">Bot tư vấn khách</span>
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="h-9 px-2.5 text-xs text-blue-700 bg-blue-50/80 hover:bg-blue-100 border-blue-200"
+          >
+            <Link
+              href="/widget"
+              aria-label="Khung Chat Khách"
+              title="Mở giao diện Chat Khách Hàng (Web Widget)"
+            >
+              <Globe className="h-4 w-4 text-blue-600 sm:mr-1.5" />
+              <span className="hidden sm:inline">Khung Chat Khách</span>
             </Link>
           </Button>
           <Button

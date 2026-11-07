@@ -52,7 +52,7 @@ import { knowledgeBase } from "@/lib/inbox/demo-data";
 import type { Attachment, Conversation } from "@/lib/inbox/types";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { Avatar } from "./shared";
-import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
+import { visitIntent } from "@/lib/chat/follow-ups";
 import { googleCalendarUrl } from "@/lib/crm/appointment";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 import { useSwipe } from "@/lib/hooks/use-touch-gestures";
@@ -482,11 +482,6 @@ export function ChatPane({
             !message.bookingConfirmation && previousQuestion
               ? visitIntent(previousQuestion)
               : undefined;
-          const questions =
-            message.sender === "bot"
-              ? (message.suggestedQuestions ??
-                suggestedQuestions(previousQuestion ?? ""))
-              : [];
           const isCustomer = message.sender === "customer";
           const previous = conversation.messages[index - 1];
           const showDate =
@@ -693,33 +688,20 @@ export function ChatPane({
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  {!isArchived && (questions.length > 0 || visit) && (
+                  {!isArchived && visit && (
                     <div
                       className="mt-2 flex flex-wrap justify-end gap-1.5"
-                      aria-label="Gợi ý tiếp theo"
+                      aria-label="Gợi ý thao tác đặt lịch"
                     >
-                      {visit && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onBook(visit)}
-                        >
-                          <CalendarDays /> Đặt lịch{" "}
-                          {visit === "thu_mon" ? "thử món" : "xem sảnh"}
-                        </Button>
-                      )}
-                      {questions.map((question) => (
-                        <button
-                          key={question}
-                          type="button"
-                          disabled={asking}
-                          onClick={() => onAsk(question)}
-                          className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-50"
-                        >
-                          {question}
-                        </button>
-                      ))}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onBook(visit)}
+                      >
+                        <CalendarDays className="mr-1 h-3.5 w-3.5" /> Đặt lịch{" "}
+                        {visit === "thu_mon" ? "thử món" : "xem sảnh"}
+                      </Button>
                     </div>
                   )}
                   <div

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect, Suspense, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   MessageSquare,
   Send,
   X,
@@ -42,6 +44,7 @@ import { playChatTone, playBookingSuccessCelebrationTone } from "@/lib/chat/soun
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 import { compressImageToJpeg, formatFileSize, type CompressedImageResult } from "@/lib/chat/image-utils";
+import { syncWidgetChatToInbox, WIDGET_SESSION_STORAGE_KEY } from "@/lib/inbox/widget-sync";
 
 export interface WidgetAttachment {
   id: string;
@@ -91,6 +94,7 @@ const EMOJI_GROUPS = [
 ];
 
 function WebWidgetContent() {
+  const router = useRouter();
   const viewportRef = useVisualViewport<HTMLDivElement>();
   const searchParams = useSearchParams();
   const customColor = searchParams.get("color") || "#2563eb";
@@ -158,6 +162,47 @@ function WebWidgetContent() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading, selectedImages]);
+
+  // Tự động tải lại lịch sử chat trước đó của khách trên Widget (nếu có)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(WIDGET_SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed?.messages) && parsed.messages.length > 0) {
+          setMessages(parsed.messages);
+          if (parsed.activeBookingDraft) {
+            setActiveBookingDraft(parsed.activeBookingDraft);
+          }
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Tự động đồng bộ tin nhắn khách chat trên widget và lịch hẹn sang Hộp thư Inbox để con người kiểm soát
+  useEffect(() => {
+    if (typeof window === "undefined" || messages.length === 0) return;
+    try {
+      localStorage.setItem(
+        WIDGET_SESSION_STORAGE_KEY,
+        JSON.stringify({ messages, activeBookingDraft, lastUpdated: new Date().toISOString() })
+      );
+      syncWidgetChatToInbox(
+        messages,
+        activeBookingDraft
+          ? {
+              fullName: activeBookingDraft.fullName || "Khách Web",
+              phone: activeBookingDraft.phone || "",
+              appointmentTime: activeBookingDraft.dateTimeIso || getSmartBookingDefault(),
+              eventType: activeBookingDraft.eventType || "xem_sanh",
+              guestsCount: activeBookingDraft.guestsCount || 2,
+              notes: activeBookingDraft.notes || "",
+            }
+          : undefined
+      );
+    } catch {}
+  }, [messages, activeBookingDraft]);
 
   // Phím tắt ESC để đóng Lightbox hoặc Menu
   useEffect(() => {
@@ -649,12 +694,35 @@ function WebWidgetContent() {
                 : "widget-panel w-full h-full sm:w-[420px] sm:h-[min(640px,calc(100dvh-2.5rem))] rounded-none sm:rounded-3xl border-0 sm:border"
             } bg-white shadow-2xl border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
           >
+            {/* Top Switcher Bar: Chuyển đổi nhanh 2 chiều giữa Widget Khách Hàng ⇋ Quản Trị Admin */}
+            {!isEmbedded && (
+              <div className="bg-slate-950 text-white text-[11px] px-3.5 pb-1.5 pt-[calc(0.4rem+var(--safe-top,0px))] flex items-center justify-between shrink-0 border-b border-slate-800 z-20">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-slate-300 font-medium truncate">Giao diện Chat Khách Hàng</span>
+                </div>
+                <Link
+                  href="/inbox"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition shadow-xs active:scale-95 shrink-0"
+                  title="Quay lại Trang Quản Trị Admin"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Về Trang Admin</span>
+                </Link>
+              </div>
+            )}
+
             {/* ================= HEADER CHUẨN ZALO / MESSENGER ================= */}
             <div
               style={{
                 background: `linear-gradient(135deg, ${customColor}, #3b82f6, #4338ca)`,
               }}
-              className="widget-header flex shrink-0 flex-wrap items-center justify-between gap-x-2 bg-blue-600 pb-2 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[calc(0.75rem+var(--safe-top))] text-white shadow-xs select-none sm:p-3.5"
+              className={`widget-header flex shrink-0 flex-wrap items-center justify-between gap-x-2 bg-blue-600 pb-2 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] ${
+                isEmbedded ? "pt-[calc(0.75rem+var(--safe-top))]" : "pt-2.5"
+              } text-white shadow-xs select-none sm:p-3.5`}
             >
               {/* Bot Info Profile */}
               <div className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-full sm:gap-3">
@@ -695,6 +763,19 @@ function WebWidgetContent() {
 
               {/* Action Buttons trên Header */}
               <div className="flex shrink-0 flex-wrap items-center gap-1 max-sm:ml-auto group-data-[keyboard-open]/chat:hidden">
+                {/* Nút Quay lại Admin nhanh trực tiếp trên Header */}
+                {!isEmbedded && (
+                  <Link
+                    href="/inbox"
+                    title="Quay lại Trang Quản Trị Hộp thư Admin"
+                    className="flex min-h-11 sm:min-h-8 items-center gap-1 rounded-xl border border-white/30 bg-white/20 px-2 text-xs font-bold text-white hover:bg-white/30 transition shadow-2xs active:scale-95"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Về Admin</span>
+                    <span className="sm:hidden">Admin</span>
+                  </Link>
+                )}
+
                 {/* Nút Đặt lịch */}
                 <button
                   type="button"
@@ -1486,16 +1567,28 @@ function WebWidgetContent() {
             )}
           </div>
         ) : (
-          /* Nút Mở Widget Tròn Nổi */
-          <button
-            type="button"
-            aria-label="Mở khung chat"
-            onClick={() => setIsOpen(true)}
-            style={{ backgroundColor: customColor }}
-            className="widget-launcher pointer-events-auto group mt-auto mr-[max(1rem,var(--safe-right,0px))] mb-[max(1rem,var(--safe-bottom,0px))] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:m-0"
-          >
-            <MessageSquare className="w-6 h-6 group-hover:scale-110 transition" />
-          </button>
+          /* Nút Mở Widget Tròn Nổi & Nút Về Admin khi chat đang thu gọn */
+          <div className="pointer-events-auto flex items-center gap-2 mt-auto mr-[max(1rem,var(--safe-right,0px))] mb-[max(1rem,var(--safe-bottom,0px))] sm:m-0">
+            {!isEmbedded && (
+              <Link
+                href="/inbox"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-900/95 text-white rounded-full text-xs font-bold shadow-xl border border-slate-700/80 backdrop-blur-md hover:bg-slate-800 transition active:scale-95"
+                title="Quay lại Trang Quản Trị Admin"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Về Admin</span>
+              </Link>
+            )}
+            <button
+              type="button"
+              aria-label="Mở khung chat"
+              onClick={() => setIsOpen(true)}
+              style={{ backgroundColor: customColor }}
+              className="widget-launcher group flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95"
+            >
+              <MessageSquare className="w-6 h-6 group-hover:scale-110 transition" />
+            </button>
+          </div>
         )}
       </div>
     </div>
