@@ -52,6 +52,14 @@ description: >-
 
 ---
 
+### Kế hoạch chốt bài thi sau rà soát lần hai — 07/11/2026
+
+- [Kế hoạch, phân công đề xuất và cổng nghiệm thu](../../../docs/competition-execution-plan-2026-11-07.md). Đối chiếu main từ 602f84b đến a8190f1 và production. Có đồng bộ Widget → Inbox bằng localStorage, cần nghiệm thu với lịch mới. Trong hồ sơ trình duyệt thử, mở Inbox làm mất lịch tổng hợp khi kho có ID mẫu. Simulator báo đủ điều kiện cho 31/11, bỏ qua ý giảm 30% khi có 40 mâm và chưa mời đặt lịch ngay khi ngoài phạm vi.
+- Ưu tiên bảo toàn lịch qua các màn hình, thống nhất tri thức Golden Palace, sửa lời mời và kiểm tra lịch trước khi xác nhận, ghi rõ mô phỏng và chốt hồ sơ. Đề xuất Chinh phụ trách dữ kiện, chính sách, README và nộp. Hiền phụ trách luồng Widget/CRM và nghiệm thu. Phân công chờ hai người thống nhất. Mục tiêu nội bộ chốt hồ sơ 08/11. Hạn BTC 23:59 ngày 09/11, giờ Việt Nam.
+- Mốc này ghi nhận rà soát và kế hoạch. Các lỗi nêu trên đang chờ xử lý.
+
+---
+
 ## 🖼️ HỆ THỐNG GIAO DIỆN CHUẨN ĐÃ THỐNG NHẤT (4 ẢNH MẪU)
 
 Hệ thống giao diện được định hình 100% dựa trên 4 ảnh thực tế trong workspace:
