@@ -23,3 +23,20 @@ Nếu Botcake báo không tìm thấy Page nào đang quản lý, vào [hồ sơ
 Nếu hồ sơ Pancake đã hiển thị Facebook nhưng Botcake vẫn báo chưa liên kết sau khi làm mới quyền, đăng xuất Botcake. Tại màn hình Pancake, chọn **Đăng nhập bằng tài khoản khác → Facebook** để mở bước cấp quyền Meta dành cho Botcake. Đối chiếu tên và ID Trang trong Facebook trước khi cấp quyền, rồi chỉ chọn Trang dùng cho bài thử nếu Meta cho chọn từng Trang.
 
 Webhook `/api/webhook/botcake` hiện trả nội dung ở `data.botReply` trong JSON và không gọi API gửi Messenger. `GET` trả `ready`, nút ping, hoặc mô phỏng `POST` thành công không xác nhận Botcake đã nhận/gửi tin thật. Bài thử JSON API trên dùng kho câu hỏi mẫu của Simulator. Đồng bộ Inbox và tạo lead thật cần kiểm thử riêng sau khi có cấu hình lưu trữ và luồng nhận sự kiện thật.
+
+## Bài thử theo nội dung Messenger
+
+Đã xác minh ngày 07/11/2026 trên Page Vân Chinh. Trong [Messenger của Page](https://m.me/1442901792232043), gửi `omnichat-fb-faq-test`, chờ lời mời nhập câu hỏi rồi gửi một câu FAQ. Flow nhận một câu mỗi lượt. Để thử câu khác, gửi lại từ khóa và chờ lời mời mới. Chỉ dùng câu hỏi mẫu.
+
+- `Hotline Golden Palace là gì?` nhận phản hồi có **0228 659 5959**.
+- `Đặt cọc giữ sảnh bao nhiêu?` nhận phản hồi có **5.000.000 VNĐ**.
+
+Botcake dùng quy tắc **Nội dung là → Từ khoá**, gọi flow `OmniChat Facebook - Thu FAQ dong`. Thẻ Nhập liệu lưu vào User Field dạng chuỗi `omnichat_facebook_test_question`, rồi chuyển sang bản sao `OmniChat Facebook smoke test-copy`. Block JSON API của bản sao gọi endpoint Simulator như bài thử gốc, với Body sau:
+
+```json
+{"channel":"facebook","message":"{{user.omnichat_facebook_test_question}}"}
+```
+
+Ánh xạ `reply` sang `omnichat_facebook_test_reply`, qua **Smart Delay 12 giây** rồi gửi biến trong một block văn bản riêng. Khi thử với khoảng chờ ngắn hơn, Botcake đã gửi giá trị của lượt trước dù trường phản hồi sau đó chứa câu đúng. Mốc 12 giây đã qua hai câu mẫu liên tiếp trên Messenger. Đây là độ chờ của flow thử, cần cơ chế gửi gắn với từng request trước khi dùng cho khách thật.
+
+Từ khóa động được bật riêng để chạy lại. Flow hotline cố định vẫn hoạt động độc lập. Bài thử không gọi webhook ghi Inbox, tạo lead hoặc gửi Telegram.
