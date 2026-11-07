@@ -568,3 +568,35 @@ app-root/
   - Bổ sung bộ test chuyên sâu `tests/rbac-assignment.test.ts` (3 nhóm test: Kiểm thử ranh giới quyền hạn chính xác của Admin/Manager/Staff, Kiểm thử CRUD tài khoản và chống trùng/tự xóa, Kiểm thử chỉ định chat và lọc tab Của tôi).
   - Kết quả kiểm thử: **45/45 unit tests pass 100%**.
   - Production build Next.js: **20/20 trang tĩnh thành công 100%**, không có lỗi TypeScript hay ESLint.
+
+### Mốc Trải Nghiệm Chat Web Widget Chuẩn Zalo & Messenger (Đính Kèm Ảnh Cross-Platform, Thả Cảm Xúc Reaction, Lightbox Phóng To & Link 1-Chạm) — 07/11/2026 (Chinh)
+
+- **1. Chức năng Đính Kèm Ảnh Đa Kênh Tương Thích 100% Mọi Hệ Điều Hành (`lib/chat/image-utils.ts` & `app/widget/page.tsx`):**
+  - Tuân thủ quy chuẩn bắt buộc của `cross-platform-sync`:
+    + Sử dụng Canvas HTML5 client-side (`compressImageToJpeg`) tự động nén và resize ảnh tỷ lệ tối đa 1600px, chất lượng JPEG 0.85 (~150KB - 300KB), giải quyết triệt để vấn đề file `.heic`/`.heif` từ iPhone/iPad và ảnh camera dung lượng lớn >10MB trên Android/Windows.
+    + Kích hoạt nút tải ảnh qua Native Label `<label htmlFor="widget-image-upload">` và `<input type="file" accept="image/*,image/heic,image/heif,.heic,.heif">` ẩn, không bị Safari/Android WebView chặn `.click()` bất đồng bộ.
+    + Hỗ trợ dán ảnh trực tiếp từ Clipboard (`Ctrl+V` / `Cmd+V`) và kéo & thả ảnh (Drag & Drop) vào khung chat với overlay hiệu ứng "Thả hình ảnh vào đây".
+    + Thanh Thumbnail Preview trước khi gửi: Xem trước danh sách ảnh đã chọn, nút xóa từng ảnh `[x]`, badge dung lượng (KB/MB), loading spinner khi đang nén.
+    + Cho phép gửi tin nhắn chỉ có ảnh (không cần text) hoặc kèm lời nhắn.
+- **2. Thả Cảm Xúc Tin Nhắn (Message Reactions Chuẩn Zalo & Facebook Messenger):**
+  - Tích hợp 6 biểu cảm kinh điển phong cách Messenger & Zalo: ❤️ (Yêu thích), 👍 (Thích), 😆 (Haha), 😮 (Wow), 😢 (Buồn), 😡 (Phẫn nộ).
+  - Hover hoặc chạm vào nút icon thả cảm xúc bên cạnh bong bóng chat -> Hiển thị thanh Floating Reaction Bar nổi với hiệu ứng nảy (scale/bounce) khi chọn.
+  - Áp dụng thả cảm xúc cho cả tin nhắn của Bot VÀ tin nhắn của User.
+  - Huy hiệu Reaction (Reaction Badge) hiển thị ghim ở góc dưới của bong bóng tin nhắn (nền trắng bo tròn, viền mỏng, đổ bóng nhẹ, đếm số lượng) đúng phong cách Zalo/Messenger. Nhấp lại vào huy hiệu để gỡ hoặc đổi cảm xúc.
+- **3. Trình Xem Ảnh Toàn Màn Hình (Image Lightbox / Modal Phóng To):**
+  - Khi nhấp vào bất kỳ ảnh nào trong luồng chat (ảnh khách gửi hoặc ảnh không gian sảnh, thực đơn do Bot gửi):
+    + Mở ngay Modal Lightbox toàn màn hình phủ tối sang trọng (`bg-black/95 backdrop-blur-md z-[100]`).
+    + Thanh công cụ đầy đủ: Nút Phóng to / Thu nhỏ (`ZoomIn` / `ZoomOut`), Nút Tải ảnh về máy (`Download`), Nút Mở tab mới (`ExternalLink`), Nút Đóng `[X]`.
+    + Đóng nhanh bằng phím `Escape` hoặc nhấp vào vùng tối bên ngoài.
+- **4. Giao Diện & Trải Nghiệm Chat Thân Thiện Người Dùng Phổ Thông:**
+  - Header chuẩn Fanpage / Zalo OA: Avatar tròn kèm chấm xanh Online đang nhấp nháy, dòng trạng thái "Đang hoạt động · 98 Đông A", các nút tiện ích Đặt lịch, Âm thanh "Ting", Reset chat, Đóng widget.
+  - Bong bóng chat mềm mại: Tin nhắn Bot nền trắng viền mỏng, tin nhắn User màu gradient xanh mượt mà, tick trạng thái gửi `✓✓ Đã nhận`.
+  - Khay Emoji Picker Nhanh: Popover chọn nhanh emoji theo 3 nhóm (Cảm xúc, Cử chỉ, Tiệc cưới & F&B).
+  - Nút Like nhanh 👍 (Thumbs Up) kinh điển của Facebook Messenger: Khi ô nhập rỗng, nút gửi hiển thị biểu tượng Like 👍 màu xanh to rõ; khi có text hoặc ảnh tự động chuyển thành nút Gửi ✈️.
+  - Hiển thị đường link sắc nét qua `FormattedMessage`: Markdown link, URL, Hotline điện thoại chạm là gọi ngay `tel:`, các nút Action Chips 1-chạm (Menu Thực đơn, Google Maps, Xem sảnh Tầng 2/3/4, Tính dự toán...).
+- **5. Nâng cấp API Chat Simulator (`app/api/simulator/chat/route.ts`):**
+  - Tiếp nhận tham số `attachments`, nhận diện khi khách gửi ảnh và phản hồi ngữ cảnh thông minh, khen ngợi mẫu ảnh của khách và gợi ý tư vấn tiệc cưới/sự kiện.
+- **6. Kiểm Thử Tự Động & Đóng Gói Toàn Diện:**
+  - Unit tests: Bổ sung `tests/widget-chat-ux.test.ts`, nâng tổng số unit test từ 45 lên **48/48 tests pass 100%**.
+  - Playwright browser tests: Bổ sung `tests/browser/widget-meta-ux.spec.ts` kiểm thử toàn bộ luồng đính kèm ảnh, reaction, lightbox, emoji picker và Like button. Toàn bộ kịch bản Playwright (desktop và mobile landscape/portrait) đạt 100%.
+  - Production build Next.js: **20/20 static pages & dynamic endpoints build thành công 100%**.

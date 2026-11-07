@@ -652,12 +652,12 @@ function WebWidgetContent() {
               style={{
                 background: `linear-gradient(135deg, ${customColor}, #3b82f6, #4338ca)`,
               }}
-              className="widget-header flex shrink-0 items-center justify-between bg-blue-600 pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))] pt-[calc(0.75rem+var(--safe-top,0px))] pb-2.5 text-white shadow-sm select-none"
+              className="widget-header flex shrink-0 flex-wrap items-center justify-between gap-x-2 bg-blue-600 pb-2 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[calc(0.75rem+var(--safe-top))] text-white shadow-xs select-none sm:p-3.5"
             >
               {/* Bot Info Profile */}
-              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-full sm:gap-3">
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-sm border border-white/30 text-white">
+                  <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20 text-white">
                     <Bot className="w-5 h-5 text-white" />
                   </div>
                   {/* Chấm trạng thái Online nhấp nháy chuẩn Messenger */}
@@ -670,9 +670,9 @@ function WebWidgetContent() {
                   </span>
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-sm leading-tight truncate">
+                    <h3 className="font-bold text-sm leading-tight max-w-[180px] truncate">
                       {customTitle}
                     </h3>
                     <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
@@ -680,7 +680,7 @@ function WebWidgetContent() {
                   <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
                     <span className="truncate">
                       {isAiActive
-                        ? "Đang hoạt động · 98 Đông A"
+                        ? "98 Đông A · Đón tiếp 8:00 - 10:30"
                         : "⚡ Tư vấn viên trực tuyến"}
                     </span>
                   </div>
@@ -688,16 +688,16 @@ function WebWidgetContent() {
               </div>
 
               {/* Action Buttons trên Header */}
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex shrink-0 flex-wrap items-center gap-1 max-sm:ml-auto group-data-[keyboard-open]/chat:hidden">
                 {/* Nút Đặt lịch */}
                 <button
                   type="button"
                   title="Đặt lịch tư vấn & xem sảnh"
                   onClick={() => openBooking()}
-                  className="flex min-h-11 sm:min-h-8 items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/30 transition shadow-2xs active:scale-95"
+                  className="flex min-h-11 sm:min-h-8 items-center gap-1 rounded-xl border border-white/20 bg-white/15 px-2.5 text-xs font-semibold text-white hover:bg-white/25 transition shadow-2xs active:scale-95"
                 >
                   <Calendar className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Đặt lịch</span>
+                  <span>Đặt lịch</span>
                 </button>
 
                 {/* Nút Đổi âm thanh */}
@@ -708,7 +708,7 @@ function WebWidgetContent() {
                     if (!soundEnabled) playChatTone();
                     setSoundEnabled(!soundEnabled);
                   }}
-                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
                 >
                   {soundEnabled ? (
                     <Volume2 className="w-4 h-4 text-emerald-300" />
@@ -722,7 +722,7 @@ function WebWidgetContent() {
                   type="button"
                   title="Làm mới cuộc trò chuyện"
                   onClick={handleResetChat}
-                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -732,7 +732,7 @@ function WebWidgetContent() {
                   type="button"
                   title="Đóng khung chat"
                   onClick={handleCloseWidget}
-                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1145,8 +1145,26 @@ function WebWidgetContent() {
             {/* ================= COMPOSER NHẬP TIN NHẮN PHONG CÁCH ZALO / MESSENGER ================= */}
             <form
               onSubmit={handleSend}
-              className="flex shrink-0 items-center gap-1.5 border-t border-slate-200 bg-white pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))] pt-2 pb-[calc(0.5rem+var(--safe-bottom,0px))]"
+              className="flex shrink-0 items-center gap-1.5 border-t border-slate-200 bg-white pl-[max(0.625rem,var(--safe-left))] pr-[max(0.625rem,var(--safe-right))] pt-2.5 pb-[calc(0.625rem+var(--safe-bottom))] group-data-[keyboard-open]/chat:pb-2.5"
             >
+              {/* Input Nhập Nội dung (Bắt đầu từ lề an toàn bên trái) */}
+              <div className="relative min-w-0 flex-1">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  aria-label="Nội dung tin nhắn"
+                  placeholder={
+                    selectedImages.length > 0
+                      ? "Thêm lời nhắn cho ảnh..."
+                      : "Nhập tin nhắn..."
+                  }
+                  enterKeyHint="send"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-full text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                />
+              </div>
+
               {/* Nút Đính kèm ảnh (Native label cross-platform) */}
               <label
                 htmlFor="widget-image-upload"
@@ -1179,24 +1197,6 @@ function WebWidgetContent() {
                 <Smile className="w-5 h-5" />
               </button>
 
-              {/* Input Nhập Nội dung */}
-              <div className="relative min-w-0 flex-1">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  aria-label="Nội dung tin nhắn"
-                  placeholder={
-                    selectedImages.length > 0
-                      ? "Thêm lời nhắn cho ảnh..."
-                      : "Nhập tin nhắn..."
-                  }
-                  enterKeyHint="send"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-100 border border-transparent rounded-full text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
-                />
-              </div>
-
               {/* Nút Gửi / Nút Thumbs Up (Like) phong cách Messenger */}
               {hasContentToSend ? (
                 <button
@@ -1211,7 +1211,7 @@ function WebWidgetContent() {
               ) : (
                 <button
                   type="button"
-                  aria-label="Gửi biểu tượng thích"
+                  aria-label="Gửi tin nhắn"
                   title="Gửi nút thích 👍"
                   onClick={handleSendLike}
                   className="grid h-11 w-11 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full text-blue-600 hover:bg-blue-50 transition active:scale-90"
@@ -1365,7 +1365,7 @@ function WebWidgetContent() {
                         placeholder="Ví dụ: 0912 345 678"
                         value={bookingPhone}
                         onChange={(e) => setBookingPhone(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 font-mono"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 font-mono text-base sm:text-xs"
                       />
                     </div>
 

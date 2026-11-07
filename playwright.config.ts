@@ -13,7 +13,7 @@ export default defineConfig({
     channel: useWebKit ? undefined : "chrome",
     viewport: { width: 1440, height: 1000 },
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    trace: "off",
   },
   webServer: {
     command: "npm run start -- --hostname 127.0.0.1 --port 3100",

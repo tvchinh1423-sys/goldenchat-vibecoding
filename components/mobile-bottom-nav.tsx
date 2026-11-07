@@ -79,7 +79,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
     <nav
       aria-label="Thanh điều hướng di động"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-6 items-center border-t border-slate-200/90 bg-white/95 pl-[max(0.15rem,var(--safe-left))] pr-[max(0.15rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden",
+        "fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-6 items-start pt-1 border-t border-slate-200/90 bg-white/95 pl-[max(0.15rem,var(--safe-left))] pr-[max(0.15rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden",
         className
       )}
     >
@@ -96,7 +96,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
             href={item.href}
             aria-current={isActive ? "page" : undefined}
             onClick={() => triggerHaptic("light")}
-            className={`relative flex min-h-11 min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-0.5 transition-all active:scale-95 ${
+            className={`relative flex h-11 min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-0.5 transition-all active:scale-95 ${
               isActive
                 ? "text-blue-600 font-bold"
                 : "text-slate-500 hover:text-slate-800 font-medium"
