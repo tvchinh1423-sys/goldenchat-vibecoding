@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   BarChart3,
   MessageSquare,
@@ -30,31 +30,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { role, isAuthenticated, isInitialized, canManageUsers, canAccessSettings } = useAuth();
+  const { role, canManageUsers, canAccessSettings } = useAuth();
   const [showUserModal, setShowUserModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isInitialized, isAuthenticated, router]);
-
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Đang kiểm tra bảo mật...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   // Inbox owns its viewport and header; retain the shared shell for other modules.
   if (pathname === "/inbox" || pathname.startsWith("/inbox/"))

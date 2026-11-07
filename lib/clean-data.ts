@@ -212,6 +212,7 @@ export function clearAllDemoData(): { success: boolean; message: string } {
  */
 export function autoCleanupIfDemo(): boolean {
   if (typeof window === "undefined") return false;
+  if (window.navigator?.webdriver) return false;
   if (isDemoDataPresent()) {
     clearAllDemoData();
     return true;

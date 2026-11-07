@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { createDemoConversations } from "../../lib/inbox/demo-data";
+import { STORAGE_KEY } from "../../lib/inbox/storage";
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(({ key, convs }) => {
+    window.localStorage.removeItem("omnichat.production_mode");
+    const raw = window.localStorage.getItem(key);
+    if (!raw || !raw.includes("Dũ Chanh")) {
+      window.localStorage.setItem(key, JSON.stringify({ version: 1, conversations: convs }));
+    }
+  }, { key: STORAGE_KEY, convs: createDemoConversations() });
+});
 
 test("draft errors preserve manual text and late responses cannot overwrite edits", async ({
   page,

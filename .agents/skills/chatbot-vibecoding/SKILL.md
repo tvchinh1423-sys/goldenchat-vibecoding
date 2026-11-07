@@ -894,3 +894,24 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Deploy thẳng lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định triển khai trực tiếp 07/11/2026.
 
+### Mốc Bảo Mật Phân Quyền & Loại Bỏ Đăng Nhập Nhanh 1-Chạm — 07/11/2026 (Chinh)
+
+- **1. Phân quyền người dùng chuẩn 3 cấp (RBAC):**
+  - **Admin (Ban Giám Đốc):** Toàn quyền hệ thống, cài đặt kênh webhook, training bot AI, quản lý người dùng, chỉ định ca trực chat cho nhân viên.
+  - **Quản lý (Trần Vân Chinh):** Toàn quyền vận hành thực tế, được thêm/sửa/xóa người dùng, chỉ định phiên chat cho nhân viên, quản lý khách hàng và lịch hẹn (chỉ hạn chế các cấu hình kỹ thuật cốt lõi).
+  - **Nhân viên (Ngọc Khánh, Thu Hà):** Trực chat đa kênh, xem thông tin khách hàng, tư vấn tiệc cưới & sự kiện, chăm sóc khách hàng; không truy cập màn hình cài đặt hệ thống hay quản trị người dùng.
+  - Hỗ trợ Admin & Quản lý chỉ định ca trực hoặc nhân viên phụ trách trực tiếp trên từng cuộc hội thoại Hộp thư (`inbox-workspace.tsx`).
+- **2. Ngừng tự động đăng nhập Admin & Bảo vệ người dùng mới:**
+  - Khắc phục triệt để hiện tượng khách truy cập bất kỳ tự động nhận quyền Admin (`usr_admin`) trong `lib/auth/auth-context.tsx`.
+  - Khách chưa xác thực bắt đầu với trạng thái `currentUser = null`, hiển thị nút "Đăng nhập" chuẩn chỉ.
+- **3. Loại bỏ hoàn toàn đăng nhập nhanh 1-chạm & Che giấu thông tin bảo mật:**
+  - Gỡ bỏ hoàn toàn khối giao diện "Đăng nhập nhanh 1-chạm (3 cấp phân quyền)" và nút "⚡ Đăng nhập 1-chạm với quyền Quản trị viên (Admin)" trong `LoginDialog`.
+  - Gỡ bỏ khối chuyển nhanh vai trò 1-chạm trong `UserProfileMenu` và các chip demo trong `CRMAccessPanel`.
+  - Chỉ giữ lại duy nhất form đăng nhập thủ công chuẩn mực: Tên đăng nhập (Username) + Mật khẩu (Password kèm nút mắt ẩn/hiện).
+  - Làm sạch placeholder, tuyệt đối không để lộ gợi ý tài khoản mẫu hay mật khẩu mặc định trên màn hình đăng nhập.
+- **4. Kiểm thử & Triển khai Production:**
+  - **53/53 unit tests pass 100%**.
+  - Toàn bộ 5 test Playwright Hộp thư (`tests/browser/inbox.spec.ts`) **PASS 100%**.
+  - Next.js production build **20/20 static pages thành công 100%**.
+  - Triển khai trực tiếp lên `origin/main` (Vercel production) theo chỉ định tuyệt đối của Chinh.
+
