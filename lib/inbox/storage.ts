@@ -13,8 +13,7 @@ export function parseSnapshot(raw: string): Conversation[] {
   if (
     !isRecord(snapshot) ||
     snapshot.version !== 1 ||
-    !Array.isArray(snapshot.conversations) ||
-    snapshot.conversations.length === 0
+    !Array.isArray(snapshot.conversations)
   )
     throw new Error("Invalid snapshot");
   const ids = new Set<string>();

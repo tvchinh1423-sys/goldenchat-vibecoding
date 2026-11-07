@@ -24,7 +24,12 @@ import {
   updateAppBadge,
   type InAppNotification,
 } from "@/lib/notifications";
-import { isSoundMuted, setSoundMuted, playNotificationChime } from "@/lib/chat/sound";
+import {
+  isSoundMuted,
+  setSoundMuted,
+  playNotificationChime,
+  playBookingSuccessCelebrationTone,
+} from "@/lib/chat/sound";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 
 function formatRelativeTime(timestamp: number): string {
@@ -200,14 +205,27 @@ export function NotificationBell() {
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Nút Nghe thử âm báo */}
+              {/* Nút Nghe thử âm báo thông thường */}
               <button
                 type="button"
                 onClick={handleTestSound}
-                title="Nghe thử âm chuông thông báo"
+                title="Nghe thử âm chuông thông báo tin nhắn (Ding-Dong)"
                 className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition"
               >
                 <Sparkles className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Nút Nghe thử âm chuông chúc mừng đặt lịch */}
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic("success");
+                  playBookingSuccessCelebrationTone(true);
+                }}
+                title="Nghe thử âm chuông chúc mừng đặt lịch thành công 🎉"
+                className="p-1.5 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 transition text-xs font-semibold"
+              >
+                🎉
               </button>
 
               {/* Nút Bật/Tắt Âm thanh */}

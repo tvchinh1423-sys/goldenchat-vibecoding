@@ -26,15 +26,29 @@ import {
   Volume2,
   Vibrate,
   Download,
+  Database,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 import { sendOmniNotification, requestNotificationPermission } from "@/lib/notifications";
 import { useAuth } from "@/lib/auth/auth-context";
+import {
+  clearAllDemoData,
+  restoreDemoData,
+  getCurrentDataStats,
+  isDemoDataPresent,
+} from "@/lib/clean-data";
 
 export default function SettingsPage() {
   const { role, canAccessSettings, quickSwitch } = useAuth();
-  const [activeTab, setActiveTab] = useState<"botcake" | "widget" | "telegram" | "sla" | "pwa">("botcake");
+  const [activeTab, setActiveTab] = useState<"botcake" | "widget" | "telegram" | "sla" | "pwa" | "data">("botcake");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Data management state
+  const [dataStats, setDataStats] = useState(getCurrentDataStats());
+  const [dataActionNotice, setDataActionNotice] = useState<string | null>(null);
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
   // Mobile App & PWA state
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
@@ -367,6 +381,28 @@ export default function SettingsPage() {
         >
           <Smartphone className="w-4 h-4 text-blue-600" />
           Ứng dụng & PWA Mobile
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic("light");
+            setDataStats(getCurrentDataStats());
+            setActiveTab("data");
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            activeTab === "data"
+              ? "border-emerald-600 text-emerald-700 bg-emerald-50/50"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Database className="w-4 h-4 text-emerald-600" />
+          Dữ liệu & Chạy thật
+          {dataStats.isClean ? (
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Sẵn sàng chạy thật" />
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-amber-400" title="Đang có dữ liệu demo" />
+          )}
         </button>
       </div>
 
@@ -934,6 +970,199 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ===================== TAB 6: DỮ LIỆU & CHẠY THẬT ===================== */}
+      {activeTab === "data" && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Banner Trạng Thái */}
+          <div className={`p-5 rounded-2xl border ${
+            dataStats.isClean
+              ? "bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border-emerald-200"
+              : "bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border-amber-200"
+          } shadow-sm space-y-3`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                  dataStats.isClean ? "bg-emerald-600 text-white" : "bg-amber-500 text-white"
+                } shadow-sm`}>
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {dataStats.isClean
+                      ? "Hệ thống sẵn sàng vận hành thật (Production Ready)"
+                      : "Hệ thống đang chứa dữ liệu thử nghiệm (Demo Data)"}
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {dataStats.isClean
+                      ? "Toàn bộ dữ liệu mẫu đã được dọn sạch. Mọi tin nhắn, lead và lịch hẹn tạo mới sẽ là dữ liệu thực tế."
+                      : "Hiện có các hội thoại, lead và lịch hẹn mẫu của Golden Palace phục vụ thử nghiệm hoặc đào tạo."}
+                  </p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
+                dataStats.isClean
+                  ? "bg-emerald-100/80 text-emerald-800 border-emerald-300"
+                  : "bg-amber-100/80 text-amber-800 border-amber-300"
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${dataStats.isClean ? "bg-emerald-600 animate-pulse" : "bg-amber-600"}`} />
+                {dataStats.isClean ? "Môi trường thật (Sạch 100%)" : "Chế độ Mẫu (Demo)"}
+              </span>
+            </div>
+          </div>
+
+          {/* Thống kê dữ liệu hiện tại */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-slate-900">
+              Kiểm kê dữ liệu trong trình duyệt hiện tại
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-center">
+                <p className="text-xs font-medium text-slate-500">Hội thoại Inbox</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">{dataStats.conversations}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">cuộc trò chuyện</p>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-center">
+                <p className="text-xs font-medium text-slate-500">Khách hàng CRM</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">{dataStats.leads}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">hồ sơ khách</p>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-center">
+                <p className="text-xs font-medium text-slate-500">Lịch hẹn xem sảnh</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">{dataStats.bookings}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">lịch hẹn</p>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-center">
+                <p className="text-xs font-medium text-slate-500">Thông báo</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">{dataStats.notifications}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">thông báo</p>
+              </div>
+            </div>
+
+            {/* Thông báo kết quả thao tác */}
+            {dataActionNotice && (
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>{dataActionNotice}</span>
+              </div>
+            )}
+
+            {/* Thao tác dọn dẹp / nạp mẫu */}
+            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              <div className="max-w-md">
+                <p className="text-xs font-bold text-slate-800">Dọn dẹp sạch sẽ để bắt đầu vận hành thật</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Xóa toàn bộ hội thoại, lead và lịch hẹn thử nghiệm để đưa OmniChat về trạng thái ban đầu tinh tươm.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("medium");
+                    setShowConfirmClear(true);
+                  }}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-sm inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Dọn dẹp toàn bộ dữ liệu demo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("light");
+                    const res = restoreDemoData();
+                    setDataStats(getCurrentDataStats());
+                    setDataActionNotice(res.message);
+                    setTimeout(() => setDataActionNotice(null), 5000);
+                  }}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition active:scale-95 inline-flex items-center gap-1.5"
+                  title="Dùng khi cần đào tạo nhân viên tư vấn"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                  Nạp lại dữ liệu demo mẫu
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Hướng dẫn khi chuyển sang chạy thật */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs text-slate-700 space-y-3">
+            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              Quy trình tiếp nhận khách hàng thực tế sau khi dọn dẹp
+            </h4>
+            <ul className="space-y-2 text-[11px] leading-relaxed text-slate-600 list-disc list-inside">
+              <li>
+                <strong>Kênh Facebook Page & Zalo cá nhân:</strong> Đã kết nối qua Webhook Botcake. Khi khách nhắn tin, hội thoại sẽ tự động xuất hiện tại Hộp thư (Inbox).
+              </li>
+              <li>
+                <strong>Web Chat Widget:</strong> Đã nhúng tại website, khách nhắn sẽ được định danh nguồn Web và xuất hiện trong Hộp thư.
+              </li>
+              <li>
+                <strong>Bộ Tri Thức Bot (FAQ):</strong> Bộ tri thức tiệc cưới Golden Palace đã nạp sẵn tại mục Huấn Luyện Bot, AI sẽ tự động tư vấn bảng giá, thực đơn, sảnh tiệc và chốt lịch xem sảnh cho khách.
+              </li>
+              <li>
+                <strong>Lead & Lịch hẹn:</strong> Khi khách để lại SĐT hoặc chốt ngày xem sảnh, AI sẽ tự động đẩy sang CRM Phễu N1–N5 và phân công nhân viên tư vấn.
+              </li>
+            </ul>
+          </div>
+
+          {/* Modal xác nhận dọn dẹp */}
+          {showConfirmClear && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in zoom-in-95">
+                <div className="flex items-center gap-3 text-rose-600">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                    <Trash2 className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Xác nhận dọn dẹp dữ liệu demo</h3>
+                    <p className="text-xs text-slate-500">Chuẩn bị đưa hệ thống vào chạy thật 100%</p>
+                  </div>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-600">
+                  Hành động này sẽ xóa toàn bộ các hội thoại mẫu, danh sách lead mẫu và thông báo mẫu trong trình duyệt. Hộp thư và CRM sẽ trở về trạng thái trắng sạch để tiếp nhận khách hàng thật của Golden Palace.
+                </p>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1">
+                  <p className="font-semibold text-slate-800">Dữ liệu sẽ được dọn dẹp:</p>
+                  <p>• {dataStats.conversations} hội thoại trong Inbox</p>
+                  <p>• {dataStats.leads} khách hàng trong CRM</p>
+                  <p>• {dataStats.bookings} lịch hẹn xem sảnh</p>
+                  <p>• {dataStats.notifications} thông báo hệ thống</p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmClear(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("heavy");
+                      const res = clearAllDemoData();
+                      setDataStats(getCurrentDataStats());
+                      setShowConfirmClear(false);
+                      setDataActionNotice(res.message);
+                      setTimeout(() => setDataActionNotice(null), 5000);
+                    }}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    Xác nhận dọn dẹp sạch
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

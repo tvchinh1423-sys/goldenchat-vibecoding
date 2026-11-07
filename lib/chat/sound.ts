@@ -119,3 +119,57 @@ export function playNotificationChime(force = false) {
     // Audio availability does not break the app
   }
 }
+
+/**
+ * Âm thanh báo xác nhận đặt lịch thành công chúc mừng (Celebration Fanfare & Chime)
+ * Hợp âm rộn rã thăng hoa C5 -> E5 -> G5 -> C6 ngân vang lấp lánh (Sparkle harmonics),
+ * mang âm hưởng hoan ca tiệc cưới chúc mừng, hoàn toàn khác biệt với tiếng pop tin nhắn và chuông ding-dong thông báo thường.
+ */
+export function playBookingSuccessCelebrationTone(force = false) {
+  if (!force && isSoundMuted()) return;
+
+  try {
+    const audio = getAudioContext();
+    if (!audio) return;
+    if (audio.state === "suspended") void audio.resume().catch(() => {});
+
+    const now = audio.currentTime;
+
+    // Chuỗi 4 nốt arpeggio vút cao: Đô 5 (523.25) -> Mi 5 (659.25) -> Sol 5 (783.99) -> Đô 6 (1046.5)
+    const notes = [
+      { freq: 523.25, start: 0, duration: 0.22, vol: 0.12 },
+      { freq: 659.25, start: 0.08, duration: 0.22, vol: 0.14 },
+      { freq: 783.99, start: 0.16, duration: 0.25, vol: 0.16 },
+      { freq: 1046.5, start: 0.25, duration: 0.65, vol: 0.20 },
+      // Âm bội lấp lánh (Sparkle overtone) tạo hiệu ứng chuông vàng pha lê chúc mừng
+      { freq: 1318.51, start: 0.28, duration: 0.60, vol: 0.10 }, // Mi 6
+    ];
+
+    notes.forEach((n) => {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+
+      osc.type = "sine";
+      const noteStart = now + n.start;
+      const noteEnd = noteStart + n.duration;
+
+      osc.frequency.setValueAtTime(n.freq, noteStart);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.linearRampToValueAtTime(n.vol, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+
+      osc.connect(gain).connect(audio.destination);
+      osc.start(noteStart);
+      osc.stop(noteEnd);
+
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
+    });
+  } catch {
+    // Audio availability does not break the app
+  }
+}

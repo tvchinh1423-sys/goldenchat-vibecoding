@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { autoCleanupIfDemo } from "@/lib/clean-data";
 import { createDemoConversations } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
@@ -28,7 +29,7 @@ import {
 } from "@/lib/crm/model";
 import { BookingEditor } from "@/components/crm/booking-editor";
 import { suggestedQuestions, type visitIntent } from "@/lib/chat/follow-ups";
-import { playChatTone } from "@/lib/chat/sound";
+import { playChatTone, playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
 import { extractLeadInfo } from "@/lib/lead-extractor";
 import { applyCRMToInbox } from "@/lib/crm/inbox-adapter";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -52,9 +53,7 @@ export function InboxWorkspace() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const viewportRef = useVisualViewport<HTMLElement>();
-  const [conversations, setConversations] = useState<Conversation[]>(
-    createDemoConversations,
-  );
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [ready, setReady] = useState(false);
   const [askingId, setAskingId] = useState<string | null>(null);
   const pendingQuestion = useRef(false);
@@ -62,7 +61,7 @@ export function InboxWorkspace() {
     conversation: Conversation;
     type: NonNullable<ReturnType<typeof visitIntent>>;
   } | null>(null);
-  const [selectedId, setSelectedId] = useState("trang");
+  const [selectedId, setSelectedId] = useState("");
   const [filters, setFilters] = useState<InboxFilters>(DEFAULT_FILTERS);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -97,30 +96,62 @@ export function InboxWorkspace() {
   ).length;
 
   useEffect(() => {
-    let initialConversations = createDemoConversations();
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) initialConversations = parseSnapshot(saved);
-    } catch {
-      setToast("Không đọc được dữ liệu đã lưu. Đang dùng dữ liệu mẫu.");
+    let initialConversations: Conversation[] = [];
+    if (typeof window !== "undefined") {
+      autoCleanupIfDemo();
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) initialConversations = parseSnapshot(saved);
+      } catch {
+        initialConversations = [];
+      }
     }
     setConversations(initialConversations);
-    const requestedId = new URLSearchParams(window.location.search).get(
+    const requestedId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get(
       "conversation",
-    );
-    const requested = initialConversations.find(
-      (conversation) => conversation.id === requestedId,
-    );
+    ) : null;
+    const requested = requestedId
+      ? initialConversations.find(
+          (conversation) => conversation.id === requestedId,
+        )
+      : undefined;
     if (requested) {
       setSelectedId(requested.id);
       setChatOpen(true);
       if (requested.status === "archived")
         setFilters({ ...DEFAULT_FILTERS, showArchived: true });
+    } else if (initialConversations.length > 0) {
+      setSelectedId(initialConversations[0].id);
+    } else {
+      setSelectedId("");
     }
     setNow(Date.now());
     setReady(true);
     const interval = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(interval);
+
+    const onCleared = () => {
+      setConversations([]);
+      setSelectedId("");
+      setChatOpen(false);
+    };
+    const onRestored = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const list = parseSnapshot(saved);
+          setConversations(list);
+          if (list.length > 0) setSelectedId(list[0].id);
+        }
+      } catch {}
+    };
+    window.addEventListener("omnichat-inbox-cleared", onCleared);
+    window.addEventListener("omnichat-demo-restored", onRestored);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("omnichat-inbox-cleared", onCleared);
+      window.removeEventListener("omnichat-demo-restored", onRestored);
+    };
   }, []);
 
   useEffect(() => {
@@ -542,7 +573,7 @@ export function InboxWorkspace() {
         },
       ],
     }));
-    playChatTone();
+    playBookingSuccessCelebrationTone();
   }
   async function createLead(fields: LeadFields) {
     if (!active) return false;
@@ -900,12 +931,18 @@ export function InboxWorkspace() {
               />
             ) : (
               <div className="panel flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-                <Inbox className="h-12 w-12 text-slate-200" />
-                <h2 className="text-sm font-semibold">
-                  Không có hội thoại phù hợp
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-2xs">
+                  <Inbox className="h-7 w-7" />
+                </div>
+                <h2 className="text-base font-semibold text-slate-800">
+                  {conversations.length === 0
+                    ? "Hộp thư trực tuyến sẵn sàng"
+                    : "Không có hội thoại phù hợp"}
                 </h2>
-                <p className="text-xs text-muted-foreground">
-                  Thay đổi bộ lọc để xem cuộc trò chuyện.
+                <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+                  {conversations.length === 0
+                    ? "Hệ thống đang lắng nghe tin nhắn từ Facebook Messenger, Zalo và Web Widget. Tin nhắn mới sẽ tự động hiển thị tại đây khi khách liên hệ."
+                    : "Thay đổi bộ lọc hoặc từ khóa tìm kiếm để xem các cuộc trò chuyện."}
                 </p>
               </div>
             )}
@@ -918,8 +955,9 @@ export function InboxWorkspace() {
               {active ? (
                 renderInfo()
               ) : (
-                <div className="flex h-full items-center justify-center p-6 text-xs text-muted-foreground">
-                  Chọn hội thoại để xem thông tin
+                <div className="flex h-full flex-col items-center justify-center p-6 text-center text-xs text-muted-foreground">
+                  <Inbox className="h-8 w-8 text-slate-200 mb-2" />
+                  Chưa có hội thoại nào được chọn
                 </div>
               )}
             </aside>

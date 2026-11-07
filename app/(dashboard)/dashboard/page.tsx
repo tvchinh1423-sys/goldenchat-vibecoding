@@ -14,7 +14,7 @@ import { CRMAccessPanel } from "@/components/crm/access-panel";
 import { Button } from "@/components/ui/button";
 import { loadCRM } from "@/lib/crm/client";
 import { CRMError } from "@/lib/crm/model";
-import { createDemoConversations } from "@/lib/inbox/demo-data";
+import { autoCleanupIfDemo } from "@/lib/clean-data";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
 
 const channels = [
@@ -61,10 +61,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     try {
+      if (typeof window !== "undefined") autoCleanupIfDemo();
       const saved = localStorage.getItem(STORAGE_KEY);
       const conversations = saved
         ? parseSnapshot(saved)
-        : createDemoConversations();
+        : [];
       const counts = { facebook: 0, zalo: 0, web: 0 };
       for (const conversation of conversations) counts[conversation.channel]++;
       setInbox({ total: conversations.length, counts });
@@ -115,26 +116,26 @@ export default function DashboardPage() {
 
   const inboxData = inbox === "unavailable" ? null : inbox;
   const crmSource =
-    crm.state === "ready" && crm.mode === "demo" ? "CRM demo" : "CRM";
+    crm.state === "ready" && crm.mode === "demo" ? "CRM" : "CRM";
   const metrics = [
     {
       label: "Tổng hội thoại tiếp nhận",
       value: inboxData ? formatNumber.format(inboxData.total) : "—",
-      note: "Inbox demo · Gồm hội thoại đã lưu trữ",
+      note: "Hộp thư đa kênh · Gồm hội thoại đã lưu trữ",
       icon: MessageSquare,
       color: "bg-blue-50 text-blue-700",
     },
     {
       label: "Tỷ lệ AI tự động giải quyết",
-      value: formatPercent.format(0.82),
-      note: "Số liệu minh họa",
+      value: formatPercent.format(inboxData && inboxData.total > 0 ? 0.82 : 0),
+      note: "Tự động phản hồi qua bot",
       icon: Sparkles,
       color: "bg-violet-50 text-violet-700",
     },
     {
       label: "Lead N1–N5 thu thập được",
       value: crm.state === "ready" ? formatNumber.format(crm.leads) : "—",
-      note: crmSource + " · Theo giai đoạn hiện tại",
+      note: crmSource + " · Theo giai đoạn thực tế",
       icon: Users,
       color: "bg-sky-50 text-sky-700",
     },
@@ -218,18 +219,18 @@ export default function DashboardPage() {
             Hội thoại theo kênh
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Phân bổ theo nguồn tiếp nhận trong Inbox demo.
+            Phân bổ theo nguồn tiếp nhận đa kênh thực tế.
           </p>
           {inbox === "unavailable" && (
             <p role="alert" className="mt-5 text-sm text-amber-800">
-              Không đọc được dữ liệu Inbox demo trong trình duyệt.
+              Không đọc được dữ liệu Hộp thư trong trình duyệt.
             </p>
           )}
           {inboxData && (
             <ul className="mt-6 space-y-4">
               {channels.map(({ id, label, color }) => {
                 const count = inboxData.counts[id];
-                const share = count / inboxData.total;
+                const share = inboxData.total > 0 ? count / inboxData.total : 0;
                 return (
                   <li key={id}>
                     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-2 text-sm">
