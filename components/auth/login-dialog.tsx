@@ -175,10 +175,6 @@ export function LoginDialog({
                   disabled={busy}
                   onClick={() => {
                     setSelectedDemoRole(acc.role);
-                    if (acc.user) {
-                      setUsername(acc.user.username);
-                      setPassword("goldenpalace2026");
-                    }
                   }}
                   className={`text-left p-3 rounded-2xl border transition-all relative ${
                     isSelected
@@ -244,6 +240,7 @@ export function LoginDialog({
               type="text"
               autoComplete="username"
               required
+              placeholder="Nhập tên đăng nhập"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="text-xs rounded-xl bg-slate-50 focus:bg-white"
@@ -260,6 +257,7 @@ export function LoginDialog({
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="text-xs rounded-xl bg-slate-50 focus:bg-white pr-9"
