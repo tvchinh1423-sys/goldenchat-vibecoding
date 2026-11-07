@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { CalendarDays, GripVertical } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, GripVertical, Phone, MessageSquare } from "lucide-react";
 import { CHANNEL_LABELS } from "@/lib/inbox/helpers";
 import { LEAD_STAGES } from "@/lib/leads/demo-data";
 import {
@@ -11,6 +12,7 @@ import {
   type CRMLead,
   type CRMBooking,
 } from "@/lib/crm/model";
+import { triggerHaptic } from "@/lib/mobile/haptics";
 export function CRMBoard({
   leads,
   bookings,
@@ -31,20 +33,45 @@ export function CRMBoard({
     setDraggedId(null);
   }
   return (
-    <div
-      className="overflow-x-auto pb-4"
-      role="region"
-      aria-label="Phễu tư vấn Kanban"
-      tabIndex={0}
-    >
-      <div className="grid min-w-[1620px] grid-cols-6 gap-3">
-        {LEAD_STAGES.map((stage) => {
-          const members = leads.filter((lead) => lead.stage === stage.id);
+    <div className="space-y-3">
+      {/* Mobile Quick Stage Bar */}
+      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" aria-label="Nhảy nhanh giai đoạn">
+        <span className="text-[11px] font-semibold text-slate-500 shrink-0">Chuyển cột:</span>
+        {LEAD_STAGES.map((s) => {
+          const count = leads.filter((l) => l.stage === s.id).length;
           return (
-            <section
-              key={stage.id}
-              aria-label={stage.id + " · " + stage.title}
-              className="min-h-[420px] rounded-2xl border border-slate-200 bg-slate-100/60 p-3"
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                triggerHaptic("light");
+                const el = document.getElementById(`kanban-stage-${s.id}`);
+                el?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+              }}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 shrink-0 shadow-2xs active:scale-95 flex items-center gap-1"
+            >
+              <span>{s.id}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-medium">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        className="overflow-x-auto pb-4"
+        role="region"
+        aria-label="Phễu tư vấn Kanban"
+        tabIndex={0}
+      >
+        <div className="grid min-w-[1620px] grid-cols-6 gap-3">
+          {LEAD_STAGES.map((stage) => {
+            const members = leads.filter((lead) => lead.stage === stage.id);
+            return (
+              <section
+                key={stage.id}
+                id={`kanban-stage-${stage.id}`}
+                aria-label={stage.id + " · " + stage.title}
+                className="min-h-[420px] rounded-2xl border border-slate-200 bg-slate-100/60 p-3"
               onDragOver={(event) => {
                 if (draggedId) event.preventDefault();
               }}
@@ -122,7 +149,29 @@ export function CRMBoard({
                         </p>
                       ))}
                     {lead.phone && (
-                      <p className="mb-3 text-xs text-blue-600">{lead.phone}</p>
+                      <div className="mb-3 flex items-center justify-between gap-1 flex-wrap">
+                        <p className="text-xs font-bold text-blue-600">{lead.phone}</p>
+                        <div className="flex items-center gap-1">
+                          <a
+                            href={`tel:${lead.phone}`}
+                            onClick={() => triggerHaptic("medium")}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-[11px] font-semibold transition active:scale-95 shadow-2xs"
+                            title={`Gọi ${lead.phone}`}
+                          >
+                            <Phone className="w-3 h-3 text-emerald-600" />
+                            <span>Gọi</span>
+                          </a>
+                          <Link
+                            href="/inbox"
+                            onClick={() => triggerHaptic("light")}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[11px] font-semibold transition active:scale-95 shadow-2xs"
+                            title="Chat với khách"
+                          >
+                            <MessageSquare className="w-3 h-3 text-blue-600" />
+                            <span>Chat</span>
+                          </Link>
+                        </div>
+                      </div>
                     )}
                     <label className="block border-t pt-3 text-[10px] text-slate-500">
                       Giai đoạn của {lead.full_name}
@@ -160,6 +209,7 @@ export function CRMBoard({
             </section>
           );
         })}
+        </div>
       </div>
     </div>
   );

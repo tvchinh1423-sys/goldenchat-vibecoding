@@ -31,7 +31,12 @@ export function parseSnapshot(raw: string): Conversation[] {
       !["active", "pending", "resolved", "archived"].includes(
         String(item.status),
       ) ||
-      !["me", "team", "unassigned"].includes(String(item.assignedTo)) ||
+      typeof item.assignedTo !== "string" ||
+      !item.assignedTo ||
+      (item.assignedStaffName !== undefined &&
+        typeof item.assignedStaffName !== "string") ||
+      (item.assignedAt !== undefined && typeof item.assignedAt !== "string") ||
+      (item.assignedBy !== undefined && typeof item.assignedBy !== "string") ||
       !Number.isInteger(item.unread) ||
       (item.unread as number) < 0 ||
       !Array.isArray(item.messages) ||

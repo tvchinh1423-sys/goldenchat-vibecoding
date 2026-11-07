@@ -19,6 +19,7 @@ import {
   Smile,
   Sparkles,
   X,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -35,6 +36,7 @@ import {
   formatDate,
   formatTime,
   waitingLabel,
+  detectContact,
 } from "@/lib/inbox/helpers";
 import { knowledgeBase } from "@/lib/inbox/demo-data";
 import type { Attachment, Conversation } from "@/lib/inbox/types";
@@ -42,6 +44,8 @@ import { FormattedMessage } from "@/components/chat/formatted-message";
 import { Avatar } from "./shared";
 import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { googleCalendarUrl } from "@/lib/crm/appointment";
+import { triggerHaptic } from "@/lib/mobile/haptics";
+import { useSwipe } from "@/lib/hooks/use-touch-gestures";
 
 interface Props {
   conversation: Conversation;
@@ -105,6 +109,21 @@ export function ChatPane({
   }, [conversation.id, conversation.messages.length]);
   const wait = waitingLabel(conversation, now);
   const isArchived = conversation.status === "archived";
+  const customerPhone =
+    conversation.lead?.phone ||
+    detectContact(conversation.messages).phones[0] ||
+    "";
+
+  // Mobile edge swipe-to-back gesture
+  const swipeSectionRef = useSwipe<HTMLElement>(
+    {
+      onSwipeRight: () => {
+        triggerHaptic("light");
+        onBack();
+      },
+    },
+    { threshold: 60, edgeOnly: true }
+  );
   const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       event.key === "Enter" &&
@@ -146,6 +165,7 @@ export function ChatPane({
   }
   return (
     <section
+      ref={swipeSectionRef}
       className="panel flex h-full flex-col"
       aria-label={`Hội thoại với ${conversation.name}`}
     >
@@ -177,6 +197,18 @@ export function ChatPane({
               kiện Golden Palace
             </p>
           </div>
+          {customerPhone && (
+            <a
+              href={`tel:${customerPhone}`}
+              onClick={() => triggerHaptic("medium")}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-semibold shrink-0 transition active:scale-95 shadow-xs"
+              title={`Gọi cho ${conversation.name}: ${customerPhone}`}
+              aria-label={`Gọi cho ${conversation.name}`}
+            >
+              <Phone className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Gọi ngay</span>
+            </a>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <label

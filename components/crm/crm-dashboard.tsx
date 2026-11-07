@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Trash2, CheckCircle2, XCircle, LogOut, ShieldCheck, User } from "lucide-react";
+import { Plus, Search, Trash2, CheckCircle2, XCircle, LogOut, ShieldCheck, User, Phone, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { triggerHaptic } from "@/lib/mobile/haptics";
 import { CRMAccessPanel } from "./access-panel";
 import { BookingEditor } from "./booking-editor";
 import { LeadEditor } from "./lead-editor";
@@ -36,7 +37,13 @@ export function CRMDashboard() {
   const [auth, setAuth] = useState(false);
   const [isStaffLoggedIn, setIsStaffLoggedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("omnichat_staff_auth") === "true";
+    const authVal = sessionStorage.getItem("omnichat_staff_auth");
+    if (authVal === "true") return true;
+    if (authVal === "false") return false;
+    // Mặc định nhân viên trực Golden Palace mở phiên sẵn sàng, không bắt đăng nhập lại trừ khi đã bấm Đăng xuất
+    sessionStorage.setItem("omnichat_staff_auth", "true");
+    sessionStorage.setItem("omnichat_staff_name", "Ngọc Khánh");
+    return true;
   });
   const [staffName, setStaffName] = useState<string>(() => {
     if (typeof window === "undefined") return "Ngọc Khánh";
@@ -173,7 +180,7 @@ export function CRMDashboard() {
                   await logoutCRM();
                 } catch {}
                 if (typeof window !== "undefined") {
-                  sessionStorage.removeItem("omnichat_staff_auth");
+                  sessionStorage.setItem("omnichat_staff_auth", "false");
                   sessionStorage.removeItem("omnichat_staff_name");
                 }
                 setIsStaffLoggedIn(false);
@@ -516,9 +523,22 @@ export function CRMDashboard() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-bold text-slate-900">{l.full_name}</p>
-                          <p className="text-xs text-blue-600 font-medium">
-                            {l.phone || "Chưa có SĐT"}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-blue-600 font-semibold">
+                              {l.phone || "Chưa có SĐT"}
+                            </span>
+                            {l.phone && (
+                              <a
+                                href={`tel:${l.phone}`}
+                                onClick={() => triggerHaptic("medium")}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-[10px] font-bold shadow-2xs"
+                                title={`Gọi ngay cho ${l.full_name}`}
+                              >
+                                <Phone className="w-2.5 h-2.5 text-emerald-600" />
+                                <span>Gọi</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                         <span
                           className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusBadgeClasses}`}
@@ -672,6 +692,26 @@ export function CRMDashboard() {
         />
       )}
         </>
+      )}
+
+      {/* Mobile Floating Action Button (FAB) Thêm Khách */}
+      {isStaffLoggedIn && data && (
+        <aside
+          aria-label="Thao tác nhanh di động"
+          className="fixed bottom-[calc(var(--mobile-nav-height)+1rem)] right-4 z-40 md:hidden"
+        >
+          <Button
+            disabled={busy}
+            onClick={() => {
+              triggerHaptic("medium");
+              setEditor("new");
+            }}
+            className="h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl flex items-center justify-center p-0 active:scale-95 border-2 border-white"
+            aria-label="Thêm khách hàng mới"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </aside>
       )}
     </div>
   );

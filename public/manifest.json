@@ -1,21 +1,78 @@
 {
+  "id": "/",
   "name": "OmniChat AI — Quản Trị Khách Hàng & Bot Đa Kênh",
   "short_name": "OmniChat",
-  "description": "Hệ thống Chatbot FAQ & Đặt Lịch Tư Vấn Đa Kênh (Facebook, Zalo, Web) - VibeCoding 2026",
+  "description": "Hệ thống Chatbot FAQ & Đặt Lịch Tư Vấn Đa Kênh (Facebook, Zalo, Web) — Golden Palace F&B",
   "start_url": "/inbox",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
-  "scope": "/",
   "lang": "vi",
+  "dir": "ltr",
   "categories": ["business", "productivity", "communication"],
+  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Hộp thư đa kênh",
+      "short_name": "Hộp thư",
+      "description": "Quản lý và trả lời tin nhắn từ Facebook, Zalo, Web",
+      "url": "/inbox",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Khách hàng & Lịch hẹn",
+      "short_name": "Khách & Lịch",
+      "description": "Theo dõi phễu N1-N5 và lịch đón khách xem sảnh",
+      "url": "/leads",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Trợ lý Bot AI",
+      "short_name": "Thử Bot",
+      "description": "Thử nghiệm bot tư vấn thực tế theo thời gian thực",
+      "url": "/training",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Báo cáo hiệu suất",
+      "short_name": "Báo cáo",
+      "description": "Xem báo cáo KPI và tỷ lệ chuyển đổi",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

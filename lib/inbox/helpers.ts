@@ -57,8 +57,24 @@ export function filterConversations(
         return false;
       if (filters.tab === "pending" && conversation.status !== "pending")
         return false;
-      if (filters.tab === "mine" && conversation.assignedTo !== "me")
-        return false;
+      if (filters.tab === "mine") {
+        const isMine =
+          conversation.assignedTo === "me" ||
+          (filters.currentUserId &&
+            (conversation.assignedTo === filters.currentUserId ||
+              conversation.assignedTo.toLowerCase() ===
+                filters.currentUserId.toLowerCase())) ||
+          (filters.currentStaffName &&
+            (conversation.assignedStaffName === filters.currentStaffName ||
+              conversation.assignedTo
+                .toLowerCase()
+                .includes(filters.currentStaffName.toLowerCase()) ||
+              (conversation.booking?.staff &&
+                conversation.booking.staff
+                  .toLowerCase()
+                  .includes(filters.currentStaffName.toLowerCase()))));
+        if (!isMine) return false;
+      }
       if (
         filters.channels.length &&
         !filters.channels.includes(conversation.channel)

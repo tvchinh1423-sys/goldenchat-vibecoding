@@ -37,7 +37,10 @@ export interface Conversation {
   avatarColor: string;
   status: ConversationStatus;
   aiEnabled: boolean;
-  assignedTo: "me" | "team" | "unassigned";
+  assignedTo: "me" | "team" | "unassigned" | string;
+  assignedStaffName?: string;
+  assignedAt?: string;
+  assignedBy?: string;
   unread: number;
   note: string;
   messages: Message[];
@@ -52,4 +55,6 @@ export interface InboxFilters {
   hasBooking: boolean;
   hasContact: boolean;
   showArchived: boolean;
+  currentUserId?: string;
+  currentStaffName?: string;
 }

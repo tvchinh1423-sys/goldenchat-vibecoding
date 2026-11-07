@@ -513,3 +513,26 @@ app-root/
 - Tích hợp `origin/main` tại `bd2b176` vào `hien/frontend-ai` cho PR #1. Giữ Báo cáo và phần xử lý vùng nhìn khi mở bàn phím của Hiền, cùng luồng đặt lịch qua nhiều lượt và hiển thị chuyển giao cho tư vấn viên của Chinh.
 - Widget hỏi tiếp khi còn thiếu dữ liệu. Khách vẫn có thể mở form bằng nút Đặt lịch. Khi đủ thông tin, Widget chờ kết quả lưu trước khi xác nhận và hiện liên kết Calendar.
 - Production build có kiểm tra kiểu dữ liệu, lint và 41 kiểm thử logic/API/SQL đạt. Các kịch bản Playwright đạt sau khi chạy lại kiểm tra đặt lịch với khung giờ không trùng lịch mẫu và nhãn Calendar hiện tại.
+
+### Mốc Nâng Cấp Toàn Diện PWA Native, Tối Ưu Mobile App UX, Cử Chỉ & Hệ Thống Thông Báo — 07/11/2026 (Chinh)
+
+- **1. Xây dựng Hệ thống PWA Native Độc lập:**
+  - Tạo trọn bộ icons chuẩn PWA vector/PNG: `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `icon-maskable-192.png`, `icon-maskable-512.png`.
+  - Nâng cấp `public/manifest.json`: khai báo `standalone`, `portrait-primary`, `theme_color: #2563eb`, `background_color: #f8fafc`, 4 shortcuts (`/inbox`, `/leads`, `/training`, `/dashboard`).
+  - Thiết lập Service Worker hoàn chỉnh (`public/sw.js`): Chiến lược Cache-first cho static assets, network-first cho pages, trang fallback ngoại tuyến thân thiện khi mất kết nối mạng, xử lý sự kiện Push Notification và click notification.
+  - Tích hợp `PWAProvider` (`components/pwa/pwa-provider.tsx`) trong `app/layout.tsx`: Lắng nghe sự kiện `beforeinstallprompt`, hiển thị popup hướng dẫn trực quan cho iOS Safari "Thêm vào MH chính" và banner cài đặt nổi 1-chạm trên Android/Chrome.
+- **2. Tối ưu Giao diện Mobile App, Cử chỉ (Gestures) & Rung Phản Hồi (Haptics):**
+  - **Cử chỉ Kéo để làm mới (Pull-to-refresh) (`lib/hooks/use-touch-gestures.ts`):** Áp dụng tại danh sách hội thoại `/inbox`, hiển thị vòng quay indicator kéo xuống làm mới và rung nhẹ.
+  - **Cử chỉ Vuốt mép quay lại (Edge Swipe to Back):** Khi đang mở chi tiết tin nhắn trên mobile, vuốt từ mép trái sang phải (`onSwipeRight`) tự động quay lại danh sách hội thoại chuẩn iOS/Android native.
+  - **Rung phản hồi (Haptic Feedback) (`lib/mobile/haptics.ts`):** Hỗ trợ an toàn các mức rung nhẹ (10ms), vừa (25ms), mạnh (40ms), thành công và cảnh báo khi bấm tab, đổi trạng thái, gửi tin, gọi điện.
+- **3. Hệ thống Thông báo (Notification Center & Web Audio):**
+  - Xây dựng `lib/notifications.ts`: Tích hợp chuông Web Audio "Ting", Web Push Notification API và In-App Banner kiểu iOS Dynamic Island slide-down ở đỉnh màn hình kèm nút "Xem ngay".
+  - Hiển thị pill xin cấp quyền thông báo nhẹ nhàng khi khởi động ứng dụng.
+- **4. Tinh gọn & Sắp xếp Thứ Tự Tính Năng Trên Mobile vs Desktop:**
+  - **Hộp thư (`/inbox`):** Header chat và danh sách hội thoại có thêm nút **📞 Gọi ngay** (`tel:${phone}`) màu xanh lá 1-chạm khi khách có SĐT; tích hợp Pull-to-refresh và Edge Swipe.
+  - **Quản lý Lead & Lịch hẹn (`/leads`):** Bổ sung thanh Quick Stage Selector trên mobile để nhảy nhanh giữa 6 giai đoạn N1-N5; thêm nút Gọi điện `tel:...` và Nhắn tin trực tiếp trên từng thẻ lead và từng thẻ lịch hẹn; bổ sung Floating Action Button (FAB) "Thêm khách" hình tròn nổi bật ở góc dưới phải trong tầm với ngón cái (Thumb zone).
+  - **Cài đặt (`/settings`):** Thêm Tab "📱 Ứng dụng & PWA Mobile" cho phép theo dõi trạng thái standalone, bật/tắt âm báo, bật/tắt rung, bắn thử thông báo kiểm tra hệ thống.
+  - **Desktop:** Giữ nguyên 100% trải nghiệm chuyên sâu: giao diện 3 cột rộng rãi, bảng Kanban kéo thả 6 cột, data table và biểu đồ phân tích sâu.
+- **5. Kiểm thử & Đóng gói:**
+  - Bổ sung bộ test Playwright `tests/browser/pwa-mobile.spec.ts` kiểm tra manifest, icons, meta tags, call button, FAB button và PWA settings.
+  - Production build Next.js 18/18 trang tĩnh đạt 100%, 42/42 unit tests pass 100%.

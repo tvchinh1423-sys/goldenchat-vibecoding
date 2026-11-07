@@ -20,11 +20,36 @@ import {
   AlertCircle,
   CheckCircle2,
   Code2,
+  ShieldAlert,
+  Smartphone,
+  Volume2,
+  Vibrate,
+  Download,
 } from "lucide-react";
+import { triggerHaptic } from "@/lib/mobile/haptics";
+import { sendOmniNotification, requestNotificationPermission } from "@/lib/notifications";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"botcake" | "widget" | "telegram" | "sla">("botcake");
+  const { role, canAccessSettings, quickSwitch } = useAuth();
+  const [activeTab, setActiveTab] = useState<"botcake" | "widget" | "telegram" | "sla" | "pwa">("botcake");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Mobile App & PWA state
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [showEmbedCode, setShowEmbedCode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        // @ts-expect-error navigator standalone
+        window.navigator.standalone === true;
+      setIsPwaInstalled(standalone);
+    }
+  }, []);
 
   // Botcake Config state
   const [webhookUrl, setWebhookUrl] = useState("https://goldenchat-vibecoding.vercel.app/api/webhook/botcake");
@@ -186,6 +211,58 @@ export default function SettingsPage() {
   async>
 </script>`;
 
+  if (!canAccessSettings) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+        <div className="p-8 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-purple-500/20">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold">
+              👑 Giới Hạn Quyền Quản Trị Hệ Thống
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+              Chỉ Quản Trị Viên (Admin) Mới Có Quyền Cấu Hình Hệ Thống
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-lg mx-auto">
+              Theo quy định phân quyền: <strong>Quản lý</strong> và <strong>Nhân viên</strong> không được can thiệp vào các thông số hệ thống chung (Webhook Botcake, Telegram Alert, Mã nhúng Web Widget, SLA phản hồi).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-left text-xs text-amber-900 space-y-1.5">
+            <div className="font-bold flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              <span>Chuyển đổi vai trò để thử nghiệm:</span>
+            </div>
+            <p className="text-[11px] text-amber-800">
+              Bạn đang đăng nhập với quyền: <span className="font-bold uppercase">{role === "manager" ? "Quản lý" : "Nhân viên"}</span>. Hãy bấm nút dưới đây để chuyển sang tài khoản Admin và kiểm tra toàn bộ cấu hình.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                triggerHaptic("medium");
+                await quickSwitch("usr_admin");
+              }}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-purple-500/20 transition active:scale-98"
+            >
+              ⚡ Chuyển sang tài khoản Admin (Toàn quyền)
+            </button>
+            <Link
+              href="/inbox"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold text-center transition"
+            >
+              Quay lại Hộp thư đa kênh
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
       {/* Header */}
@@ -273,6 +350,22 @@ export default function SettingsPage() {
         >
           <Clock className="w-4 h-4" />
           SLA & Phân công
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic("light");
+            setActiveTab("pwa");
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            activeTab === "pwa"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Smartphone className="w-4 h-4 text-blue-600" />
+          Ứng dụng & PWA Mobile
         </button>
       </div>
 
@@ -719,6 +812,121 @@ export default function SettingsPage() {
               <span className="text-[11px] text-slate-400">
                 Hiển thị trong cột 1 danh sách hội thoại và phân bổ Lead
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== TAB 5: ỨNG DỤNG & PWA MOBILE ===================== */}
+      {activeTab === "pwa" && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Card trạng thái cài đặt */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-md">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Trạng thái Ứng dụng PWA Mobile
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Chạy độc lập trên màn hình chính như Native App
+                  </p>
+                </div>
+              </div>
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto ${
+                  isPwaInstalled
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {isPwaInstalled ? "Đang chạy độc lập (PWA Standalone)" : "Trình duyệt Web (Sẵn sàng cài đặt)"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-slate-800">
+                  <Volume2 className="w-4 h-4 text-blue-600" />
+                  <span>Âm thanh thông báo (&quot;Ting&quot;)</span>
+                </div>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  Phát âm thanh chuông khi có tin nhắn khách hàng mới hoặc lịch hẹn xem sảnh.
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-slate-600 font-medium">Bật âm báo</span>
+                  <input
+                    type="checkbox"
+                    checked={soundEnabled}
+                    onChange={(e) => {
+                      triggerHaptic("light");
+                      setSoundEnabled(e.target.checked);
+                    }}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-slate-800">
+                  <Vibrate className="w-4 h-4 text-blue-600" />
+                  <span>Rung phản hồi (Haptic Feedback)</span>
+                </div>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  Rung nhẹ khi thao tác chuyển tab, bấm gửi tin nhắn, xác nhận lịch hoặc lưu khách.
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-slate-600 font-medium">Bật rung</span>
+                  <input
+                    type="checkbox"
+                    checked={hapticEnabled}
+                    onChange={(e) => {
+                      triggerHaptic("medium");
+                      setHapticEnabled(e.target.checked);
+                    }}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Test thông báo */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Thử nghiệm Thông báo & Rung</p>
+                <p className="text-[11px] text-slate-500">Kiểm tra banner Dynamic Island, âm thanh và rung</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestNotificationPermission();
+                    sendOmniNotification({
+                      title: "💬 Khách hỏi thực đơn tiệc cưới",
+                      body: "Nguyễn Thu Trang: 'Em ơi cho chị xin bảng giá thực đơn 30 bàn ngày 20/11 với ạ!'",
+                      url: "/inbox",
+                      type: "message",
+                      playSound: soundEnabled,
+                      haptic: hapticEnabled,
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition active:scale-95 shadow-sm inline-flex items-center gap-1.5"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  Bắn thử thông báo
+                </button>
+                <Link
+                  href="/download"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Hướng dẫn cài đặt
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
   Search,
   SearchX,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,9 @@ import type {
   InboxTab,
 } from "@/lib/inbox/types";
 import { Avatar, ChannelIcon } from "./shared";
+import { triggerHaptic } from "@/lib/mobile/haptics";
+import { usePullToRefresh } from "@/lib/hooks/use-touch-gestures";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface Props {
   conversations: Conversation[];
@@ -36,6 +40,7 @@ interface Props {
   onSelect: (id: string) => void;
   searchRef: RefObject<HTMLInputElement>;
   now: number;
+  onRefresh?: () => Promise<void> | void;
 }
 export function ConversationList({
   conversations,
@@ -46,9 +51,18 @@ export function ConversationList({
   onSelect,
   searchRef,
   now,
+  onRefresh,
 }: Props) {
+  const { currentUser } = useAuth();
   const [channelsOpen, setChannelsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Mobile pull-to-refresh
+  const { containerRef, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
+  });
   useEffect(() => {
     if (!channelsOpen) return;
     const close = (event: PointerEvent) => {
@@ -71,7 +85,17 @@ export function ConversationList({
     {
       id: "mine",
       label: "Của tôi",
-      count: visible.filter((c) => c.assignedTo === "me").length,
+      count: visible.filter((c) => {
+        if (c.assignedTo === "me") return true;
+        if (
+          currentUser &&
+          (c.assignedTo === currentUser.id ||
+            c.assignedTo.toLowerCase() === currentUser.username.toLowerCase())
+        )
+          return true;
+        if (currentUser && c.assignedStaffName === currentUser.name) return true;
+        return false;
+      }).length,
     },
   ];
   const reset = () =>
@@ -230,7 +254,19 @@ export function ConversationList({
           </button>
         </div>
       </div>
-      <div className="scrollbar-thin flex-1 overflow-y-auto">
+      <div ref={containerRef} className="scrollbar-thin flex-1 overflow-y-auto relative">
+        {/* Mobile Pull to refresh indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div
+            className="flex items-center justify-center overflow-hidden transition-all text-blue-600 bg-blue-50/70 border-b border-blue-100"
+            style={{ height: isRefreshing ? 44 : Math.max(pullDistance, 0) }}
+          >
+            <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing ? "animate-spin text-blue-600" : "text-blue-500")} />
+            <span className="text-xs font-semibold text-blue-700">
+              {isRefreshing ? "Đang đồng bộ..." : pullDistance >= 70 ? "Thả ra để làm mới" : "Kéo xuống làm mới"}
+            </span>
+          </div>
+        )}
         {filtered.length ? (
           filtered.map((conversation) => {
             const lastMessage = conversation.messages.at(-1)!;
@@ -238,7 +274,10 @@ export function ConversationList({
             return (
               <button
                 key={conversation.id}
-                onClick={() => onSelect(conversation.id)}
+                onClick={() => {
+                  triggerHaptic("light");
+                  onSelect(conversation.id);
+                }}
                 aria-current={
                   selectedId === conversation.id ? "true" : undefined
                 }
@@ -287,13 +326,25 @@ export function ConversationList({
                       <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
                         {conversation.unread}
                       </span>
-                    ) : (
-                      conversation.assignedTo === "me" && (
-                        <span className="ml-auto rounded bg-[#e6e8f2] px-1 py-0.5 text-[9px] font-semibold">
-                          {CURRENT_STAFF}
+                    ) : conversation.assignedStaffName ? (
+                      <span
+                        className="ml-auto rounded bg-blue-50 text-blue-700 border border-blue-200/80 px-1.5 py-0.5 text-[9px] font-semibold flex items-center gap-0.5 shrink-0"
+                        title={`Phụ trách: ${conversation.assignedStaffName}`}
+                      >
+                        <span className="text-[8px]">👤</span>
+                        <span className="truncate max-w-[65px]">
+                          {conversation.assignedStaffName}
                         </span>
-                      )
-                    )}
+                      </span>
+                    ) : conversation.assignedTo === "me" ? (
+                      <span className="ml-auto rounded bg-[#e6e8f2] px-1 py-0.5 text-[9px] font-semibold">
+                        {CURRENT_STAFF}
+                      </span>
+                    ) : conversation.assignedTo === "unassigned" ? (
+                      <span className="ml-auto rounded bg-amber-50 text-amber-700 border border-amber-200/80 px-1 py-0.5 text-[9px] font-medium">
+                        Chưa gán
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </button>

@@ -692,6 +692,15 @@ export function InboxWorkspace() {
               onSelect={selectConversation}
               searchRef={searchRef}
               now={now}
+              onRefresh={async () => {
+                try {
+                  const crm = await loadCRM();
+                  setConversations((current) => applyCRMToInbox(current, crm));
+                  notify("Đã đồng bộ dữ liệu mới nhất.");
+                } catch {
+                  notify("Đã làm mới danh sách hội thoại.");
+                }
+              }}
             />
           </div>
           <div
