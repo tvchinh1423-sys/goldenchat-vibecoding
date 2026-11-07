@@ -21,6 +21,13 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Kiểm thử toàn hệ thống mới nhất — 07/11/2026, khoảng 22:00 (Hiền)
+
+- Đối chiếu `origin/main` tại e33d8bd và production; xem [báo cáo kiểm thử lại](../../../docs/full-retest-2026-11-07.md). Build 20/20 trang, 59/59 unit/API/SQL đạt; Chromium toàn bộ 18/29 đạt (11 không đạt), WebKit mobile 5/5 đạt. Có test kỳ vọng cũ 60 phút và fixture chưa cách ly cloud mới; không diễn giải toàn bộ 11 ca là lỗi sản phẩm độc lập.
+- Các lỗi đã tái hiện riêng: API sync đọc snapshot không cần đăng nhập; Inbox vẫn mở và CRM tự tạo phiên nhân viên; dọn demo làm mất bản ghi mới trong kho hỗn hợp; merge cloud không truyền xóa; Simulator xác nhận 31/11 và 14:00; giảm 30% kèm 40 mâm bị nhánh sức chứa bắt; lỗi draft 503 thay bản nháp nhân viên bằng FAQ. Cloud hiện dùng global process + `/tmp`, chưa phải kho bền vững. Cấu hình vẫn báo lưu thành công khi không có DB; tỷ lệ AI 82% còn hardcode và thiếu nhãn minh họa.
+- Production CRM/AI draft vẫn báo demo. Facebook có bằng chứng hai câu Messenger ở lượt trước; lượt này kiểm tra lại API, chưa gửi lại Messenger hoặc nghiệm thu Facebook→Inbox/CRM. Zalo, Telegram thật, AI provider, Supabase cloud, PWA và bàn phím/âm thanh trên điện thoại thật chưa được xác minh trong lượt này.
+- Kết luận hiện tại: có đủ nhiều tính năng trình diễn nhưng **chưa nghiệm thu toàn hệ thống, chưa sẵn sàng dữ liệu khách thật**. Ưu tiên quyền truy cập, bảo toàn/xóa dữ liệu, lịch hợp lệ và kiểm thử hồi quy; Chinh chốt FAQ/giờ, kênh thật và hồ sơ nộp. Mốc này chỉ cập nhật báo cáo, chưa sửa các lỗi trên; trạng thái này được ưu tiên hơn các tuyên bố “100%” ở nhật ký cũ.
+
 | Key | Value | Trạng thái |
 |-----|-------|:----------:|
 | **Cuộc thi** | VibeCoding 2026 — AI × Mini App (Bảng B) | Đang diễn ra |
