@@ -942,3 +942,20 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Triển khai trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định ngày 07/11/2026.
 
+### Mốc Tối Giản Câu Phản Hồi Khi Trùng Lịch / Kín Khung Giờ Đặt Lịch — 07/11/2026 (Chinh)
+
+- **1. Tinh gọn triệt để câu thông báo trùng lịch gửi tới khách hàng:**
+  - Thay vì câu cảnh báo nội bộ dài dòng mang tính kỹ thuật (`⚠️ Lưu ý: Nhân viên tư vấn đã có tối đa 2 lịch hẹn trong khung 30 phút này (tối đa 2 lịch 1 lúc)...`), Chinh chỉ thị khi trùng lịch chỉ cần ngắn gọn: bên em bận, anh chị vui lòng đổi qua khung giờ khác.
+  - Chuẩn hóa câu phản hồi trên toàn hệ thống (Web Widget, CRM Model, CRM Server):
+    `"Dạ khung giờ này bên em bận rồi ạ, anh/chị vui lòng đổi qua khung giờ khác giúp em nhé!"`
+  - Đính kèm 3 nút gợi ý đổi giờ trực quan, 1-chạm: `["Đổi sang 09:30", "Đổi sang 10:00", "Hotline: 0228 659 5959"]`.
+- **2. Tối ưu luồng phản hồi Auto-Booking:**
+  - Loại bỏ hoàn toàn tin nhắn đệm thừa thãi `"Dạ em đang lưu lịch hẹn cho anh/chị ạ."`.
+  - Khi khách cung cấp đủ thông tin hoặc đổi giờ, hệ thống tiến hành lưu trực tiếp và trả về kết quả duy nhất:
+    * Nếu khung giờ trống: Hiển thị ngay thẻ `"🎉 ĐẶT LỊCH THÀNH CÔNG!"` kèm chi tiết và âm thanh chúc mừng tiệc cưới.
+    * Nếu khung giờ đã bận (trùng lịch): Hiển thị ngay câu thông báo ngắn gọn `"Dạ khung giờ này bên em bận rồi ạ, anh/chị vui lòng đổi qua khung giờ khác giúp em nhé!"`.
+- **3. Kiểm thử & Triển khai:**
+  - **55/55 unit tests pass 100%**.
+  - Next.js production build **20/20 static pages thành công 100%**.
+  - Deploy trực tiếp lên `origin/main` (Vercel production).
+

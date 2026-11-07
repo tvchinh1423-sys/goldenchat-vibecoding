@@ -176,7 +176,7 @@ test("booking promotes N1/N2 to N3 atomically and enforces staff overlap, not ha
         assigned_staff: " ngọc khánh ",
         appointment_time: sameSlotTime,
       }),
-    /tối đa 2 lịch/,
+    /bận|khung giờ/,
   );
 
   // Khác nhân viên tư vấn trong cùng khung giờ: CHO PHÉP

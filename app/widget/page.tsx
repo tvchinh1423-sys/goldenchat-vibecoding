@@ -362,7 +362,10 @@ function WebWidgetContent() {
   };
 
   // Tự động chốt lịch hẹn trực tiếp khi đã đủ thông tin (NLP Auto-Book)
-  const saveDirectBooking = async (draft: BookingDraftInfo) => {
+  const saveDirectBooking = async (
+    draft: BookingDraftInfo,
+    baseMessages: WidgetMessage[] = messages,
+  ) => {
     const cleanPhone = (draft.phone || "").replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
     if (!cleanPhone || !draft.fullName) return;
 
@@ -427,7 +430,7 @@ function WebWidgetContent() {
         ],
       };
 
-      const updatedMsgs = [...messages, autoBookMsg];
+      const updatedMsgs = [...baseMessages, autoBookMsg];
       setMessages(updatedMsgs);
       syncWidgetChatToInbox(updatedMsgs, {
         fullName: draft.fullName,
@@ -443,15 +446,25 @@ function WebWidgetContent() {
       setActiveBookingDraft(null);
     } catch (e: any) {
       console.error("Auto booking error:", e);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b-err-${Date.now()}`,
-          sender: "bot",
-          text: `⚠️ Lưu ý: ${e?.message || "Chưa lưu được thông tin"}. Quý khách có thể bấm nút "Đặt lịch" ở góc trên hoặc liên hệ Hotline 0228 6595 959 để được hỗ trợ nhé ạ!`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
+      const isBusy = /bận|khung giờ|đổi qua|lịch/i.test(e?.message || "") || e?.status === 409;
+      const replyContent = isBusy
+        ? "Dạ khung giờ này bên em bận rồi ạ, anh/chị vui lòng đổi qua khung giờ khác giúp em nhé!"
+        : `Dạ ${e?.message || "chưa lưu được lịch hẹn"}. Anh/chị vui lòng đổi qua khung giờ khác giúp em nhé!`;
+
+      const busyBotMsg: WidgetMessage = {
+        id: `b-busy-${Date.now()}`,
+        sender: "bot",
+        text: replyContent,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        suggestedQuestions: [
+          "Đổi sang 09:30",
+          "Đổi sang 10:00",
+          "Hotline: 0228 659 5959",
+        ],
+      };
+      const updatedMsgs = [...baseMessages, busyBotMsg];
+      setMessages(updatedMsgs);
+      syncWidgetChatToInbox(updatedMsgs);
     }
   };
 
@@ -553,40 +566,38 @@ function WebWidgetContent() {
         }).catch(() => {});
       }
 
-      const botReplyMsg: WidgetMessage = {
-        id: `b-${Date.now()}`,
-        sender: "bot",
-        text: data.autoBooked && data.bookingDraft
-          ? "Dạ em đang lưu lịch hẹn cho anh/chị ạ."
-          : data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        suggestedQuestions: data.suggestedQuestions,
-        visitType: resolvedVisitType,
-        bookingDraft: data.bookingDraft,
-        handoff: isHandoff,
-      };
-
-      const nextBotMessages = [...nextUserMessages, botReplyMsg];
-      setMessages(nextBotMessages);
-
-      // Đồng bộ tức thì câu trả lời của Bot sang Hộp thư Admin
-      const effectiveDraft = data.bookingDraft || activeBookingDraft;
-      syncWidgetChatToInbox(
-        nextBotMessages,
-        effectiveDraft
-          ? {
-              fullName: effectiveDraft.fullName || "Khách Web",
-              phone: effectiveDraft.phone || "",
-              appointmentTime: effectiveDraft.dateTimeIso || getSmartBookingDefault(),
-              eventType: effectiveDraft.eventType || "xem_sanh",
-              guestsCount: effectiveDraft.guestsCount || 2,
-              notes: effectiveDraft.notes || "",
-            }
-          : undefined
-      );
-
       if (data.autoBooked && data.bookingDraft) {
-        await saveDirectBooking(data.bookingDraft);
+        await saveDirectBooking(data.bookingDraft, nextUserMessages);
+      } else {
+        const botReplyMsg: WidgetMessage = {
+          id: `b-${Date.now()}`,
+          sender: "bot",
+          text: data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          suggestedQuestions: data.suggestedQuestions,
+          visitType: resolvedVisitType,
+          bookingDraft: data.bookingDraft,
+          handoff: isHandoff,
+        };
+
+        const nextBotMessages = [...nextUserMessages, botReplyMsg];
+        setMessages(nextBotMessages);
+
+        // Đồng bộ tức thì câu trả lời của Bot sang Hộp thư Admin
+        const effectiveDraft = data.bookingDraft || activeBookingDraft;
+        syncWidgetChatToInbox(
+          nextBotMessages,
+          effectiveDraft
+            ? {
+                fullName: effectiveDraft.fullName || "Khách Web",
+                phone: effectiveDraft.phone || "",
+                appointmentTime: effectiveDraft.dateTimeIso || getSmartBookingDefault(),
+                eventType: effectiveDraft.eventType || "xem_sanh",
+                guestsCount: effectiveDraft.guestsCount || 2,
+                notes: effectiveDraft.notes || "",
+              }
+            : undefined
+        );
       }
     } catch {
       const errBotMsg: WidgetMessage = {
