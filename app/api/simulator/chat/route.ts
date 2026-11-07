@@ -88,13 +88,27 @@ export async function POST(req: NextRequest) {
       lower.includes("giam 30%") ||
       lower.includes("giảm 50%") ||
       lower.includes("giam 50%") ||
-      lower.includes("hứa giảm 30%")
+      lower.includes("hứa giảm 30%") ||
+      lower.includes("giảm giá 30%") ||
+      lower.includes("giam gia 30%") ||
+      lower.includes("chiết khấu 30%") ||
+      lower.includes("chiet khau 30%")
     ) {
+      const tableMatch = lower.match(/(\d+)\s*(?:bàn|mâm|ban|mam)/);
+      const tables = tableMatch ? parseInt(tableMatch[1], 10) : null;
+      const extraContext = tables
+        ? ` Với quy mô ${tables} mâm (khoảng ${tables * 10} khách), nhà hàng có chính sách tặng trọn gói dịch vụ (như tặng vòng ánh sáng Laser trao nhẫn) và sảnh tiệc Tầng 3 hoặc Tầng 2 rất phù hợp ạ.`
+        : "";
       return respond({
         success: true,
-        reply: `Dạ ${brandName} xin phép làm rõ ạ: Nhà hàng áp dụng các gói ưu đãi theo chính sách hiện hành của trung tâm và không có chính sách chiết khấu tiền mặt 30% trên thực đơn. Quý khách vui lòng liên hệ Hotline 0228 6595 959 hoặc để lại số lượng bàn dự kiến để chuyên viên gửi thông tin chi tiết nhất nhé!`,
+        reply: `Dạ ${brandName} xin phép làm rõ ạ: Nhà hàng áp dụng các gói ưu đãi theo chính sách hiện hành của trung tâm và không có chính sách chiết khấu tiền mặt 30% trên thực đơn.${extraContext} Quý khách vui lòng liên hệ Hotline 0228 6595 959 để chuyên viên gửi bảng dự toán chi tiết nhất nhé!`,
         triggeredRule: "guardrail_pricing_violation",
         guardrailWarning: "Phát hiện câu hỏi vượt quá hạn mức ưu đãi giá của trung tâm!",
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một mâm?",
+          "Ưu đãi mùa cưới hiện nay có gì?",
+          "Hotline tư vấn: 0228 6595 959",
+        ],
       });
     }
 
@@ -142,7 +156,42 @@ export async function POST(req: NextRequest) {
       (/\b(bao nhiêu|bn|thế nào|sao|như thế nào|mấy|hết bao|quy trình)\b/i.test(lower) || !hasBookingKeywords);
 
     if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !hasDepositInquiry) {
-      // 3.1. ĐÃ ĐẦY ĐỦ THÔNG TIN (Tên + SĐT + Ngày Giờ) -> TỰ ĐỘNG CHỐT LỊCH HẸN
+      // 3.0. KIỂM TRA TÍNH HỢP LỆ CỦA NGÀY / GIỜ HẸN
+      if (bookingDetails.isInvalidDate) {
+        return respond({
+          success: true,
+          reply: `Dạ ${bookingDetails.dateInvalidReason} Quý khách vui lòng chọn lại ngày hẹn phù hợp (ví dụ ngày mai hoặc cuối tuần) để em hỗ trợ xếp lịch đón tiếp chu đáo nhất nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: "dateTime",
+          suggestedQuestions: [
+            "Sáng mai lúc 9h",
+            "Cuối tuần này lúc 9h30",
+            "Hotline tư vấn: 0228 6595 959",
+          ],
+        });
+      }
+
+      if (bookingDetails.isInvalidTime) {
+        return respond({
+          success: true,
+          reply: `Dạ ${bookingDetails.timeInvalidReason} Quý khách vui lòng chọn một khung giờ trong khoảng 8:00 – 10:30 sáng (ví dụ 8h30 hoặc 9h30 sáng) để chuyên viên chuẩn bị đón tiếp chu đáo nhất nhé ạ!`,
+          appointmentIntent: true,
+          autoBooked: false,
+          bookingDraft: bookingDetails,
+          visitType: bookingDetails.eventType,
+          promptFor: "dateTime",
+          suggestedQuestions: [
+            "Sáng mai lúc 8h30",
+            "Sáng mai lúc 9h30",
+            "Đón tiếp lúc 10h sáng",
+          ],
+        });
+      }
+
+      // 3.1. ĐÃ ĐẦY ĐỦ THÔNG TIN (Tên + SĐT + Ngày Giờ Hợp Lệ) -> TỰ ĐỘNG CHỐT LỊCH HẸN
       if (bookingDetails.isComplete) {
         return respond({
           success: true,
@@ -465,6 +514,14 @@ export async function POST(req: NextRequest) {
         return null;
       }
 
+      // Nếu câu có chứa yêu cầu hỏi về giảm giá, chiết khấu, ưu đãi, khuyến mãi
+      // -> KHÔNG nuốt câu hỏi ưu đãi/giảm giá thành gợi ý sảnh đơn thuần!
+      if (
+        /\b(giảm|giam|chiết khấu|chiet khau|bớt|bot|sale|khuyến mãi|khuyen mai|ưu đãi|uu dai)\b/i.test(t)
+      ) {
+        return null;
+      }
+
       // 1. Số bàn / số mâm (VD: '30 bàn', '35 mâm', 'khoảng 30 mâm')
       const tableMatch = t.match(/(\d+)\s*(?:bàn|mâm|ban|mam)/);
       if (tableMatch) {
@@ -595,7 +652,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5.10. Địa chỉ, vị trí, Google Maps
+    // 5.10. Địa chỉ, vị trí, Giờ mở cửa & Đón khách
     if (
       lower.includes("địa chỉ") ||
       lower.includes("dia chi") ||
@@ -604,11 +661,19 @@ export async function POST(req: NextRequest) {
       lower.includes("chỉ đường") ||
       lower.includes("chi duong") ||
       lower.includes("bản đồ") ||
-      lower.includes("maps")
+      lower.includes("maps") ||
+      lower.includes("giờ mở cửa") ||
+      lower.includes("gio mo cua") ||
+      lower.includes("mấy giờ mở") ||
+      lower.includes("mở cửa lúc mấy giờ") ||
+      lower.includes("thời gian làm việc") ||
+      lower.includes("giờ làm việc") ||
+      lower.includes("giờ đón khách") ||
+      lower.includes("mở cửa")
     ) {
       return respond({
         success: true,
-        reply: `Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định. Giờ đón tiếp Quý khách tham quan trực tiếp các sảnh tiệc từ 8h00 – 21h00 tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ) ạ! Quý khách xem chỉ đường Google Maps tại: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`,
+        reply: `Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định.\n⏰ Giờ mở cửa đón tiếp khách tham quan không gian sảnh: 8h00 – 21h00 tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ).\n📋 Riêng khung giờ chuyên viên tư vấn chi tiết và xem sảnh trực tiếp là từ 8h00 – 10h30 sáng hàng ngày ạ!\n📍 Chỉ đường Google Maps: https://maps.app.goo.gl/GrYDqNTLNmqQ1nH76?g_st=ic`,
         suggestedQuestions: [
           "Nhà hàng có chỗ đỗ xe ô tô không?",
           "Hotline liên hệ trực tiếp",
@@ -667,20 +732,28 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 6.3. ƯU ĐÃI / KHUYẾN MÃI
+    // 6.3. ƯU ĐÃI / KHUYẾN MÃI / GIẢM GIÁ
     if (
       lower.includes("ưu đãi") ||
       lower.includes("uu dai") ||
       lower.includes("khuyến mãi") ||
       lower.includes("khuyen mai") ||
-      lower.includes("giảm giá")
+      lower.includes("giảm giá") ||
+      lower.includes("giam gia") ||
+      lower.includes("chiết khấu") ||
+      lower.includes("chiet khau")
     ) {
-      const uuDaiItem = knowledgeBase.find((k: any) => k.category === "uu_dai");
+      const tableMatch = lower.match(/(\d+)\s*(?:bàn|mâm|ban|mam)/);
+      const tables = tableMatch ? parseInt(tableMatch[1], 10) : null;
+      let reply = `Dạ Golden Palace luôn có chính sách ưu đãi hấp dẫn theo mùa. Đặc biệt tiệc từ 400 khách trở lên (từ 40 mâm) được TẶNG MIỄN PHÍ Vòng ánh sáng Laser trao nhẫn cưới độc đáo và các gói quà tặng dịch vụ sân khấu.`;
+      if (tables) {
+        reply += ` Với quy mô ${tables} mâm (khoảng ${tables * 10} khách), nhà hàng sẽ áp dụng trọn gói ưu đãi và bố trí sảnh tiệc Tầng 3 hoặc Tầng 2 sang trọng nhất.`;
+      }
+      reply += ` Quý khách vui lòng liên hệ Hotline 0228 659 5959 để chuyên viên gửi báo giá ưu đãi chi tiết nhé ạ!`;
+
       return respond({
         success: true,
-        reply:
-          uuDaiItem?.answer ||
-          `Dạ Golden Palace luôn có chính sách ưu đãi hấp dẫn theo mùa. Đặc biệt tiệc từ 400 khách trở lên được TẶNG MIỄN PHÍ Vòng ánh sáng Laser trao nhẫn cưới độc đáo. Quý khách liên hệ Hotline 0228 659 5959 để được tư vấn gói ưu đãi chi tiết ạ!`,
+        reply,
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một bàn?",
           "Đặt cọc giữ sảnh bao nhiêu?",

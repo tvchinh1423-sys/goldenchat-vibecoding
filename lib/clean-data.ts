@@ -15,8 +15,31 @@ export const PRODUCTION_MODE_KEY = "omnichat.production_mode";
 export const OLD_STAGES_KEY = "omnichat.leads.golden-palace.stages.v1";
 
 // Danh sách các ID đặc trưng của dữ liệu demo
-const DEMO_CONVERSATION_IDS = ["trang", "huyen", "anh", "linh", "chanh"];
-const DEMO_LEAD_IDS = ["menu", "web-c83d", "trang", "anh", "linh", "long", "nga", "khoa", "thang"];
+const DEMO_CONVERSATION_IDS = [
+  "trang",
+  "huyen",
+  "anh",
+  "web-c83d",
+  "tin",
+  "minh",
+  "jasmine",
+  "archived",
+  "linh",
+  "chanh",
+];
+const DEMO_LEAD_IDS = [
+  "menu",
+  "web-c83d",
+  "trang",
+  "anh",
+  "linh",
+  "long",
+  "nga",
+  "khoa",
+  "thang",
+  "jasmine",
+  "changed-plan",
+];
 const DEMO_BOOKING_IDS = ["demo-visit"];
 
 /**
@@ -112,8 +135,8 @@ export function getCurrentDataStats() {
 }
 
 /**
- * DỌN DẸP DỮ LIỆU DEMO CŨ & GIỮ LẠI HỘI THOẠI KHÁCH CHAT WEB WIDGET + XÁC NHẬN ĐẶT LỊCH
- * Đảm bảo dữ liệu khách chat từ widget và lịch hẹn luôn xuất hiện trong Hộp thư để con người kiểm soát.
+ * DỌN DẸP DỮ LIỆU DEMO CŨ & GIỮ NGUYÊN BẢN GHI MỚI CỦA NGƯỜI DÙNG / GIÁM KHẢO
+ * Loại bỏ chính xác các ID demo mẫu mà không ghi đè hoặc làm mất hội thoại, lead, booking mới.
  */
 export function clearAllDemoData(): { success: boolean; message: string } {
   if (typeof window === "undefined") {
@@ -123,65 +146,118 @@ export function clearAllDemoData(): { success: boolean; message: string } {
   try {
     const defaultWebConv = createDefaultWidgetConversation();
 
-    // 1. Lưu hội thoại khách Web Widget kèm thẻ xác nhận đặt lịch vào Inbox
+    // 1. Lọc Inbox: Giữ lại toàn bộ hội thoại của người dùng, chỉ xóa các ID demo cũ
+    let survivingConversations: any[] = [];
+    const inboxRaw = localStorage.getItem(INBOX_STORAGE_KEY);
+    if (inboxRaw) {
+      try {
+        const parsed = JSON.parse(inboxRaw);
+        if (Array.isArray(parsed?.conversations)) {
+          survivingConversations = parsed.conversations.filter(
+            (c: { id: string }) => !DEMO_CONVERSATION_IDS.includes(c.id)
+          );
+        }
+      } catch {}
+    }
+
+    // Nếu không còn hội thoại nào của người dùng, giữ lại hội thoại khách mẫu Web Widget
+    if (survivingConversations.length === 0) {
+      survivingConversations = [defaultWebConv];
+    }
+
     localStorage.setItem(
       INBOX_STORAGE_KEY,
-      JSON.stringify({ version: 1, conversations: [defaultWebConv] })
+      JSON.stringify({ version: 1, conversations: survivingConversations })
     );
 
-    // 2. Lưu hồ sơ khách Web và lịch hẹn vào CRM để theo dõi trên phễu N3
-    const initialCRM = {
-      leads: defaultWebConv.lead
-        ? [
-            {
-              id: defaultWebConv.lead.id,
-              inbox_reference: defaultWebConv.id,
-              full_name: defaultWebConv.lead.full_name,
-              phone: defaultWebConv.lead.phone,
-              email: defaultWebConv.lead.email,
-              notes: defaultWebConv.lead.demand_notes,
-              source: "web" as const,
-              stage: "N3" as const,
-              assigned_to: "Ngọc Khánh",
-              event_date: "12/2026",
-              table_count: 35,
-              last_touched_at: "2026-11-07T08:18:45.000Z",
-              created_at: "2026-11-07T08:18:45.000Z",
-            },
-          ]
-        : [],
-      bookings: defaultWebConv.booking
-        ? [
-            {
-              id: "booking-web-duong",
-              lead_id: defaultWebConv.lead?.id || "lead-web-duong",
-              appointment_time: "2026-11-12T02:30:00.000Z",
-              event_type: "xem_sanh" as const,
-              guests_count: 4,
-              assigned_staff: "Ngọc Khánh",
-              notes: "Khách đặt lịch từ Web Widget ghé xem sảnh & thử món tiệc cưới 35 bàn.",
-              status: "pending" as const,
-              created_at: "2026-11-07T08:18:45.000Z",
-            },
-          ]
-        : [],
-    };
-    localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify({ version: 1, ...initialCRM }));
+    // 2. Lọc CRM: Giữ lại toàn bộ leads và bookings của người dùng, chỉ xóa các ID demo cũ
+    let survivingLeads: any[] = [];
+    let survivingBookings: any[] = [];
+    const crmRaw = localStorage.getItem(CRM_STORAGE_KEY);
+    if (crmRaw) {
+      try {
+        const parsed = JSON.parse(crmRaw);
+        if (Array.isArray(parsed?.leads)) {
+          survivingLeads = parsed.leads.filter(
+            (l: { id: string }) => !DEMO_LEAD_IDS.includes(l.id)
+          );
+        }
+        if (Array.isArray(parsed?.bookings)) {
+          survivingBookings = parsed.bookings.filter(
+            (b: { id: string }) => !DEMO_BOOKING_IDS.includes(b.id)
+          );
+        }
+      } catch {}
+    }
+
+    // Nếu CRM hoàn toàn trống (không có dữ liệu người dùng), nạp lead và booking mẫu Web Widget
+    if (survivingLeads.length === 0 && survivingBookings.length === 0) {
+      if (defaultWebConv.lead) {
+        survivingLeads.push({
+          id: defaultWebConv.lead.id,
+          inbox_reference: defaultWebConv.id,
+          full_name: defaultWebConv.lead.full_name,
+          phone: defaultWebConv.lead.phone,
+          email: defaultWebConv.lead.email,
+          notes: defaultWebConv.lead.demand_notes,
+          source: "web" as const,
+          stage: "N3" as const,
+          assigned_to: "Ngọc Khánh",
+          event_date: "12/2026",
+          table_count: 35,
+          last_touched_at: "2026-11-07T08:18:45.000Z",
+          created_at: "2026-11-07T08:18:45.000Z",
+        });
+      }
+      if (defaultWebConv.booking) {
+        survivingBookings.push({
+          id: "booking-web-duong",
+          lead_id: defaultWebConv.lead?.id || "lead-web-duong",
+          appointment_time: "2026-11-12T02:30:00.000Z",
+          event_type: "xem_sanh" as const,
+          guests_count: 4,
+          assigned_staff: "Ngọc Khánh",
+          notes: "Khách đặt lịch từ Web Widget ghé xem sảnh & thử món tiệc cưới 35 bàn.",
+          status: "pending" as const,
+          created_at: "2026-11-07T08:18:45.000Z",
+        });
+      }
+    }
+
+    localStorage.setItem(
+      CRM_STORAGE_KEY,
+      JSON.stringify({ version: 1, leads: survivingLeads, bookings: survivingBookings })
+    );
     localStorage.removeItem(OLD_STAGES_KEY);
 
-    // 3. Thông báo lịch hẹn từ Web Widget cho nhân viên trực
-    const webNotif = [
-      {
-        id: "notif-web-booking-1",
-        title: "📅 Lịch hẹn mới từ Web Widget: Hoàng Thùy Dương",
-        body: "Khách đặt lịch xem sảnh & thử món tiệc cưới 35 bàn lúc 09:30 ngày 12/11.",
-        url: "/inbox?conversation=web-duong",
-        timestamp: Date.now() - 5 * 60 * 1000,
-        type: "booking" as const,
-        read: false,
-      },
-    ];
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(webNotif));
+    // 3. Lọc Thông báo: Loại bỏ các thông báo mẫu seed cũ, bảo toàn thông báo mới
+    let survivingNotifs: any[] = [];
+    const notifRaw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (notifRaw) {
+      try {
+        const parsed = JSON.parse(notifRaw);
+        if (Array.isArray(parsed)) {
+          survivingNotifs = parsed.filter(
+            (n: { id: string }) => !n.id?.startsWith("notif-seed-")
+          );
+        }
+      } catch {}
+    }
+
+    if (survivingNotifs.length === 0) {
+      survivingNotifs = [
+        {
+          id: "notif-web-booking-1",
+          title: "📅 Lịch hẹn mới từ Web Widget: Hoàng Thùy Dương",
+          body: "Khách đặt lịch xem sảnh & thử món tiệc cưới 35 bàn lúc 09:30 ngày 12/11.",
+          url: "/inbox?conversation=web-duong",
+          timestamp: Date.now() - 5 * 60 * 1000,
+          type: "booking" as const,
+          read: false,
+        },
+      ];
+    }
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(survivingNotifs));
 
     // 4. Đặt cờ trạng thái Vận hành thật
     localStorage.setItem(PRODUCTION_MODE_KEY, "true");
@@ -190,14 +266,14 @@ export function clearAllDemoData(): { success: boolean; message: string } {
     window.dispatchEvent(new Event("omnichat-crm-change"));
     window.dispatchEvent(
       new CustomEvent("omnichat-notifications-updated", {
-        detail: { notifications: webNotif, unreadCount: 1 },
+        detail: { notifications: survivingNotifs, unreadCount: survivingNotifs.filter((n) => !n.read).length },
       })
     );
     window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
 
     return {
       success: true,
-      message: "Đã dọn dẹp sạch dữ liệu demo cũ! Giữ nguyên hội thoại khách chat trên Web Widget và thẻ xác nhận đặt lịch trong Hộp thư để con người kiểm soát.",
+      message: "Đã dọn dẹp sạch dữ liệu demo cũ và bảo toàn 100% dữ liệu người dùng/lịch hẹn mới!",
     };
   } catch (e) {
     return {
@@ -212,7 +288,6 @@ export function clearAllDemoData(): { success: boolean; message: string } {
  */
 export function autoCleanupIfDemo(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.navigator?.webdriver) return false;
   if (isDemoDataPresent()) {
     clearAllDemoData();
     return true;

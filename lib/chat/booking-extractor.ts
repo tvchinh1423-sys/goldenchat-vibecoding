@@ -17,6 +17,10 @@ export interface BookingDraftInfo {
   isComplete: boolean;
   missingFields: ("fullName" | "phone" | "dateTime")[];
   awaitingInfo?: boolean;
+  isInvalidDate?: boolean;
+  dateInvalidReason?: string | null;
+  isInvalidTime?: boolean;
+  timeInvalidReason?: string | null;
 }
 
 // Chuẩn hóa tên (Viết hoa chữ cái đầu: "vân" -> "Vân")
@@ -211,16 +215,39 @@ export function extractBookingDetails(
   let dateStr: string | null = null;
   let timeStr: string | null = null;
   let dateTimeIso: string | null = null;
+  let isInvalidDate = false;
+  let dateInvalidReason: string | null = null;
+  let isInvalidTime = false;
+  let timeInvalidReason: string | null = null;
+  const pad = (n: number) => n.toString().padStart(2, "0");
 
   if (targetDay !== null && targetMonth !== null) {
-    const pad = (n: number) => n.toString().padStart(2, "0");
     dateStr = `${pad(targetDay)}/${pad(targetMonth)}/${targetYear}`;
     timeStr = `${pad(targetHour)}:${pad(targetMinute)}`;
-    dateTimeIso = `${targetYear}-${pad(targetMonth)}-${pad(targetDay)}T${timeStr}`;
+
+    // 6.1. Kiểm tra tính hợp lệ của ngày trong lịch (Gregorian Calendar)
+    if (targetMonth < 1 || targetMonth > 12 || targetDay < 1 || targetDay > 31) {
+      isInvalidDate = true;
+      dateInvalidReason = `Ngày ${dateStr} không hợp lệ.`;
+    } else {
+      const checkDate = new Date(Date.UTC(targetYear, targetMonth - 1, targetDay));
+      if (
+        checkDate.getUTCFullYear() !== targetYear ||
+        checkDate.getUTCMonth() !== targetMonth - 1 ||
+        checkDate.getUTCDate() !== targetDay
+      ) {
+        isInvalidDate = true;
+        const daysInMonth = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+        dateInvalidReason = `Tháng ${targetMonth} chỉ có ${daysInMonth} ngày (không có ngày ${pad(targetDay)}/${pad(targetMonth)}).`;
+      }
+    }
+
+    if (!isInvalidDate) {
+      dateTimeIso = `${targetYear}-${pad(targetMonth)}-${pad(targetDay)}T${timeStr}`;
+    }
   } else if (hasExplicitTime) {
     // Khách có nói giờ rõ ràng (ví dụ: "lúc 10h") nhưng chưa nói ngày -> mặc định lấy ngày mai
     const tmr = new Date(Date.now() + 86400000);
-    const pad = (n: number) => n.toString().padStart(2, "0");
     dateStr = `${pad(tmr.getDate())}/${pad(tmr.getMonth() + 1)}/${tmr.getFullYear()}`;
     timeStr = `${pad(targetHour)}:${pad(targetMinute)}`;
     dateTimeIso = `${tmr.getFullYear()}-${pad(tmr.getMonth() + 1)}-${pad(tmr.getDate())}T${timeStr}`;
@@ -235,6 +262,18 @@ export function extractBookingDetails(
     dateTimeIso = null;
   }
 
+  // 6.2. Kiểm tra khung giờ đón tiếp chuyên viên tư vấn / xem sảnh (08:00 - 10:30 sáng)
+  if (hasExplicitTime) {
+    const minutes = targetHour * 60 + targetMinute;
+    const minMinutes = 8 * 60;        // 08:00
+    const maxMinutes = 10 * 60 + 30;  // 10:30
+    if (minutes < minMinutes || minutes > maxMinutes) {
+      isInvalidTime = true;
+      timeInvalidReason = `Khung giờ chuyên viên đón tiếp tư vấn trực tiếp và xem sảnh tại Golden Palace là từ 8:00 đến 10:30 sáng hàng ngày (thời gian ${pad(targetHour)}:${pad(targetMinute)} hiện nằm ngoài khung giờ này).`;
+      dateTimeIso = null;
+    }
+  }
+
   // 7. Trích xuất số khách / bàn nếu có
   let guestsCount = existingContext?.guestsCount || 2;
   const guestMatch = clean.match(/(\d{1,3})\s*(?:người|khách|pax)/i);
@@ -246,9 +285,15 @@ export function extractBookingDetails(
   const missingFields: ("fullName" | "phone" | "dateTime")[] = [];
   if (!extractedName) missingFields.push("fullName");
   if (!extractedPhone) missingFields.push("phone");
-  if (!dateTimeIso) missingFields.push("dateTime");
+  if (!dateTimeIso || isInvalidDate || isInvalidTime) missingFields.push("dateTime");
 
-  const isComplete = Boolean(extractedName && extractedPhone && dateTimeIso);
+  const isComplete = Boolean(
+    extractedName &&
+    extractedPhone &&
+    dateTimeIso &&
+    !isInvalidDate &&
+    !isInvalidTime
+  );
 
   return {
     fullName: extractedName,
@@ -262,5 +307,9 @@ export function extractBookingDetails(
     notes: existingContext?.notes || clean,
     isComplete,
     missingFields,
+    isInvalidDate,
+    dateInvalidReason,
+    isInvalidTime,
+    timeInvalidReason,
   };
 }

@@ -358,15 +358,27 @@ export function InboxWorkspace() {
       );
     } catch (error) {
       if (!controller.signal.aborted) {
-        // Fallback tức thì về tạo bản nháp FAQ từ tri thức Golden Palace nếu API gặp sự cố
-        try {
-          const fallbackDraft = createFaqDraft(active.messages);
-          setDrafts((current) => ({ ...current, [id]: fallbackDraft }));
-          notify("Đã điền gợi ý FAQ chuẩn Golden Palace. Hãy duyệt trước khi gửi.");
-        } catch {
+        const hadExistingText = Boolean((drafts[id] || "").trim());
+        setDrafts((current) => {
+          const currentText = (current[id] || "").trim();
+          // Bảo vệ dữ liệu: Tuyệt đối không ghi đè nếu nhân viên đã tự soạn nội dung trước đó
+          if (currentText.length > 0) return current;
+          try {
+            const fallbackDraft = createFaqDraft(active.messages);
+            return { ...current, [id]: fallbackDraft };
+          } catch {
+            return current;
+          }
+        });
+
+        if (hadExistingText) {
           notify(
-            error instanceof Error ? error.message : "Chưa tạo được bản nháp.",
+            error instanceof Error
+              ? `Không thể tạo nháp AI (${error.message}). Đã giữ nguyên nội dung bạn tự soạn.`
+              : "Không thể tạo nháp AI. Đã giữ nguyên nội dung bạn tự soạn.",
           );
+        } else {
+          notify("Đã điền gợi ý FAQ chuẩn Golden Palace. Hãy duyệt trước khi gửi.");
         }
       }
     } finally {

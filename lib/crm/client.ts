@@ -27,13 +27,23 @@ export interface CRMState extends CRMSnapshot {
 
 const AVAILABLE_STAFFS = ["Ngọc Khánh", "Thu Hà", "Hoàng Long"];
 
-async function syncCRMCloudPush(data: CRMSnapshot) {
+async function syncCRMCloudPush(
+  data: CRMSnapshot,
+  deletedBookingIds?: string[],
+  deletedLeadIds?: string[],
+  replaceCrm = false,
+) {
   if (typeof window === "undefined") return;
   try {
     await fetch("/api/sync/store", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ crm: data }),
+      body: JSON.stringify({
+        crm: data,
+        deletedBookingIds,
+        deletedLeadIds,
+        replaceCrm,
+      }),
       signal: AbortSignal.timeout(3000),
     });
   } catch {}
@@ -94,12 +104,15 @@ async function mutate(
   method: string,
   body: unknown,
   local: (data: CRMSnapshot) => CRMSnapshot,
+  deletedBookingIds?: string[],
+  deletedLeadIds?: string[],
 ): Promise<CRMState> {
   const result = await request(path, method, body);
   if (result.mode !== "demo") return result;
   const data = local(readDemoCRM(localStorage));
   writeDemoCRM(localStorage, data);
-  void syncCRMCloudPush(data);
+  const isDelete = method === "DELETE";
+  void syncCRMCloudPush(data, deletedBookingIds, deletedLeadIds, isDelete);
   window.dispatchEvent(new Event("omnichat-crm-change"));
   return { mode: "demo", ...data };
 }
@@ -232,6 +245,8 @@ export async function deleteCRMBooking(id: string) {
     "DELETE",
     undefined,
     (data) => deleteDemoBooking(data, id),
+    [id],
+    undefined,
   );
 }
 export async function deleteCRMLead(id: string) {
@@ -240,6 +255,8 @@ export async function deleteCRMLead(id: string) {
     "DELETE",
     undefined,
     (data) => deleteDemoLead(data, id),
+    undefined,
+    [id],
   );
 }
 export async function loginCRM(password: string) {

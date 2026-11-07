@@ -5,8 +5,9 @@
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Unit%20Tests-34%2F34%20Pass-emerald?style=flat&logo=jest)](tests/)
-[![Vercel](https://img.shields.io/badge/Live%20Demo-Vercel-success?style=flat&logo=vercel)](https://goldenchat-vibecoding.vercel.app)
+[![Tests](https://img.shields.io/badge/Automated%20Tests-65%2F65%20Pass-emerald?style=flat&logo=jest)](tests/)
+[![Build](https://img.shields.io/badge/Build-20%2F20%20Pages%20Pass-success?style=flat&logo=next.js)](https://goldenchat-vibecoding.vercel.app)
+[![Vercel](https://img.shields.io/badge/Live%20Production-Online-blue?style=flat&logo=vercel)](https://goldenchat-vibecoding.vercel.app)
 
 ---
 
@@ -17,6 +18,18 @@
 - 📱 **Trung tâm Cài đặt Ứng dụng (PWA đa nền tảng):** [https://goldenchat-vibecoding.vercel.app/download](https://goldenchat-vibecoding.vercel.app/download)
 - ⚙️ **Webhook Botcake tiếp nhận FB & Zalo:** `https://goldenchat-vibecoding.vercel.app/api/webhook/botcake`
 - 📦 **Script nhúng 1 dòng mã vào Website:** `https://goldenchat-vibecoding.vercel.app/embed.js`
+
+---
+
+## 🔑 Tài Khoản Trải Nghiệm Phân Quyền (RBAC)
+
+Hệ thống OmniChat AI hỗ trợ phân quyền 3 cấp độ (Admin / Manager / Staff) tại trang [`/login`](https://goldenchat-vibecoding.vercel.app/login):
+
+| Vai Trò | Tên đăng nhập | Mật khẩu | Quyền hạn nổi bật |
+|---|---|---|---|
+| **Quản trị viên (Admin)** | `admin` | `admin123` | **Toàn quyền hệ thống:** Xem toàn bộ Inbox, CRM, Quản lý Nhân sự (`/users`), Cấu hình Kênh & SLA (`/settings`), Huấn luyện Bot (`/training`), Dashboard báo cáo. |
+| **Quản lý (Manager)** | `manager` | `manager123` | **Quản lý vận hành:** Phân công ca trực, duyệt lịch hẹn CRM, xuất báo cáo Dashboard, chỉnh sửa tri thức FAQ. |
+| **Tư vấn viên (Staff)** | `staff` | `staff123` | **Trực chat & chăm sóc lead:** Hộp thư cá nhân ("Của tôi"), trả lời khách, soạn nháp AI, tạo và xử lý lịch hẹn trên phễu N3. Bị chặn truy cập Cấu hình và Nhân sự. |
 
 ---
 

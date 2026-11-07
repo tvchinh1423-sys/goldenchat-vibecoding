@@ -75,6 +75,64 @@ test("clean-data: autoCleanupIfDemo automatically detects and clears legacy demo
   assert.equal(secondRun, false);
 });
 
+test("clean-data: P0 data preservation ensures user-created conversation, lead, and booking survive cleanup", () => {
+  const mockStorage = createMockStorage();
+  (global as any).window = {
+    localStorage: mockStorage,
+    dispatchEvent: () => true,
+    navigator: { webdriver: false },
+  };
+  (global as any).localStorage = mockStorage;
+
+  // 1. Tạo kho hỗn hợp: Demo id 'chanh' kèm 1 hội thoại người dùng mới
+  const mixedInbox = {
+    version: 1,
+    conversations: [
+      { id: "chanh", customerName: "Vân Chinh (Demo)", messages: [] },
+      { id: "user-conv-real-123", customerName: "Nguyễn Văn Real", messages: [{ id: "m-1", content: "Chào bạn" }] },
+    ],
+  };
+  mockStorage.setItem(INBOX_KEY, JSON.stringify(mixedInbox));
+
+  // 2. CRM hỗn hợp: Lead demo 'menu' + Booking demo 'demo-visit' kèm Lead & Booking người dùng mới
+  const mixedCRM = {
+    version: 1,
+    leads: [
+      { id: "menu", full_name: "Khách Menu (Demo)" },
+      { id: "lead-real-999", full_name: "Lê Hoàng Nam", phone: "0912345678", stage: "N2" },
+    ],
+    bookings: [
+      { id: "demo-visit", lead_id: "menu" },
+      { id: "booking-real-888", lead_id: "lead-real-999", appointment_time: "2026-11-15T09:00:00.000Z" },
+    ],
+  };
+  mockStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(mixedCRM));
+
+  // Kiểm tra ban đầu phát hiện demo
+  assert.equal(isDemoDataPresent(), true);
+
+  // 3. Thực hiện autoCleanupIfDemo với navigator.webdriver = false
+  const cleaned = autoCleanupIfDemo();
+  assert.equal(cleaned, true);
+
+  // 4. Kiểm tra: Demo đã dọn sạch, nhưng dữ liệu người dùng được bảo toàn 100%
+  assert.equal(isDemoDataPresent(), false);
+
+  const updatedInbox = JSON.parse(mockStorage.getItem(INBOX_KEY) || "{}");
+  assert.equal(updatedInbox.conversations.length, 1);
+  assert.equal(updatedInbox.conversations[0].id, "user-conv-real-123");
+  assert.equal(updatedInbox.conversations[0].customerName, "Nguyễn Văn Real");
+
+  const updatedCRM = JSON.parse(mockStorage.getItem(CRM_STORAGE_KEY) || "{}");
+  assert.equal(updatedCRM.leads.length, 1);
+  assert.equal(updatedCRM.leads[0].id, "lead-real-999");
+  assert.equal(updatedCRM.leads[0].full_name, "Lê Hoàng Nam");
+
+  assert.equal(updatedCRM.bookings.length, 1);
+  assert.equal(updatedCRM.bookings[0].id, "booking-real-888");
+  assert.equal(updatedCRM.bookings[0].lead_id, "lead-real-999");
+});
+
 test("widget-sync: syncWidgetChatToInbox syncs messages and booking confirmation to inbox in real-time", async () => {
   const { syncWidgetChatToInbox, getInboxConversations } = await import(
     "../lib/inbox/widget-sync"

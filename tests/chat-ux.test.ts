@@ -132,3 +132,61 @@ test("API chat prioritizes deposit inquiry even when customer message mentions a
   assert.equal(data.success, true);
   assert.match(data.reply, /5\.000\.000/);
 });
+
+test("API chat answers opening hours directly without human handoff", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Giờ mở cửa nhà hàng thế nào?" }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.handoff ?? false, false);
+  assert.match(data.reply, /8h00 – 21h00/);
+  assert.match(data.reply, /8h00 – 10h30/);
+});
+
+test("API chat prioritizes discount explanation over capacity when asking 30% discount for 40 tables", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Giảm giá 30% cho tiệc 40 mâm được không?" }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.triggeredRule, "guardrail_pricing_violation");
+  assert.match(data.reply, /không có chính sách chiết khấu tiền mặt 30%/);
+  assert.match(data.reply, /40 mâm/);
+});
+
+test("API chat rejects invalid calendar date 31/11 and does not auto-book", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "Tôi muốn đặt lịch ngày 31/11/2026 lúc 9h sáng, tên Chi, sđt 0912345678",
+    }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.autoBooked, false);
+  assert.match(data.reply, /Tháng 11 chỉ có 30 ngày/);
+});
+
+test("API chat rejects appointment outside 8:00 - 10:30 consulting window", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "Tôi muốn đặt lịch ngày 15/11/2026 lúc 14h chiều, tên Chi, sđt 0912345678",
+    }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.autoBooked, false);
+  assert.match(data.reply, /8:00 đến 10:30 sáng/);
+});

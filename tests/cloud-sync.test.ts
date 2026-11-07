@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadCloudStore, updateCloudStore } from "../lib/sync/store";
+import { loadCloudStore, updateCloudStore, resetCloudStore } from "../lib/sync/store";
 
 test("Cloud Store loads initial demo data and increments revision on updates", () => {
+  resetCloudStore();
   const initial = loadCloudStore();
   assert.ok(initial.revision >= 1);
   assert.ok(initial.crm.leads.length > 0);
@@ -102,4 +103,70 @@ test("Cloud Store merges incoming conversations without duplicating existing mes
   assert.equal(conv?.messages.length, 2);
   assert.equal(conv?.messages[0].id, "msg-sync-1");
   assert.equal(conv?.messages[1].id, "msg-sync-2");
+});
+
+test("Cloud Store permanently purges records on deletion with tombstone and replaceCrm", () => {
+  // 1. Thêm 1 booking và 1 lead vào store
+  const testBookingId = "booking-tombstone-test";
+  const testLeadId = "lead-tombstone-test";
+
+  updateCloudStore({
+    crm: {
+      leads: [
+        {
+          id: testLeadId,
+          full_name: "Khách Sắp Xóa",
+          phone: "0999888777",
+          email: "",
+          notes: "",
+          source: "web",
+          stage: "N1",
+          assigned_to: "Ngọc Khánh",
+          event_date: "",
+          table_count: null,
+          created_at: new Date().toISOString(),
+          last_touched_at: new Date().toISOString(),
+          inbox_reference: null,
+        },
+      ],
+      bookings: [
+        {
+          id: testBookingId,
+          lead_id: testLeadId,
+          appointment_time: "2026-11-20T09:00:00.000Z",
+          event_type: "xem_sanh",
+          guests_count: 2,
+          assigned_staff: "Ngọc Khánh",
+          notes: "Lịch hẹn sẽ xóa",
+          status: "pending",
+          created_at: new Date().toISOString(),
+        },
+      ],
+    },
+  });
+
+  const beforeStore = loadCloudStore();
+  assert.ok(beforeStore.crm.bookings.some((b) => b.id === testBookingId));
+  assert.ok(beforeStore.crm.leads.some((l) => l.id === testLeadId));
+
+  // 2. Client gửi xóa với deletedBookingIds và deletedLeadIds
+  const afterDelete = updateCloudStore({
+    deletedBookingIds: [testBookingId],
+    deletedLeadIds: [testLeadId],
+  });
+
+  // 3. Đảm bảo bản ghi đã bị xóa triệt để, không còn tồn tại trong cloud store
+  assert.equal(afterDelete.crm.bookings.some((b) => b.id === testBookingId), false);
+  assert.equal(afterDelete.crm.leads.some((l) => l.id === testLeadId), false);
+
+  // 4. Kiểm tra replaceCrm xóa sạch mảng khi gửi mảng rỗng
+  const cleared = updateCloudStore({
+    replaceCrm: true,
+    crm: {
+      leads: [],
+      bookings: [],
+    },
+  });
+  assert.equal(cleared.crm.leads.length, 0);
+  assert.equal(cleared.crm.bookings.length, 0);
 });

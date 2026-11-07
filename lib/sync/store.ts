@@ -55,6 +55,13 @@ export function loadCloudStore(): CloudStoreData {
   return initial;
 }
 
+export function resetCloudStore(): CloudStoreData {
+  const initial = getInitialStore();
+  globalThis.__omnichat_cloud_store__ = initial;
+  saveCloudStore(initial);
+  return initial;
+}
+
 export function saveCloudStore(store: CloudStoreData): void {
   store.revision += 1;
   store.lastUpdated = new Date().toISOString();
@@ -164,14 +171,28 @@ function mergeConversations(
 
 /**
  * Cập nhật dữ liệu vào Cloud Store từ Client
+ * Hỗ trợ cập nhật thông minh (merge), ghi đè trực tiếp (replace) và xóa triệt để (tombstone)
+ * Đảm bảo các bản ghi đã xóa trên 1 máy sẽ không bị hồi sinh khi polling từ máy khác.
  */
 export function updateCloudStore(patch: {
   crm?: Partial<CRMSnapshot>;
   conversations?: Conversation[];
+  deletedLeadIds?: string[];
+  deletedBookingIds?: string[];
+  deletedConversationIds?: string[];
+  replaceCrm?: boolean;
+  replaceConversations?: boolean;
 }): CloudStoreData {
   const store = loadCloudStore();
 
-  if (patch.crm) {
+  if (patch.replaceCrm && patch.crm) {
+    if (Array.isArray(patch.crm.leads)) {
+      store.crm.leads = patch.crm.leads;
+    }
+    if (Array.isArray(patch.crm.bookings)) {
+      store.crm.bookings = patch.crm.bookings;
+    }
+  } else if (patch.crm) {
     if (Array.isArray(patch.crm.leads)) {
       store.crm.leads = mergeLeads(store.crm.leads, patch.crm.leads);
     }
@@ -180,7 +201,23 @@ export function updateCloudStore(patch: {
     }
   }
 
-  if (Array.isArray(patch.conversations)) {
+  // Xóa triệt để các ID chỉ định khỏi Cloud Store
+  if (Array.isArray(patch.deletedBookingIds) && patch.deletedBookingIds.length > 0) {
+    const delSet = new Set(patch.deletedBookingIds);
+    store.crm.bookings = store.crm.bookings.filter((b) => !delSet.has(b.id));
+  }
+  if (Array.isArray(patch.deletedLeadIds) && patch.deletedLeadIds.length > 0) {
+    const delSet = new Set(patch.deletedLeadIds);
+    store.crm.leads = store.crm.leads.filter((l) => !delSet.has(l.id));
+  }
+  if (Array.isArray(patch.deletedConversationIds) && patch.deletedConversationIds.length > 0) {
+    const delSet = new Set(patch.deletedConversationIds);
+    store.conversations = store.conversations.filter((c) => !delSet.has(c.id));
+  }
+
+  if (patch.replaceConversations && Array.isArray(patch.conversations)) {
+    store.conversations = patch.conversations;
+  } else if (Array.isArray(patch.conversations)) {
     store.conversations = mergeConversations(store.conversations, patch.conversations);
   }
 

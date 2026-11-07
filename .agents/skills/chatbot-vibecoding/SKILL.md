@@ -21,6 +21,22 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành toàn diện các lỗi P0 & P1 và Đóng gói Hồ sơ Dự thi — 07/11/2026, khoảng 22:30 (Chinh)
+
+- **Đã khắc phục triệt để các lỗi P0 & P1 theo báo cáo kiểm thử của Chị Hiền:**
+  1. **P0 Bảo toàn dữ liệu (Data Preservation):** Tái cấu trúc `clearAllDemoData()` và `autoCleanupIfDemo()` trong `lib/clean-data.ts`. Không còn ghi đè toàn bộ kho khi dọn demo; chỉ lọc bỏ các demo IDs (`DEMO_CONVERSATION_IDS`, `DEMO_LEAD_IDS`, `DEMO_BOOKING_IDS`), bảo toàn 100% hội thoại, lead và lịch hẹn mới do người dùng/giám khảo tạo trên mọi trang.
+  2. **P0 Xóa triệt để & Chống hồi sinh (Tombstone & Cloud Sync):** Bổ sung `deletedBookingIds`, `deletedLeadIds`, `deletedConversationIds` và `replaceCrm` trong `lib/sync/store.ts` và `lib/crm/client.ts`. Khi người dùng xóa lịch hoặc xóa lead ở CRM, lệnh push cloud sẽ gỡ vĩnh viễn khỏi bộ nhớ và file `/tmp`, ngăn chặn hoàn toàn việc polling sync làm hồi sinh lịch đã xóa.
+  3. **P1 Thẩm định Lịch hẹn Hợp lệ (Gregorian & Business Time Guards):** Bổ sung kiểm tra lịch chuẩn trong `lib/chat/booking-extractor.ts` và `app/api/simulator/chat/route.ts`. Chặn các ngày phi lý như 31/11/2026 (tháng 11 chỉ có 30 ngày), chặn đặt lịch ngoài khung giờ chuyên viên tư vấn tiếp đón (8:00 - 10:30 sáng), giải thích lý do cụ thể và không cấp `autoBooked: true`.
+  4. **P1 Ưu tiên Chính sách Giá & Giờ mở cửa:** Cập nhật `app/api/simulator/chat/route.ts` để câu hỏi "Giảm giá 30% cho tiệc 40 mâm" không bị nhánh bóc tách số mâm nuốt chửng, mà giải thích rõ chính sách ưu đãi của Golden Palace (không giảm 30% tiền mặt trên thực đơn, tặng gói quà tặng dịch vụ) kèm tư vấn sảnh 40 mâm. Câu hỏi về "giờ mở cửa" được trả lời trực tiếp (8h00 - 21h00 tham quan, 8h00 - 10h30 tư vấn), không bị handoff.
+  5. **P1 Bảo toàn Bản nháp Nhân viên:** Trong `components/inbox/inbox-workspace.tsx`, cơ chế bảo vệ Fail-safe Draft Guard giữ nguyên nội dung nhân viên đã gõ tay khi gọi AI nháp bị lỗi (503), không bị ghi đè bởi FAQ.
+- **Hoàn thành Trọn bộ Hồ sơ Nộp bài Cuộc thi VibeCoding 2026:**
+  - `README.md` chính thức với bảng tài khoản phân quyền RBAC (`admin/admin123`, `manager/manager123`, `staff/staff123`), 5 chức năng chấm điểm, link Live Vercel.
+  - `docs/minh-chung-ung-dung-ai.md` chi tiết đáp ứng 20 điểm Bảng B.
+  - Đóng gói mã nguồn sạch `OmniChat_AI_VibeCoding2026_De04.zip` (11MB, loại trừ cache, git và env local).
+- **Kiểm thử tự động:** Toàn bộ **65/65 tests PASS 100%**, Next.js build **20/20 trang tĩnh đạt 100%**. Sẵn sàng deploy production theo chỉ đạo của Chinh.
+
+---
+
 ### Kiểm thử toàn hệ thống mới nhất — 07/11/2026, khoảng 22:00 (Hiền)
 
 - Đối chiếu `origin/main` tại e33d8bd và production; xem [báo cáo kiểm thử lại](../../../docs/full-retest-2026-11-07.md). Build 20/20 trang, 59/59 unit/API/SQL đạt; Chromium toàn bộ 18/29 đạt (11 không đạt), WebKit mobile 5/5 đạt. Có test kỳ vọng cũ 60 phút và fixture chưa cách ly cloud mới; không diễn giải toàn bộ 11 ca là lỗi sản phẩm độc lập.
