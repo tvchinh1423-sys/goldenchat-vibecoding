@@ -739,3 +739,31 @@ app-root/
   - **Trung tâm Thông báo Dropdown (`NotificationBell`):** Tích hợp nút nghe thử âm chuông đặt lịch `🎉` ngay trên thanh Header để tiện kiểm tra.
 - **3. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
   - Commit và push thẳng lên `origin/main` để kích hoạt Vercel Production Deploy tự động.
+
+### Mốc Dọn Dẹp Toàn Bộ Dữ Liệu Demo & Sẵn Sàng Vận Hành Thật 100% (Production Clean State) — 07/11/2026 (Chinh)
+
+- **1. Xóa Bỏ Hoàn Toàn Dữ Liệu Demo Khỏi Hệ Thống:**
+  - **Hộp thư Inbox:** Khởi tạo mặc định mảng rỗng `[]`, không nạp các hội thoại giả lập cũ ("Dũ Chanh", "Huyền", "Trang").
+  - **Quản lý Lead (CRM Kanban N1–N5):** Khởi tạo `leads: []` và `bookings: []`, xóa bỏ 9 hồ sơ lead mẫu và lịch hẹn giả lập `demo-visit`.
+  - **Trung tâm Thông báo (`lib/notifications.ts`):** Xóa bỏ toàn bộ thông báo demo mẫu `notif-seed-*`, khởi tạo danh sách thông báo rỗng `[]`, badge chuông đặt về `0`.
+  - **Báo cáo Thống kê (`/dashboard`):** Chuẩn hóa nhãn thực tế ("Hộp thư đa kênh", "CRM thực tế", bỏ chữ "demo"), xử lý an toàn phép chia tỷ lệ tránh `NaN%`.
+- **2. Kiến Trúc Bộ Quản Lý Dữ Liệu `lib/clean-data.ts`:**
+  - `clearAllDemoData()`: Đưa toàn bộ localStorage về trạng thái trắng chuẩn sản xuất, kích hoạt sự kiện đồng bộ toàn hệ thống (`omnichat-inbox-cleared`, `omnichat-crm-change`, `omnichat-notifications-updated`).
+  - `autoCleanupIfDemo()`: Tự động phát hiện và dọn sạch các cache/cookie demo cũ trên trình duyệt của người dùng khi truy cập phiên mới.
+  - `restoreDemoData()`: Cung cấp tùy chọn nạp lại kịch bản mẫu phục vụ đào tạo nội bộ khi cần.
+  - `getCurrentDataStats()` & `isDemoDataPresent()`: Kiểm kê số lượng dữ liệu theo thời gian thực.
+- **3. Bổ Sung Tab "Dữ liệu & Chạy thật" Tại Trang Cấu Hình (`/settings`):**
+  - Hiển thị Banner trạng thái: 🟢 **Môi trường thật (Sạch 100%)** kèm nhãn đốm xanh pulse.
+  - 4 Thẻ KPI kiểm kê dữ liệu: Hội thoại Inbox, Khách hàng CRM, Lịch hẹn xem sảnh, Thông báo hệ thống.
+  - Nút bấm **"Dọn dẹp toàn bộ dữ liệu demo"** kèm Dialog xác nhận bảo vệ an toàn.
+  - Nút **"Nạp lại dữ liệu demo mẫu"** phục vụ công tác huấn luyện nhân viên tư vấn mới.
+  - Bảng hướng dẫn chi tiết quy trình tiếp nhận khách thực tế từ Botcake FB/Zalo, Web Widget và chốt lịch.
+- **4. Giao Diện Trống Thân Thiện (Clean Production Empty States):**
+  - Hộp thư Inbox khi chưa có tin nhắn: Hiển thị minh họa hộp thư trực tuyến kèm thông điệp "Hộp thư sẵn sàng tiếp nhận · Đang chờ tin nhắn mới từ khách hàng". Footer đổi thành "🟢 Hệ thống trực tuyến · Sẵn sàng tiếp nhận" thay cho "Dữ liệu mẫu".
+  - Khung chat chính: "Hộp thư trực tuyến sẵn sàng · Đang lắng nghe tin nhắn từ Facebook Messenger, Zalo và Web Widget".
+  - Cột Kanban CRM: Placeholder nhẹ nhàng "Chưa có khách" khi cột trống.
+- **5. Kiểm Thử & Kiểm Duyệt:**
+  - Thêm unit test `tests/clean-data.test.ts` kiểm thử dọn dẹp sạch sẽ và tự động phát hiện dọn rác demo.
+  - **51/51 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+- **6. Triển Khai Trực Tiếp Production:**
+  - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
