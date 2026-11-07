@@ -56,6 +56,7 @@ export function InboxWorkspace() {
   const [filters, setFilters] = useState<InboxFilters>(DEFAULT_FILTERS);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [botReplyingId, setBotReplyingId] = useState<string | null>(null);
   const draftRequest = useRef<AbortController | null>(null);
   const crmRevision = useRef(0);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -281,6 +282,84 @@ export function InboxWorkspace() {
     setDrafts((current) => ({ ...current, [active.id]: "" }));
     setAttachments((current) => ({ ...current, [active.id]: [] }));
     notify("Đã thêm tin nhắn demo. AI tự tắt khi tư vấn viên tiếp quản.");
+  }
+
+  async function triggerBotReply(
+    conversationId: string,
+    customQuestion?: string,
+  ) {
+    const target =
+      conversations.find((c) => c.id === conversationId) ?? active;
+    if (!target || target.status === "archived" || botReplyingId) return;
+
+    const customerMsg = customQuestion
+      ? { content: customQuestion }
+      : [...target.messages]
+          .reverse()
+          .find((m) => m.sender === "customer");
+
+    if (!customerMsg?.content) return;
+
+    setBotReplyingId(conversationId);
+    cancelDraft();
+
+    try {
+      const response = await fetch("/api/simulator/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: customerMsg.content,
+          channel: target.channel,
+          messageCount: target.messages.length,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success || typeof data.reply !== "string") {
+        throw new Error("Không nhận được phản hồi từ bot.");
+      }
+
+      const preferred = Array.isArray(data.suggestedQuestions)
+        ? data.suggestedQuestions.filter(
+            (item: unknown): item is string => typeof item === "string",
+          )
+        : [];
+      const isAiTurnedOff = data.aiEnabled === false || data.handoff === true;
+
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        aiEnabled: isAiTurnedOff ? false : conversation.aiEnabled,
+        messages: [
+          ...conversation.messages,
+          {
+            id: crypto.randomUUID(),
+            sender: "bot",
+            content: data.reply,
+            suggestedQuestions: suggestedQuestions(
+              customerMsg.content,
+              true,
+              preferred,
+            ),
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }));
+      playChatTone();
+
+      if (isAiTurnedOff) {
+        notify(
+          "⚡ Câu hỏi ngoài phạm vi tri thức: Bot đã tự động ngắt AI để tư vấn viên tiếp quản (tránh trả lời lung tung).",
+        );
+      } else {
+        notify("🤖 Bot đã tự động phản hồi khách hàng.");
+      }
+    } catch {
+      notify(
+        "Chưa nhận được phản hồi của bot. Bạn có thể dùng nút Soạn nháp AI để duyệt trước khi gửi.",
+      );
+    } finally {
+      setBotReplyingId(null);
+    }
   }
 
   async function askFollowUp(question: string) {
@@ -627,14 +706,31 @@ export function InboxWorkspace() {
                 onAsk={(question) => void askFollowUp(question)}
                 onBook={(type) => setChatVisit({ conversation: active, type })}
                 onGenerateDraft={() => void generateDraft()}
+                botReplying={botReplyingId === active.id}
+                onTriggerBotReply={() => void triggerBotReply(active.id)}
                 onAiToggle={(aiEnabled) => {
                   updateConversation(active.id, (conversation) => ({
                     ...conversation,
                     aiEnabled,
                   }));
-                  notify(
-                    `${aiEnabled ? "Đã bật" : "Đã tắt"} cờ AI cho hội thoại demo. Gửi tự động qua Botcake chưa được kết nối.`,
-                  );
+                  if (aiEnabled) {
+                    const lastMsg =
+                      active.messages[active.messages.length - 1];
+                    if (lastMsg && lastMsg.sender === "customer") {
+                      notify(
+                        "🤖 Đã bật AI · Bot đang tiếp quản và tự động trả lời khách...",
+                      );
+                      setTimeout(() => {
+                        void triggerBotReply(active.id);
+                      }, 700);
+                    } else {
+                      notify(
+                        "🤖 Đã bật chế độ AI tự động. Bot sẽ trả lời khi khách gửi tin nhắn tiếp theo.",
+                      );
+                    }
+                  } else {
+                    notify("Đã tắt chế độ AI. Tư vấn viên tiếp quản hội thoại.");
+                  }
                 }}
                 onResolve={() => {
                   updateConversation(active.id, (conversation) => ({

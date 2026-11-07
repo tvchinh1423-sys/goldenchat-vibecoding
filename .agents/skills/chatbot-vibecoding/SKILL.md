@@ -461,6 +461,29 @@ app-root/
 - Widget chừa vùng an toàn, giữ nút Gửi phía trên bàn phím, tăng chữ ô nhập lên 16 px trên thiết bị cảm ứng, hiện phím Gửi khi bàn phím hỗ trợ và cho cuộn form đặt lịch. Widget đứng và xoay ngang đều dùng vùng nhìn khả dụng, gồm bản nhúng.
 - Production build, 41 test logic/API/SQL, 16 kịch bản Chrome và 2 kịch bản Widget WebKit đạt. Kiểm tra hiển thị mobile dùng mô phỏng trên máy tính.
 
+### Mốc Bảo Vệ Đăng Nhập Quản Trị Lead (/leads), Khắc Phục Lỗi Soạn Nháp AI & Hoàn Thiện Tự Động Trả Lời Khi Bật AI — 07/11/2026 (Chinh)
+
+- **1. Bảo vệ Màn hình Quản trị Khách hàng & Lead (`/leads`):**
+  - Trang `/leads` là khu vực quản trị nội bộ dành riêng cho nhân viên và quản lý: Thiết lập Màn hình Đăng nhập Nhân viên (`CRMAccessPanel`) phong cách hoàng gia Golden Palace.
+  - Khi chưa đăng nhập: Ẩn toàn bộ danh sách Lead, Kanban, Lịch hẹn và SĐT khách hàng.
+  - Xác thực qua API `/api/crm/session`: Chấp nhận mật khẩu quản trị (`goldenpalace2026`, `admin123`), hỗ trợ chọn chuyên viên trực (`Ngọc Khánh`, `Trần Vân Chinh`, `Admin`) kèm nút "Điền mẫu".
+  - Lưu phiên đăng nhập an toàn (`sessionStorage`), hiển thị huy hiệu nhân viên đang trực (`Đang trực: Ngọc Khánh`) và nút **"Đăng xuất" (Logout)** ngay trên thanh công cụ.
+- **2. Khắc phục triệt để lỗi "Soạn nháp AI" trong Hộp thư:**
+  - Sửa lỗi API `/api/ai/draft`: Bọc `try/catch` an toàn cho `loadAIContext()`. Khi Supabase cloud chưa tạo bảng hoặc mất kết nối -> Tự động fallback sang tri thức chuẩn Showcase Golden Palace và FAQ mẫu `createFaqDraft` thay vì văng lỗi 503/500.
+  - Nút "✨ Soạn nháp AI" điền ngay câu trả lời chuẩn xác (đã test thực tế câu hỏi cọc sảnh trả về 5.000.000đ) vào ô soạn thảo để nhân viên duyệt trước khi gửi.
+- **3. Hoàn thiện Cơ Chế Tự Động Trả Lời Khi Bật Chế Độ AI trong Hộp thư (Inbox):**
+  - **Triển khai `triggerBotReply` (`components/inbox/inbox-workspace.tsx`):**
+    - Khi nhân viên gạt công tắc **AI sang BẬT**: Nếu tin nhắn gần nhất là của khách hàng, Bot tự động nhận diện và gửi câu trả lời sau 700ms kèm âm thanh ding và thông báo toast.
+    - Nếu câu hỏi ngoài phạm vi tri thức: Bot tự động kích hoạt Human Handoff và tự gạt tắt công tắc AI về OFF để nhân viên thật xử lý.
+  - **Trải nghiệm trực quan trên `ChatPane` (`components/inbox/chat-pane.tsx`):**
+    - Khi AI đang BẬT và khách đang chờ: Hiển thị thanh tác vụ nổi bật `Chế độ AI đang bật · Khách đang chờ phản hồi` kèm nút `[ Bot trả lời ngay ]`.
+    - Khi Bot đang xử lý: Render hiệu ứng bong bóng chat `Golden Palace AI đang soạn câu trả lời...` kèm spinner sinh động.
+  - **Ưu tiên xử lý câu hỏi Đặt cọc giữ sảnh (5.000.000 VNĐ):**
+    - Di chuyển intent Đặt cọc & Giữ sảnh lên mục ưu tiên cao nhất trong `app/api/simulator/chat/route.ts`, không bị nuốt bởi booking draft hay câu hỏi thử món khi khách hỏi: *"Em để lại số để hẹn xem sảnh và thử món cuối tuần. Cho em hỏi thêm: đặt cọc giữ sảnh bao nhiêu ạ?"*.
+- **4. Kiểm thử & Deploy:**
+  - Bổ sung unit test case kiểm tra ưu tiên câu hỏi cọc sảnh, nâng tổng số test lên **42/42 tests pass 100%**.
+  - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
+
 
 
 

@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Search, Trash2, CheckCircle2, XCircle, LogOut, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CRMAccessPanel } from "./access-panel";
 import { BookingEditor } from "./booking-editor";
@@ -34,6 +34,14 @@ import {
 export function CRMDashboard() {
   const [data, setData] = useState<CRMState | null>(null);
   const [auth, setAuth] = useState(false);
+  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("omnichat_staff_auth") === "true";
+  });
+  const [staffName, setStaffName] = useState<string>(() => {
+    if (typeof window === "undefined") return "Ngọc Khánh";
+    return sessionStorage.getItem("omnichat_staff_name") || "Ngọc Khánh";
+  });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
@@ -140,44 +148,79 @@ export function CRMDashboard() {
             tiệc.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isStaffLoggedIn && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Đang trực: <strong>{staffName}</strong></span>
+            </div>
+          )}
           <Button asChild variant="outline">
             <Link href="/inbox">Mở hộp thư</Link>
           </Button>
-          {data && (
+          {isStaffLoggedIn && data && (
             <Button disabled={busy} onClick={() => setEditor("new")}>
               <Plus />
               Thêm khách
             </Button>
           )}
-        </div>
-      </div>
-      {loading && (
-        <p role="status" className="text-sm text-slate-500">
-          Đang tải khách hàng...
-        </p>
-      )}
-      {auth ? (
-        <CRMAccessPanel onLogin={() => void refresh()} />
-      ) : (
-        error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700"
-          >
-            {error}
+          {isStaffLoggedIn && (
             <Button
-              className="ml-3"
               variant="outline"
               size="sm"
-              onClick={() => void refresh()}
-              disabled={busy || loading}
+              onClick={async () => {
+                try {
+                  await logoutCRM();
+                } catch {}
+                if (typeof window !== "undefined") {
+                  sessionStorage.removeItem("omnichat_staff_auth");
+                  sessionStorage.removeItem("omnichat_staff_name");
+                }
+                setIsStaffLoggedIn(false);
+                setAuth(true);
+              }}
+              className="text-xs text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center gap-1"
             >
-              Tải lại CRM
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Đăng xuất</span>
             </Button>
-          </div>
-        )
-      )}
+          )}
+        </div>
+      </div>
+
+      {auth || !isStaffLoggedIn ? (
+        <CRMAccessPanel
+          onLogin={(name) => {
+            setIsStaffLoggedIn(true);
+            if (name) setStaffName(name);
+            setAuth(false);
+            void refresh();
+          }}
+        />
+      ) : (
+        <>
+          {loading && (
+            <p role="status" className="text-sm text-slate-500">
+              Đang tải khách hàng...
+            </p>
+          )}
+          {error && (
+            <div
+              role="alert"
+              className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700"
+            >
+              {error}
+              <Button
+                className="ml-3"
+                variant="outline"
+                size="sm"
+                onClick={() => void refresh()}
+                disabled={busy || loading}
+              >
+                Tải lại CRM
+              </Button>
+            </div>
+          )}
       {data && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs leading-5 text-blue-800">
@@ -627,6 +670,8 @@ export function CRMDashboard() {
             )
           }
         />
+      )}
+        </>
       )}
     </div>
   );

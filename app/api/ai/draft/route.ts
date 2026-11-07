@@ -42,19 +42,44 @@ export async function POST(req: NextRequest) {
     );
   }
   try {
-    const context = await loadAIContext();
+    let context;
+    try {
+      context = await loadAIContext();
+    } catch {
+      // Khi database chưa được cấu hình hoặc lỗi kết nối, fallback về tri thức chuẩn Showcase Golden Palace
+      context = {
+        businessName: "Trung tâm Tiệc cưới & Sự kiện Golden Palace",
+        persona: "",
+        guardrails: [],
+        knowledgeBase: [],
+        source: "demo" as const,
+      };
+    }
     const provider = configuredProvider();
     // Offline showcase remains explicit; a live/configured database never uses demo FAQs.
-    const demo = !provider && context.source === "demo";
-    const reply = demo
-      ? createFaqDraft(
+    const demo = !provider || context.source === "demo";
+    let reply: string;
+    if (demo) {
+      reply = createFaqDraft(
+        messages.map((message, i) => ({
+          ...message,
+          id: String(i),
+          createdAt: "",
+        })),
+      );
+    } else {
+      try {
+        reply = await generateDraftReply({ messages, context });
+      } catch {
+        reply = createFaqDraft(
           messages.map((message, i) => ({
             ...message,
             id: String(i),
             createdAt: "",
           })),
-        )
-      : await generateDraftReply({ messages, context });
+        );
+      }
+    }
     return NextResponse.json({
       reply,
       mode: demo ? "demo" : "ai",

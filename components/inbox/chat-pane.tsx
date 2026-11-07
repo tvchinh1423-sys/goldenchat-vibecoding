@@ -55,6 +55,8 @@ interface Props {
   asking: boolean;
   onBook: (type: NonNullable<ReturnType<typeof visitIntent>>) => void;
   onGenerateDraft: () => void;
+  botReplying?: boolean;
+  onTriggerBotReply?: () => void;
   onAiToggle: (enabled: boolean) => void;
   onResolve: () => void;
   onArchive: () => void;
@@ -78,6 +80,8 @@ export function ChatPane({
   asking,
   onBook,
   onGenerateDraft,
+  botReplying = false,
+  onTriggerBotReply,
   onAiToggle,
   onResolve,
   onArchive,
@@ -451,6 +455,19 @@ export function ChatPane({
             </div>
           );
         })}
+        {botReplying && (
+          <div className="group flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[8px] font-semibold text-primary">
+              <Bot className="h-3.5 w-3.5 animate-spin text-primary" />
+            </div>
+            <div className="min-w-0 max-w-[85%] sm:max-w-[80%]">
+              <div className="relative rounded-2xl rounded-bl-md bg-blue-50/90 border border-blue-200/80 px-4 py-2.5 text-xs text-blue-900 flex items-center gap-2.5 shadow-2xs">
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                <span className="font-medium">Golden Palace AI đang soạn câu trả lời...</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <footer className="relative shrink-0 border-t bg-white p-3 sm:p-4">
         {isArchived ? (
@@ -490,6 +507,45 @@ export function ChatPane({
                 ))}
               </div>
             )}
+            {(() => {
+              const lastMsg =
+                conversation.messages[conversation.messages.length - 1];
+              const isCustomerWaiting =
+                conversation.aiEnabled && lastMsg?.sender === "customer";
+              if (!isCustomerWaiting) return null;
+              return (
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 px-3 py-2 text-xs text-blue-900 shadow-2xs animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                    </span>
+                    <span className="text-[11px] sm:text-xs font-medium">
+                      Chế độ AI đang bật · Tin nhắn của khách đang chờ phản hồi
+                    </span>
+                  </div>
+                  {onTriggerBotReply && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="default"
+                      disabled={botReplying}
+                      className="h-7 px-3 text-[11px] bg-primary text-white hover:bg-primary/90 rounded-lg flex items-center gap-1.5 shadow-xs shrink-0"
+                      onClick={onTriggerBotReply}
+                    >
+                      {botReplying ? (
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Bot className="h-3.5 w-3.5" />
+                      )}
+                      <span>
+                        {botReplying ? "Đang trả lời..." : "Bot trả lời ngay"}
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
             <Textarea
               ref={inputRef}
               aria-label="Nội dung tin nhắn"

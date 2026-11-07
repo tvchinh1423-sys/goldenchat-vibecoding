@@ -119,9 +119,12 @@ export async function POST(req: NextRequest) {
       (/\btên\b/i.test(lower) && /\b(sđt|số điện thoại|sdt|phone)\b/i.test(lower))
     );
 
-    const isDepositQuestion = /\b(cọc|coc|giữ sảnh|giu sanh)\b/i.test(lower) && !/\b(lịch|hẹn|booking|qua xem|đến xem)\b/i.test(lower);
+    const hasDepositKeywords = /\b(cọc|coc|giữ sảnh|giu sanh|đặt cọc|dat coc|tiền cọc|tien coc)\b/i.test(lower);
+    const hasDepositInquiry =
+      hasDepositKeywords &&
+      (/\b(bao nhiêu|bn|thế nào|sao|như thế nào|mấy|hết bao|quy trình)\b/i.test(lower) || !hasBookingKeywords);
 
-    if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !isDepositQuestion) {
+    if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !hasDepositInquiry) {
       // 3.1. ĐÃ ĐẦY ĐỦ THÔNG TIN (Tên + SĐT + Ngày Giờ) -> TỰ ĐỘNG CHỐT LỊCH HẸN
       if (bookingDetails.isComplete) {
         return respond({
@@ -238,6 +241,28 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Kiểm tra các câu hỏi thực tế theo BỘ TRI THỨC GOLDEN PALACE (Phiên bản v1.2)
+    // 5.0. ĐẶT CỌC & GIỮ SẢNH (Ưu tiên cao nhất khi khách hỏi cọc / giữ sảnh)
+    if (
+      lower.includes("cọc") ||
+      lower.includes("coc") ||
+      lower.includes("đặt cọc") ||
+      lower.includes("tiền cọc") ||
+      lower.includes("giữ sảnh") ||
+      lower.includes("giu sanh") ||
+      lower.includes("quy trình đặt tiệc") ||
+      lower.includes("quy trinh dat tiec")
+    ) {
+      return respond({
+        success: true,
+        reply: `Dạ để giữ ngày đẹp và sảnh tiệc ưng ý, Quý khách đặt cọc giữ sảnh lần 1 là 5.000.000 VNĐ ạ (khoản này được cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn chính thức). Sau đó ký hợp đồng cọc 50% và thanh toán phần còn lại sau tiệc. Hotline/Zalo hỗ trợ: 0228 659 5959!`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng ở đâu?",
+        ],
+      });
+    }
+
     // 5.1. Dịch vụ Photobooth (máy chụp ảnh in lấy ngay - BÁO GIÁ TRỰC TIẾP)
     if (
       lower.includes("photobooth") ||
@@ -579,31 +604,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Đối chiếu tri thức FAQ (Knowledge Base)
-
-    // 6.1. ĐẶT CỌC & GIỮ SẢNH (Ưu tiên xử lý chính xác khi khách hỏi cọc / giữ sảnh)
-    if (
-      lower.includes("cọc") ||
-      lower.includes("coc") ||
-      lower.includes("đặt cọc") ||
-      lower.includes("tiền cọc") ||
-      lower.includes("giữ sảnh") ||
-      lower.includes("giu sanh") ||
-      lower.includes("quy trình đặt tiệc") ||
-      lower.includes("quy trinh dat tiec")
-    ) {
-      const datCocItem = knowledgeBase.find((k: any) => k.category === "dat_coc");
-      return respond({
-        success: true,
-        reply:
-          datCocItem?.answer ||
-          `Dạ mức cọc giữ sảnh lần 1 là 5.000.000 VNĐ (cấn trừ trực tiếp khi ký hợp đồng và chốt thực đơn). Quy trình gồm 3 bước:\n• Bước 1: Khảo sát sảnh & cọc lần 1 là 5.000.000 VNĐ giữ ngày đẹp.\n• Bước 2: Ký hợp đồng, chốt thực đơn & dịch vụ (cọc 50%).\n• Bước 3: Bàn giao kịch bản và chạy thử trước ngày tiệc.\nQuý khách cần hỗ trợ thêm vui lòng liên hệ Hotline 0228 659 5959 hoặc ghé 98 Đông A nhé ạ!`,
-        suggestedQuestions: [
-          "Thực đơn tiệc cưới bao nhiêu một bàn?",
-          "Cho tôi xem ảnh không gian sảnh tiệc",
-          "Địa chỉ nhà hàng ở đâu?",
-        ],
-      });
-    }
 
     // 6.2. THỰC ĐƠN / GIÁ BÀN / MENU
     if (

@@ -117,3 +117,18 @@ test("API chat disables AI and initiates human handoff when question is out of s
   assert.equal(data.triggeredRule, "out_of_scope_human_handoff");
   assert.match(data.reply, /chuyên viên tư vấn hỗ trợ mình ngay/);
 });
+
+test("API chat prioritizes deposit inquiry even when customer message mentions appointment or weekend", async () => {
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "Em để lại số để hẹn xem sảnh và thử món cuối tuần. Cho em hỏi thêm: đặt cọc giữ sảnh bao nhiêu ạ?",
+      messageCount: 4,
+    }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.match(data.reply, /5\.000\.000/);
+});

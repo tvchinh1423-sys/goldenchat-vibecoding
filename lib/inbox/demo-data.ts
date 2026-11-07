@@ -242,7 +242,7 @@ export function createFaqDraft(messages: Message[]) {
   if (/con trong|lich trong/.test(text))
     return "Dạ em cần nhờ quản lý kiểm tra lịch sảnh trước khi xác nhận. Anh/chị cho em xin ngày tổ chức (kèm năm), tiệc trưa hay tối và số khách dự kiến nhé!";
   const intents: [string, RegExp][] = [
-    ["dat_coc", /dat coc|tien coc|giu sanh/],
+    ["dat_coc", /dat coc|tien coc|giu sanh|\bcoc\b/],
     ["thuc_don", /thuc don|gia ban|mot ban|1 ban/],
     ["hen_xem_sanh", /xem sanh|thu mon|cuoi tuan|hen/],
     ["uu_dai", /uu dai|khuyen mai|trang tri/],
