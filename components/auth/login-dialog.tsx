@@ -244,7 +244,6 @@ export function LoginDialog({
               type="text"
               autoComplete="username"
               required
-              placeholder="admin, chinh, ngockhanh..."
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="text-xs rounded-xl bg-slate-50 focus:bg-white"
@@ -252,21 +251,15 @@ export function LoginDialog({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-                <span>Mật khẩu</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">
-                Mặc định: goldenpalace2026
-              </span>
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+              <span>Mật khẩu</span>
             </label>
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                placeholder="Nhập mật khẩu..."
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="text-xs rounded-xl bg-slate-50 focus:bg-white pr-9"

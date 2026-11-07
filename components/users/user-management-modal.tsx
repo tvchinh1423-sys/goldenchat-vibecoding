@@ -294,7 +294,7 @@ export function UserManagementModal({ open, onClose }: Props) {
                       required={isAdding}
                       placeholder={
                         isAdding
-                          ? "Tối thiểu 6 ký tự (VD: 123456)"
+                          ? "Tối thiểu 6 ký tự"
                           : "Nhập để đổi mật khẩu mới"
                       }
                       value={formData.password}

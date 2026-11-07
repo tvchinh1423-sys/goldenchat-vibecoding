@@ -294,7 +294,7 @@ export default function UsersPage() {
                   required={isAdding}
                   placeholder={
                     isAdding
-                      ? "Tối thiểu 6 ký tự (VD: 123456)"
+                      ? "Tối thiểu 6 ký tự"
                       : "Nhập để đổi mật khẩu mới"
                   }
                   value={formData.password}
@@ -391,9 +391,6 @@ export default function UsersPage() {
           <h2 className="text-sm font-bold text-slate-900">
             Danh sách nhân sự & quyền hạn ({users.length})
           </h2>
-          <span className="text-xs text-slate-500">
-            Mật khẩu mặc định: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded font-bold">goldenpalace2026</code>
-          </span>
         </div>
 
         <div className="divide-y divide-slate-100">

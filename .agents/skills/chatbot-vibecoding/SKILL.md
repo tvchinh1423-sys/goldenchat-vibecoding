@@ -692,6 +692,8 @@ app-root/
 - **4. Kiểm Thử & Kiểm Duyệt:**
   - Bổ sung kiểm thử đơn vị trong `tests/rbac-assignment.test.ts` xác thực tạo user kèm mật khẩu tùy chỉnh, kiểm tra độ dài tối thiểu 6 ký tự, và cập nhật mật khẩu thành công.
   - **48/48 unit tests pass 100%**, Next.js build **20/20 trang tĩnh thành công 100%**.
+- **5. Bảo Mật Giao Diện (Ẩn Toàn Bộ Gợi Ý Placeholder / Mật Khẩu):**
+  - Xóa bỏ toàn bộ gợi ý placeholder tài khoản (`admin, chinh, ngockhanh...`) và gợi ý mật khẩu (`goldenpalace2026`) trên giao diện Đăng nhập và Quản lý người dùng, giữ ô nhập hoàn toàn trống sạch sẽ để bảo mật khi trình chiếu demo.
 
 ### Mốc Tích Hợp Bộ Nhận Diện Thương Hiệu (App Icon PWA, Logo Ngang & Logo Dọc) & Deploy Trực Tiếp Production — 07/11/2026 (Chinh)
 
