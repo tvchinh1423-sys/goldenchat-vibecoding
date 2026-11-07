@@ -823,3 +823,10 @@ app-root/
 - **3. Kiểm thử & Triển khai Production:**
   - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
   - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
+
+### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
+
+- Đã nhận `origin/main` tại `47cb8be` và tích hợp tiếp giao diện Widget/Inbox của Chinh tại `8b32ba3`, giữ nguyên schema và các file chạy cục bộ chưa commit.
+- Kiểm tra Vercel: `GET /api/webhook/botcake` trả HTTP 200 `ready`; `POST /api/simulator/chat` với kênh `facebook` và câu hỏi mẫu về hotline trả đúng nội dung. Kiểm thử cục bộ xác nhận webhook đọc được payload Facebook dạng custom và `entry[].messaging[]`, trả JSON có `data.botReply`; tổng 49 test đạt. Webhook không tự gửi nội dung đó lên Messenger.
+- Chuẩn bị bài thử có từ khóa riêng và JSON API trong [docs/test-facebook-botcake.md](../../../docs/test-facebook-botcake.md). Dùng câu hỏi cố định, không gửi dữ liệu khách và không ghi Inbox/CRM. Đã đăng nhập Botcake nhưng onboarding Messenger báo không tìm thấy Page đang quản lý; hồ sơ Pancake hiện nút **Liên kết với tài khoản Facebook**. Chưa cấu hình flow hoặc xác minh tin nhắn Facebook thật. Bước kế tiếp: người quản trị liên kết Facebook và chọn đúng Page, chạy flow rồi đối chiếu phản hồi trong Messenger; kiểm thử đồng bộ Inbox/CRM riêng.
+- Đối chiếu lại Facebook: Trang thử là **Vân Chinh** (ID `61595929607803`); link gửi ở lượt đầu mở một Trang khác. Tài khoản Facebook hiện tại có quyền quản lý và nhắn tin trên Vân Chinh, hồ sơ Pancake đã hiện Facebook liên kết. Botcake vẫn báo không tìm thấy Trang sau khi làm mới và đăng nhập lại qua phiên Pancake. Đã mở được màn hình Meta bằng **Đăng nhập bằng tài khoản khác → Facebook** trong luồng Botcake; đang chờ người dùng xác nhận quyền. Chưa kích hoạt Trang hoặc chạy thử Messenger. Kiểm tra lại API Simulator trên Vercel cho kênh Facebook trả đúng câu trả lời mẫu; tài liệu dùng đường dẫn `reply` theo phần xem trước phản hồi của Botcake.
