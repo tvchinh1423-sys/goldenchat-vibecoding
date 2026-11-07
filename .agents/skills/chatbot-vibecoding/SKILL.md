@@ -848,3 +848,16 @@ app-root/
 - **3. Kiểm thử & Triển khai:**
   - Cập nhật bộ unit test `tests/crm.test.ts` và `tests/crm-migration.test.ts` xác thực cho phép 2 lịch đồng thời và chặn lịch thứ 3.
   - Đạt **53/53 tests pass 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+
+### Mốc Đồng Bộ Toàn Diện & Kích Hoạt Âm Thanh Chúc Mừng 100% — 07/11/2026 (Chinh & Hiền)
+
+- **1. Hợp nhất kiểm thử Botcake & tài liệu kết nối Facebook từ Chị Hiền:**
+  - Nhận và tích hợp tài liệu hướng dẫn kiểm thử Messenger qua Botcake `docs/test-facebook-botcake.md`.
+  - Tích hợp bộ kiểm thử Facebook Webhook đọc sự kiện custom và `entry[].messaging[]` trong `tests/channel-booking.test.ts`.
+- **2. Kích hoạt mở khóa Web Audio tự động & Phát âm thanh chúc mừng đặt lịch:**
+  - Mở khóa `AudioContext` (`unlockAudioContext()`) ngay khi người dùng tương tác trên Widget, Inbox và CRM.
+  - Tự động phát hiệu ứng âm thanh chúc mừng hoan ca `playBookingSuccessCelebrationTone(true)` kèm fallback WAV khi đặt lịch hoặc xác nhận lịch thành công.
+- **3. Kiểm thử & Triển khai Production:**
+  - **53/53 unit tests pass 100%**. Next.js build **20/20 static pages thành công 100%**.
+  - Đã deploy thẳng lên production `origin/main` tại `https://goldenchat-vibecoding.vercel.app` theo quy định triển khai trực tiếp 07/11/2026.
+
