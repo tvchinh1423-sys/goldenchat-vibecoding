@@ -4,41 +4,66 @@ import { useState } from "react";
 import { loginCRM } from "@/lib/crm/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, Lock, User, KeyRound, Sparkles, Building2 } from "lucide-react";
+import { ShieldCheck, User, KeyRound, Sparkles, Building2, ShieldAlert, Headphones, Check } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { triggerHaptic } from "@/lib/mobile/haptics";
 
 interface Props {
   onLogin: (staffName?: string) => void;
 }
 
 export function CRMAccessPanel({ onLogin }: Props) {
-  const [staffName, setStaffName] = useState("Ngọc Khánh (Tư vấn tiệc)");
-  const [password, setPassword] = useState("");
+  const { users, currentUser, quickSwitch } = useAuth();
+  const [selectedUserId, setSelectedUserId] = useState(
+    currentUser?.id || "usr_ngockhanh"
+  );
+  const [password, setPassword] = useState("goldenpalace2026");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const selectedUser =
+    users.find((u) => u.id === selectedUserId) || users[0];
 
   const handleFillDemo = () => {
     setPassword("goldenpalace2026");
     setError("");
   };
 
+  const handleQuickLogin = async (userId: string) => {
+    triggerHaptic("medium");
+    setBusy(true);
+    setError("");
+    try {
+      await quickSwitch(userId);
+      const user = users.find((u) => u.id === userId);
+      onLogin(user?.name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Đăng nhập chưa thành công.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-md w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
       <form
-        className="rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-8 shadow-xl space-y-5"
+        className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xl space-y-5"
         onSubmit={async (e) => {
           e.preventDefault();
+          triggerHaptic("medium");
           setBusy(true);
           setError("");
           try {
             await loginCRM(password);
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem("omnichat_staff_auth", "true");
-              sessionStorage.setItem("omnichat_staff_name", staffName.split(" (")[0]);
-            }
+            await quickSwitch(selectedUserId);
             setPassword("");
-            onLogin(staffName.split(" (")[0]);
+            onLogin(selectedUser.name);
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Mật khẩu quản trị chưa đúng. Vui lòng thử lại!");
+            setError(
+              e instanceof Error
+                ? e.message
+                : "Mật khẩu quản trị chưa đúng. Vui lòng thử lại!"
+            );
           } finally {
             setBusy(false);
           }
@@ -46,7 +71,7 @@ export function CRMAccessPanel({ onLogin }: Props) {
       >
         {/* Header thương hiệu */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
@@ -58,29 +83,81 @@ export function CRMAccessPanel({ onLogin }: Props) {
               Đăng nhập Quản trị Lead & Phễu
             </h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Khu vực nội bộ dành cho Quản lý & Chuyên viên tư vấn tiệc. Vui lòng đăng nhập để xem thông tin khách hàng và lịch hẹn.
+              Hệ thống phân quyền cho Quản lý & Chuyên viên tư vấn. Đăng nhập để trực chat và xem thông tin khách hàng.
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 pt-1">
-          {/* Chọn nhân viên đang trực */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-400" />
-              <span>Nhân viên tư vấn đang trực</span>
-            </label>
-            <select
-              value={staffName}
-              onChange={(e) => setStaffName(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            >
-              <option value="Ngọc Khánh (Tư vấn tiệc)">Ngọc Khánh (Chuyên viên tư vấn tiệc cưới)</option>
-              <option value="Trần Vân Chinh (Quản lý Marketing)">Trần Vân Chinh (Quản lý Marketing & Khách hàng)</option>
-              <option value="Ban Quản Lý (Admin)">Ban Quản Lý Golden Palace (Admin)</option>
-            </select>
+        {/* 1-Click Demo Login Quick Chips */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Chọn tài khoản theo phân quyền:</span>
+            </span>
+            <span className="text-[10px] text-blue-600">3 cấp quyền</span>
           </div>
 
+          <div className="space-y-1.5">
+            {users.filter(u => u.active).slice(0, 4).map((u) => {
+              const isSelected = selectedUserId === u.id;
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedUserId(u.id);
+                    setPassword("goldenpalace2026");
+                  }}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left text-xs transition-all ${
+                    isSelected
+                      ? "border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 font-semibold"
+                      : "border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center text-white shrink-0 ${
+                        u.role === "admin"
+                          ? "bg-purple-600"
+                          : u.role === "manager"
+                          ? "bg-blue-600"
+                          : "bg-emerald-600"
+                      }`}
+                    >
+                      {u.name.charAt(0)}
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-semibold text-slate-900 truncate">
+                        {u.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {u.title}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 border ${
+                      u.role === "admin"
+                        ? "bg-purple-100 text-purple-800 border-purple-200"
+                        : u.role === "manager"
+                        ? "bg-blue-100 text-blue-800 border-blue-200"
+                        : "bg-emerald-100 text-emerald-800 border-emerald-200"
+                    }`}
+                  >
+                    {u.role === "admin"
+                      ? "👑 Admin"
+                      : u.role === "manager"
+                      ? "💼 Quản lý"
+                      : "🎧 Nhân viên"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-1">
           {/* Mật khẩu */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
@@ -118,7 +195,10 @@ export function CRMAccessPanel({ onLogin }: Props) {
           </div>
 
           {error && (
-            <div role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
+            <div
+              role="alert"
+              className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium"
+            >
               {error}
             </div>
           )}
@@ -126,9 +206,11 @@ export function CRMAccessPanel({ onLogin }: Props) {
           <Button
             type="submit"
             disabled={busy}
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/20 transition active:scale-98"
+            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/20 transition active:scale-98"
           >
-            {busy ? "Đang xác thực bảo mật..." : "Đăng nhập Quản trị Lead"}
+            {busy
+              ? "Đang xác thực bảo mật..."
+              : `Đăng nhập với quyền ${selectedUser.name}`}
           </Button>
         </div>
       </form>

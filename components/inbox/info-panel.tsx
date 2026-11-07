@@ -34,6 +34,7 @@ import {
 } from "@/lib/inbox/helpers";
 import type { Conversation, Lead } from "@/lib/inbox/types";
 import { extractLeadInfo } from "@/lib/lead-extractor";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export type LeadFields = Pick<
   Lead,
@@ -45,7 +46,7 @@ interface Props {
   onNote: (note: string) => void;
   onSaveNote: () => void;
   onCreateLead: (fields: LeadFields) => Promise<boolean>;
-  onAssign: (value: Conversation["assignedTo"]) => void;
+  onAssign: (value: Conversation["assignedTo"], staffName?: string) => void;
   notify: (text: string) => void;
 }
 export function InfoPanel({
@@ -57,6 +58,7 @@ export function InfoPanel({
   onAssign,
   notify,
 }: Props) {
+  const { users, currentUser } = useAuth();
   const [dialog, setDialog] = useState<
     "lead" | "booking" | "assign" | "summary" | null
   >(null);
@@ -217,12 +219,14 @@ export function InfoPanel({
             <span className="rounded bg-[#f1f3f9] px-2 py-1 text-[9px] text-muted-foreground">
               {CHANNEL_LABELS[conversation.channel]}
             </span>
-            <span className="rounded bg-blue-50 px-2 py-1 text-[9px] text-primary">
-              {conversation.assignedTo === "me"
+            <span className="rounded bg-blue-50 text-blue-700 border border-blue-200/80 px-2 py-1 text-[9px] font-semibold">
+              {conversation.assignedStaffName
+                ? `👤 ${conversation.assignedStaffName}`
+                : conversation.assignedTo === "me"
                 ? "Bạn phụ trách"
                 : conversation.assignedTo === "team"
-                  ? "Đội tư vấn"
-                  : "Chưa phân công"}
+                ? "Đội tư vấn"
+                : "Chưa phân công"}
             </span>
           </div>
         </section>
@@ -495,28 +499,85 @@ export function InfoPanel({
             </div>
           )}
           {dialog === "assign" && (
-            <div className="space-y-2">
-              {(
-                [
-                  { value: "me", label: "Tôi · NK" },
-                  { value: "team", label: "Đội tư vấn Golden Palace" },
-                  { value: "unassigned", label: "Chưa phân công" },
-                ] as const
-              ).map((option) => (
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <p className="text-xs text-slate-500 mb-2">
+                Chỉ định tư vấn viên phụ trách phiên chat này:
+              </p>
+              {users
+                .filter((u) => u.active)
+                .map((staff) => {
+                  const isCurrent =
+                    conversation.assignedTo === staff.id ||
+                    conversation.assignedStaffName === staff.name ||
+                    (conversation.assignedTo === "me" &&
+                      currentUser?.id === staff.id);
+                  return (
+                    <button
+                      key={staff.id}
+                      className={`flex w-full items-center justify-between rounded-xl border p-3 text-xs text-left transition-colors ${
+                        isCurrent
+                          ? "bg-blue-50 border-blue-300 font-semibold text-blue-900 ring-2 ring-blue-500/20"
+                          : "hover:bg-slate-50 border-slate-200"
+                      }`}
+                      onClick={() => {
+                        onAssign(staff.id, staff.name);
+                        setDialog(null);
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center text-white shrink-0 ${
+                            staff.role === "admin"
+                              ? "bg-purple-600"
+                              : staff.role === "manager"
+                              ? "bg-blue-600"
+                              : "bg-emerald-600"
+                          }`}
+                        >
+                          {staff.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {staff.name}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {staff.title || staff.role}
+                          </p>
+                        </div>
+                      </div>
+                      {isCurrent && (
+                        <Check className="h-4 w-4 text-primary shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
                 <button
-                  key={option.value}
-                  className="flex w-full items-center justify-between rounded-xl border p-4 text-sm hover:bg-blue-50"
+                  className="flex w-full items-center justify-between rounded-xl border p-3 text-xs hover:bg-slate-50"
                   onClick={() => {
-                    onAssign(option.value);
+                    onAssign("team", "Đội tư vấn Golden Palace");
                     setDialog(null);
                   }}
                 >
-                  {option.label}
-                  {conversation.assignedTo === option.value && (
+                  <span>👥 Đội tư vấn Golden Palace</span>
+                  {conversation.assignedTo === "team" && (
                     <Check className="h-4 w-4 text-primary" />
                   )}
                 </button>
-              ))}
+                <button
+                  className="flex w-full items-center justify-between rounded-xl border p-3 text-xs hover:bg-rose-50 text-rose-600 border-rose-100"
+                  onClick={() => {
+                    onAssign("unassigned", "");
+                    setDialog(null);
+                  }}
+                >
+                  <span>⚠️ Bỏ phân công</span>
+                  {conversation.assignedTo === "unassigned" && (
+                    <Check className="h-4 w-4 text-rose-600" />
+                  )}
+                </button>
+              </div>
             </div>
           )}
           {dialog === "summary" && (

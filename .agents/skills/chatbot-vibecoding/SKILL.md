@@ -536,3 +536,35 @@ app-root/
 - **5. Kiểm thử & Đóng gói:**
   - Bổ sung bộ test Playwright `tests/browser/pwa-mobile.spec.ts` kiểm tra manifest, icons, meta tags, call button, FAB button và PWA settings.
   - Production build Next.js 18/18 trang tĩnh đạt 100%, 42/42 unit tests pass 100%.
+
+### Mốc Hệ Thống Phân Quyền (RBAC 3 Cấp), Quản Lý Người Dùng & Chỉ Định Phiên Chat Cho Nhân Viên — 07/11/2026 (Chinh)
+
+- **1. Xây Dựng Mô Hình Phân Quyền (Role-Based Access Control - RBAC 3 Cấp) Chuẩn Nghiệp Vụ (`lib/auth/`):**
+  - **👑 Admin (Quản trị viên hệ thống):** Toàn quyền toàn bộ hệ thống — Cấu hình hệ thống chung (`/settings`), Webhook Botcake, Telegram bot, Quản trị tri thức bot (`/training`), Quản lý phễu khách hàng & CRM (`/leads`), Báo cáo (`/dashboard`), Trực chat đa kênh (`/inbox`), Quản lý tài khoản người dùng (`/users`), Chỉ định phiên chat cho nhân viên.
+  - **💼 Quản lý (Manager - Vận hành & Khách hàng):** Toàn quyền vận hành (Hộp thư, Bot tư vấn, Lead & Lịch hẹn, Báo cáo), được quyền **Thêm, Sửa, Xóa Người dùng** và **Chỉ định phiên chat cho nhân viên cụ thể**. TUYỆT ĐỐI KHÔNG có quyền truy cập Cấu hình hệ thống chung (`/settings`). Khi cố truy cập `/settings` sẽ hiển thị màn hình Khóa phân quyền thông báo rõ giới hạn thẩm quyền.
+  - **🎧 Nhân viên (Staff - Tư vấn viên tiệc & CSKH):** Toàn quyền trực chat đa kênh (`/inbox`), tiếp nhận và chăm sóc khách hàng, quản lý danh sách phễu Lead & Lịch hẹn (`/leads`). Xem Báo cáo (`/dashboard`). KHÔNG có quyền vào `/settings`, KHÔNG được sửa cấu hình tri thức bot (`/training` ở chế độ Thử bot/View only), KHÔNG được quản lý người dùng, KHÔNG tự phân công lại chat cho người khác.
+- **2. Cổng Xác Thực & Quản Lý Phiên Tập Trung (Unified Auth & Session):**
+  - Xây dựng `AuthProvider` & `useAuth` hook (`lib/auth/auth-context.tsx`) bao bọc toàn bộ ứng dụng tại `app/layout.tsx`. Đồng bộ đa chiều với `sessionStorage`, `localStorage` và session CRM cookie.
+  - Cung cấp **Bộ Chuyển Đổi Nhanh 1-Chạm (Quick Demo Switcher)** trong Menu người dùng (`UserProfileMenu`) trên thanh Header của cả Trang chủ, Layout và Hộp thư. Ban Giám Khảo & Chinh có thể đổi qua lại tức thì giữa 3 vai trò (👑 Admin: Ban Giám Đốc, 💼 Quản lý: Trần Vân Chinh, 🎧 Nhân viên: Ngọc Khánh / Thu Hà / Hoàng Long) để kiểm tra giao diện và quyền hạn thay đổi trong 1 giây mà không cần gõ lại mật khẩu!
+  - Cung cấp Cổng Đăng Nhập Độc Lập `/login` (`app/login/page.tsx`) và Hộp thoại Đăng nhập (`LoginDialog`) với giao diện hoàng gia Golden Palace sang trọng.
+  - Nâng cấp `CRMAccessPanel` (`components/crm/access-panel.tsx`): Tự động nhận diện phiên đăng nhập hệ thống chung, hỗ trợ chọn tài khoản 3 vai trò và điền mẫu 1-chạm.
+- **3. Chức Năng Quản Lý Người Dùng & Nhân Sự (`/users` & `UserManagementModal`):**
+  - Cung cấp trang Quản lý nhân sự `/users` và Modal Quản lý Người dùng (`components/users/user-management-modal.tsx`).
+  - Dành riêng cho **Admin** và **Quản lý**: Xem danh sách toàn bộ nhân sự, Họ tên, Tên đăng nhập, Vai trò, Số điện thoại, Chức vụ, Bộ phận.
+  - Thêm người dùng mới, Sửa thông tin & cấp vai trò, Xóa người dùng (có xác nhận bảo vệ, chặn tự xóa tài khoản đang đăng nhập).
+  - Tự động bảo vệ route: Nhân viên truy cập `/users` bị chặn với màn hình cảnh báo quyền hạn.
+- **4. Tính Năng Chỉ Định Phiên Chat Cho Nhân Viên Cụ Thể Trong Hộp Thư (`/inbox`):**
+  - Mở rộng cấu trúc `Conversation`: `assignedTo: string`, `assignedStaffName?: string`, `assignedAt?: string`, `assignedBy?: string`.
+  - **Trên Header Khung Chat (`ChatPane`):** Bổ sung nút/badge phân công trực quan:
+    + Hiển thị `👤 Phụ trách: [Tên nhân viên]` (hoặc `⚠️ Chưa phân công`, `👥 Đội tư vấn`).
+    + Khi Admin hoặc Quản lý click: Mở Modal danh sách toàn bộ nhân viên tư vấn đang hoạt động (Ngọc Khánh, Thu Hà, Hoàng Long, Trần Vân Chinh...) -> Chọn 1 nhân viên -> Gán ngay lập tức!
+    + Tự động chèn tin nhắn sự kiện hệ thống vào đoạn chat: `🔔 [Admin/Quản lý] đã chỉ định phiên chat này cho: [Tên nhân viên].`
+    + Nếu là Nhân viên: Cho phép bấm "Nhận phiên chat này" nếu hội thoại chưa ai gán.
+  - **Trong Cột Thông Tin Khách (`InfoPanel`):** Mục "Phụ trách" hiển thị tên tư vấn viên; mở dialog chọn từ toàn bộ danh sách nhân sự của nhà hàng.
+  - **Trong Danh Sách Hội Thoại (`ConversationList`):**
+    + Thẻ hội thoại gắn badge tên người phụ trách `[👤 Ngọc Khánh]` hoặc `[Chưa gán]`.
+    + Tab "Của tôi" (Mine): Tự động lọc chính xác các hội thoại được chỉ định cho nhân viên đang đăng nhập (`currentUser.id`, `currentUser.username`, hoặc `currentUser.name`).
+- **5. Kiểm Thử Tự Động & Đóng Gói:**
+  - Bổ sung bộ test chuyên sâu `tests/rbac-assignment.test.ts` (3 nhóm test: Kiểm thử ranh giới quyền hạn chính xác của Admin/Manager/Staff, Kiểm thử CRUD tài khoản và chống trùng/tự xóa, Kiểm thử chỉ định chat và lọc tab Của tôi).
+  - Kết quả kiểm thử: **45/45 unit tests pass 100%**.
+  - Production build Next.js: **20/20 trang tĩnh thành công 100%**, không có lỗi TypeScript hay ESLint.

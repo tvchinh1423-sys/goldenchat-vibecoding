@@ -15,6 +15,8 @@ export interface Message {
   content: string;
   createdAt: string;
   liked?: boolean;
+  reaction?: "like" | "love" | "haha" | "wow" | "sad" | "angry" | string;
+  pinned?: boolean;
   attachments?: Attachment[];
   suggestedQuestions?: string[];
   bookingConfirmation?: Pick<BookingInput, "appointment_time" | "event_type">;
@@ -46,6 +48,7 @@ export interface Conversation {
   messages: Message[];
   booking?: { appointmentTime: string; staff: string; notes: string };
   lead?: Lead;
+  pinnedMessageId?: string;
   crmMode?: "demo" | "supabase";
 }
 export interface InboxFilters {

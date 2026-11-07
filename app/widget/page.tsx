@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   MessageSquare,
@@ -20,7 +20,18 @@ import {
   FileText,
   CheckCircle2,
   RotateCcw,
-  Headset,
+  Smile,
+  Image as ImageIcon,
+  Camera,
+  ThumbsUp,
+  Download,
+  ZoomIn,
+  ZoomOut,
+  Check,
+  CheckCheck,
+  Heart,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { getSmartBookingDefault, googleCalendarUrl } from "@/lib/crm/appointment";
@@ -30,18 +41,54 @@ import { visitIntent } from "@/lib/chat/follow-ups";
 import { playChatTone } from "@/lib/chat/sound";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
+import { compressImageToJpeg, formatFileSize, type CompressedImageResult } from "@/lib/chat/image-utils";
 
-interface Message {
+export interface WidgetAttachment {
+  id: string;
+  name: string;
+  url: string;
+  size?: number;
+}
+
+export interface WidgetMessage {
   id: string;
   sender: "bot" | "user";
   text: string;
   time: string;
+  attachments?: WidgetAttachment[];
+  reaction?: string;
   suggestedQuestions?: string[];
   visitType?: ReturnType<typeof visitIntent>;
   customCalendarUrl?: string;
   bookingDraft?: BookingDraftInfo | null;
   handoff?: boolean;
 }
+
+// 6 biểu cảm kinh điển phong cách Facebook Messenger & Zalo
+const META_REACTIONS = [
+  { id: "love", emoji: "❤️", label: "Yêu thích" },
+  { id: "like", emoji: "👍", label: "Thích" },
+  { id: "haha", emoji: "😆", label: "Haha" },
+  { id: "wow", emoji: "😮", label: "Wow" },
+  { id: "sad", emoji: "😢", label: "Buồn" },
+  { id: "angry", emoji: "😡", label: "Phẫn nộ" },
+] as const;
+
+// Nhóm Emoji nhanh phong cách Messenger / Zalo
+const EMOJI_GROUPS = [
+  {
+    name: "Cảm xúc",
+    emojis: ["😊", "😂", "🥰", "😍", "🥳", "😎", "🤔", "😅", "🥺", "😇", "🤩", "🤗"],
+  },
+  {
+    name: "Cử chỉ",
+    emojis: ["👍", "❤️", "🙏", "👏", "🤝", "🔥", "💯", "✨", "🎉", "👌", "💪", "💐"],
+  },
+  {
+    name: "Tiệc cưới & F&B",
+    emojis: ["🏛️", "🍽️", "🥂", "🎂", "💍", "👰", "🤵", "📅", "📍", "📞", "💌", "⭐"],
+  },
+];
 
 function WebWidgetContent() {
   const viewportRef = useVisualViewport<HTMLDivElement>();
@@ -56,6 +103,19 @@ function WebWidgetContent() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Đính kèm ảnh & Trạng thái nén ảnh
+  const [selectedImages, setSelectedImages] = useState<CompressedImageResult[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  // Popup & Menus
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [activeEmojiTab, setActiveEmojiTab] = useState(0);
+  const [activeReactionMenu, setActiveReactionMenu] = useState<string | null>(null);
+  const [previewModalImage, setPreviewModalImage] = useState<{ url: string; name?: string } | null>(null);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   // Form Đặt lịch state
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingName, setBookingName] = useState("");
@@ -66,12 +126,13 @@ function WebWidgetContent() {
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
+
   // State lưu thông tin bóc tách đặt lịch thông minh (NLP Smart Booking)
   const [activeBookingDraft, setActiveBookingDraft] = useState<BookingDraftInfo | null>(null);
   // Trạng thái AI tự động (sẽ tự tắt khi gặp câu hỏi ngoài phạm vi để chuyển giao nhân viên thật)
   const [isAiActive, setIsAiActive] = useState(true);
 
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<WidgetMessage[]>([
     {
       id: "w-1",
       sender: "bot",
@@ -86,13 +147,31 @@ function WebWidgetContent() {
       ],
     },
   ]);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Tự động cuộn xuống cuối khi có tin nhắn mới hoặc bot đang phản hồi
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [messages, loading, selectedImages]);
+
+  // Phím tắt ESC để đóng Lightbox hoặc Menu
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (previewModalImage) setPreviewModalImage(null);
+        if (activeReactionMenu) setActiveReactionMenu(null);
+        if (emojiOpen) setEmojiOpen(false);
+        if (showBookingModal) setShowBookingModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [previewModalImage, activeReactionMenu, emojiOpen, showBookingModal]);
 
   const handleCloseWidget = () => {
     if (typeof window !== "undefined" && window.parent && window.parent !== window) {
@@ -103,6 +182,8 @@ function WebWidgetContent() {
 
   const handleResetChat = () => {
     setActiveBookingDraft(null);
+    setSelectedImages([]);
+    setActiveReactionMenu(null);
     setMessages([
       {
         id: "w-" + Date.now(),
@@ -120,7 +201,122 @@ function WebWidgetContent() {
     ]);
   };
 
-  // Tự động chốt lịch hẹn trực tiếp khi đã đủ thông tin (không cần khách mở form)
+  // ================= XỬ LÝ ẢNH ĐÍNH KÈM (CROSS-PLATFORM) =================
+  const processImageFiles = async (files: FileList | File[]) => {
+    setImageError(null);
+    const validFiles = Array.from(files).filter((f) =>
+      /^image\/(png|jpe?g|webp|gif|heic|heif)$/i.test(f.type) ||
+      /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name)
+    );
+
+    if (validFiles.length === 0) {
+      setImageError("Vui lòng chọn file hình ảnh (JPG, PNG, WebP, GIF, HEIC).");
+      return;
+    }
+
+    if (selectedImages.length + validFiles.length > 4) {
+      setImageError("Mỗi tin nhắn tối đa 4 hình ảnh.");
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressedList: CompressedImageResult[] = [];
+      for (const file of validFiles) {
+        const result = await compressImageToJpeg(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.85,
+        });
+        compressedList.push(result);
+      }
+      setSelectedImages((prev) => [...prev, ...compressedList]);
+      if (soundEnabled) playChatTone();
+    } catch (err: any) {
+      console.error("Lỗi nén ảnh:", err);
+      setImageError("Không thể xử lý ảnh. Vui lòng thử lại với ảnh khác!");
+    } finally {
+      setIsCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      void processImageFiles(e.target.files);
+    }
+  };
+
+  const handleRemoveSelectedImage = (id: string) => {
+    setSelectedImages((prev) => prev.filter((img) => img.id !== id));
+  };
+
+  // Hỗ trợ Paste ảnh từ Clipboard (Ctrl + V / Cmd + V)
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (!e.clipboardData) return;
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles: File[] = [];
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      void processImageFiles(imageFiles);
+    }
+  };
+
+  // Hỗ trợ Kéo & Thả ảnh (Drag & Drop)
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      void processImageFiles(e.dataTransfer.files);
+    }
+  };
+
+  // ================= THẢ CẢM XÚC TIN NHẮN (REACTION) =================
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === messageId) {
+          const newReaction = msg.reaction === emoji ? undefined : emoji;
+          return { ...msg, reaction: newReaction };
+        }
+        return msg;
+      })
+    );
+    setActiveReactionMenu(null);
+    if (soundEnabled) playChatTone();
+  };
+
+  // Chèn Emoji vào ô nhập tin nhắn
+  const handleInsertEmoji = (emoji: string) => {
+    setInput((prev) => prev + emoji);
+    setEmojiOpen(false);
+    inputRef.current?.focus();
+  };
+
+  // Gửi icon Thumbs Up kinh điển của Facebook Messenger
+  const handleSendLike = () => {
+    void sendMessageWithText("👍");
+  };
+
+  // Tự động chốt lịch hẹn trực tiếp khi đã đủ thông tin (NLP Auto-Book)
   const saveDirectBooking = async (draft: BookingDraftInfo) => {
     const cleanPhone = (draft.phone || "").replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
     if (!cleanPhone || !draft.fullName) return;
@@ -203,19 +399,31 @@ function WebWidgetContent() {
     }
   };
 
-  const sendMessageWithText = async (textToSend: string) => {
-    if (!textToSend.trim() || loading) return;
-
+  // Gửi tin nhắn kèm text và hình ảnh
+  const sendMessageWithText = async (textToSend: string, imagesToSend: CompressedImageResult[] = []) => {
     const userText = textToSend.trim();
-    const userMsg: Message = {
+    if ((!userText && imagesToSend.length === 0) || loading || isCompressing) return;
+
+    const attachmentsPayload: WidgetAttachment[] = imagesToSend.map((img) => ({
+      id: img.id,
+      name: img.name,
+      url: img.dataUrl,
+      size: img.size,
+    }));
+
+    const userMsg: WidgetMessage = {
       id: `u-${Date.now()}`,
       sender: "user",
       text: userText,
+      attachments: attachmentsPayload.length > 0 ? attachmentsPayload : undefined,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setSelectedImages([]);
+    setImageError(null);
+    setEmojiOpen(false);
     setLoading(true);
     if (soundEnabled) playChatTone();
 
@@ -229,6 +437,7 @@ function WebWidgetContent() {
           isWorkingHours: true,
           messageCount: messages.length,
           bookingDraftContext: activeBookingDraft,
+          attachments: attachmentsPayload,
           businessProfile: {
             name: "Trung tâm Tiệc cưới & Sự kiện Golden Palace",
             serviceTypeName: "Gói tiệc & Sảnh cưới",
@@ -265,7 +474,7 @@ function WebWidgetContent() {
             type: "handover",
             data: {
               name: "Khách Web Widget",
-              message: userText,
+              message: userText || (attachmentsPayload.length > 0 ? "Khách gửi hình ảnh" : ""),
               platform: "Web Widget",
             },
           }),
@@ -306,6 +515,11 @@ function WebWidgetContent() {
     }
   };
 
+  const handleSend = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    void sendMessageWithText(input, selectedImages);
+  };
+
   function openBooking(type: "xem_sanh" | "thu_mon" | "tu_van_su_kien" = "xem_sanh") {
     setBookingType(type);
     if (!activeBookingDraft?.dateTimeIso) {
@@ -314,11 +528,6 @@ function WebWidgetContent() {
     setBookingError("");
     setShowBookingModal(true);
   }
-
-  const handleSend = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    sendMessageWithText(input);
-  };
 
   // Submit Form Đặt lịch trực tiếp trong chat
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -358,6 +567,7 @@ function WebWidgetContent() {
         table_count: null,
         inbox_reference: null,
       }, visit);
+
       if (saved.mode === "supabase") {
         void fetch("/api/telegram/alert", {
           method: "POST",
@@ -374,6 +584,7 @@ function WebWidgetContent() {
           }),
         }).catch(() => {});
       }
+
       const calUrl = googleCalendarUrl(visit);
       const confirmation = saved.mode === "demo"
         ? "Lịch demo đã lưu trên trình duyệt."
@@ -406,14 +617,22 @@ function WebWidgetContent() {
     }
   };
 
+  const hasContentToSend = input.trim().length > 0 || selectedImages.length > 0;
+
   return (
-    <div className={`widget-shell min-h-dvh ${isEmbedded ? "bg-transparent" : "bg-slate-900/10"}`}>
-      {/* Background mô phỏng khi xem trực tiếp trên tab riêng (chỉ hiện trên desktop) */}
+    <div
+      className={`widget-shell min-h-dvh ${isEmbedded ? "bg-transparent" : "bg-slate-900/10"}`}
+      onPaste={handlePaste}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Background mô phỏng khi xem trực tiếp trên tab riêng */}
       {!isEmbedded && (
         <div className="hidden sm:block fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
       )}
 
-      {/* Floating Chat Widget Container - Tự động full màn hình trên mobile */}
+      {/* Floating Chat Widget Container */}
       <div
         ref={viewportRef}
         className={`group/chat fixed inset-x-0 top-[var(--chat-top,0px)] z-50 flex h-[var(--chat-height,100dvh)] flex-col items-end ${
@@ -425,68 +644,71 @@ function WebWidgetContent() {
             className={`${
               isEmbedded
                 ? "w-full h-full rounded-none border-0"
-                : "widget-panel w-full h-full sm:w-[410px] sm:h-[min(600px,calc(100dvh-3rem))] rounded-none sm:rounded-3xl border-0 sm:border"
-            } bg-white shadow-2xl border-slate-200/80 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
+                : "widget-panel w-full h-full sm:w-[420px] sm:h-[min(640px,calc(100dvh-2.5rem))] rounded-none sm:rounded-3xl border-0 sm:border"
+            } bg-white shadow-2xl border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in sm:slide-in-from-bottom-5 duration-200 relative`}
           >
-            {/* Header */}
+            {/* ================= HEADER CHUẨN ZALO / MESSENGER ================= */}
             <div
               style={{
-                background: `linear-gradient(135deg, ${customColor}, #4338ca)`,
+                background: `linear-gradient(135deg, ${customColor}, #3b82f6, #4338ca)`,
               }}
-              className="widget-header flex shrink-0 flex-wrap items-center justify-between gap-x-2 bg-blue-600 pb-2 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[calc(0.75rem+var(--safe-top))] text-white shadow-xs select-none sm:p-3.5"
+              className="widget-header flex shrink-0 items-center justify-between bg-blue-600 pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))] pt-[calc(0.75rem+var(--safe-top,0px))] pb-2.5 text-white shadow-sm select-none"
             >
-              <div className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-full sm:gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
-                  <Bot className="w-5 h-5 text-white" />
+              {/* Bot Info Profile */}
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-sm border border-white/30 text-white">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                  {/* Chấm trạng thái Online nhấp nháy chuẩn Messenger */}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ring-2 ring-white ${
+                      isAiActive ? "bg-emerald-400" : "bg-amber-400"
+                    }`}
+                  >
+                    <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                  </span>
                 </div>
-                <div className="min-w-0">
+
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-sm leading-tight max-w-[180px] truncate">
+                    <h3 className="font-bold text-sm leading-tight truncate">
                       {customTitle}
                     </h3>
                     <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
-                    <span
-                      className={`w-2 h-2 shrink-0 rounded-full ${
-                        isAiActive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                      }`}
-                    />
                     <span className="truncate">
                       {isAiActive
-                        ? "98 Đông A · Đón tiếp 8:00 - 10:30"
-                        : "⚡ Đã ngắt AI · Tư vấn viên tiếp quản"}
+                        ? "Đang hoạt động · 98 Đông A"
+                        : "⚡ Tư vấn viên trực tuyến"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-1 max-sm:ml-auto group-data-[keyboard-open]/chat:hidden">
-                {/* Nút Đặt lịch nhanh trên header */}
+              {/* Action Buttons trên Header */}
+              <div className="flex shrink-0 items-center gap-1">
+                {/* Nút Đặt lịch */}
                 <button
                   type="button"
                   title="Đặt lịch tư vấn & xem sảnh"
                   onClick={() => openBooking()}
-                  className="flex min-h-11 items-center gap-1 rounded-xl border border-white/20 bg-white/15 px-2.5 text-xs font-semibold text-white hover:bg-white/25 sm:min-h-8"
+                  className="flex min-h-11 sm:min-h-8 items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/30 transition shadow-2xs active:scale-95"
                 >
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>Đặt lịch</span>
+                  <span className="hidden sm:inline">Đặt lịch</span>
                 </button>
 
-                <button
-                  type="button"
-                  title="Làm mới cuộc trò chuyện"
-                  onClick={handleResetChat}
-                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-
+                {/* Nút Đổi âm thanh */}
                 <button
                   type="button"
                   title={soundEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-                  onClick={() => { if (!soundEnabled) playChatTone(); setSoundEnabled(!soundEnabled); }}
-                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
+                  onClick={() => {
+                    if (!soundEnabled) playChatTone();
+                    setSoundEnabled(!soundEnabled);
+                  }}
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
                 >
                   {soundEnabled ? (
                     <Volume2 className="w-4 h-4 text-emerald-300" />
@@ -495,216 +717,601 @@ function WebWidgetContent() {
                   )}
                 </button>
 
-                {/* Phím tắt nhanh sang Quản trị khi test trên điện thoại */}
-                {!isEmbedded && (
-                  <a
-                    href="/leads"
-                    title="Mở Quản lý Khách hàng & Lịch hẹn"
-                    className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
-                  >
-                    <Users className="w-4 h-4 text-amber-300" />
-                  </a>
-                )}
+                {/* Reset cuộc trò chuyện */}
+                <button
+                  type="button"
+                  title="Làm mới cuộc trò chuyện"
+                  onClick={handleResetChat}
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
 
+                {/* Đóng widget */}
                 <button
                   type="button"
                   title="Đóng khung chat"
                   onClick={handleCloseWidget}
-                  className="grid h-11 w-11 place-items-center rounded-xl text-white/80 hover:bg-white/20 hover:text-white sm:h-8 sm:w-8"
+                  className="grid h-11 w-11 sm:h-8 sm:w-8 place-items-center rounded-full text-white/80 hover:bg-white/20 hover:text-white transition active:scale-90"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Messages Body */}
+            {/* ================= OVERLAY KÉO THẢ ẢNH (DRAG & DROP) ================= */}
+            {isDragOver && (
+              <div className="absolute inset-0 z-40 bg-blue-600/90 backdrop-blur-xs flex flex-col items-center justify-center text-white p-6 text-center animate-in fade-in duration-150">
+                <ImageIcon className="w-16 h-16 mb-2 animate-bounce" />
+                <h4 className="text-lg font-bold">Thả hình ảnh vào đây</h4>
+                <p className="text-xs text-blue-100 mt-1">
+                  Hỗ trợ JPG, PNG, WebP, GIF, HEIC · Tối đa 4 ảnh
+                </p>
+              </div>
+            )}
+
+            {/* ================= KHUNG NỘI DUNG TIN NHẮN (MESSAGE STREAM) ================= */}
             <div
               ref={scrollRef}
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#f8fafc] py-3.5 pl-[max(0.875rem,var(--safe-left))] pr-[max(0.875rem,var(--safe-right))]"
+              onClick={() => {
+                if (activeReactionMenu) setActiveReactionMenu(null);
+                if (emojiOpen) setEmojiOpen(false);
+              }}
+              className="min-h-0 flex-1 space-y-3.5 overflow-y-auto overscroll-contain bg-[#f3f4f6]/70 py-3.5 pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))]"
             >
+              {/* Badge thông báo Hotline đầu ngày */}
               <div className="text-center my-1">
-                <span className="text-[10px] text-slate-400 font-medium bg-slate-200/60 px-2.5 py-0.5 rounded-full">
-                  Hôm nay · Hotline tư vấn: 0228 6595 959
+                <span className="text-[10px] text-slate-500 font-medium bg-white/90 border border-slate-200/80 px-3 py-1 rounded-full shadow-2xs inline-flex items-center gap-1.5">
+                  <Phone className="w-3 h-3 text-blue-600" />
+                  <span>Golden Palace · Hotline hỗ trợ: <strong>0228 6595 959</strong></span>
                 </span>
               </div>
 
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex flex-col ${
-                    m.sender === "user" ? "items-end" : "items-start"
-                  }`}
-                >
+              {messages.map((m) => {
+                const isUser = m.sender === "user";
+                const isReactionMenuOpen = activeReactionMenu === m.id;
+
+                return (
                   <div
-                    className={`max-w-[90%] break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-2xs sm:max-w-[86%] sm:text-xs ${
-                      m.sender === "user"
-                        ? "bg-blue-600 text-white rounded-br-xs"
-                        : "bg-white text-slate-800 border border-slate-200/70 rounded-bl-xs"
+                    key={m.id}
+                    className={`flex flex-col group/msg relative ${
+                      isUser ? "items-end" : "items-start"
                     }`}
                   >
-                    <FormattedMessage
-                      text={m.text}
-                      isUser={m.sender === "user"}
-                    />
-
-                    {/* Thẻ tóm tắt phiếu hẹn nhỏ gọn - CHỈ HIỆN KHI KHÁCH ĐÃ CUNG CẤP TÊN HOẶC THỜI GIAN THẬT */}
-                    {m.bookingDraft && (m.bookingDraft.fullName || m.bookingDraft.timeStr) && !m.bookingDraft.isComplete && (
-                      <div className="mt-2 p-2.5 bg-blue-50/90 border border-blue-200/80 rounded-xl text-[11px] space-y-1">
-                        <div className="flex items-center justify-between font-semibold text-blue-900">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-blue-600" />
-                            <span>
-                              {m.bookingDraft.fullName ? `Khách: ${m.bookingDraft.fullName}` : ""}{" "}
-                              {m.bookingDraft.timeStr ? `· ${m.bookingDraft.timeStr} (${m.bookingDraft.dateStr})` : ""}
-                            </span>
-                          </span>
-                          <span className="text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded text-[10px] font-medium">
-                            Chờ SĐT
-                          </span>
+                    <div className="flex items-end gap-1.5 max-w-[92%] sm:max-w-[88%]">
+                      {/* Avatar Bot bên cạnh tin nhắn đầu tiên */}
+                      {!isUser && (
+                        <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mb-1 shadow-2xs text-[11px] font-bold">
+                          GP
                         </div>
-                        <p className="text-slate-600 text-[11px]">
-                          👉 Chị nhắn số điện thoại vào chat để em chốt lịch ngay nhé!
-                        </p>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Nút Thêm vào Google Calendar 1-chạm khi đã chốt lịch thành công */}
-                    {m.customCalendarUrl && (
-                      <div className="mt-2 pt-2 border-t border-slate-100">
-                        <a
-                          href={m.customCalendarUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer"
+                      {/* VÙNG BONG BÓNG TIN NHẮN CHUẨN ZALO / MESSENGER */}
+                      <div className="relative">
+                        <div
+                          className={`relative break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed transition-all shadow-2xs ${
+                            isUser
+                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-br-xs"
+                              : "bg-white text-slate-800 border border-slate-200/80 rounded-bl-xs"
+                          }`}
                         >
-                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Thêm vào Google Calendar</span>
-                          <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
-                        </a>
-                      </div>
-                    )}
+                          {/* 1. HIỂN THỊ DANH SÁCH ẢNH ĐÍNH KÈM (IMAGE GRID) */}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <div
+                              className={`mb-2 ${
+                                m.attachments.length === 1
+                                  ? "max-w-[280px]"
+                                  : "grid grid-cols-2 gap-1.5 max-w-[280px]"
+                              }`}
+                            >
+                              {m.attachments.map((att, idx) => (
+                                <div
+                                  key={att.id || idx}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewModalImage({ url: att.url, name: att.name });
+                                    setLightboxZoom(1);
+                                  }}
+                                  className="relative group/media overflow-hidden rounded-xl bg-slate-900/10 cursor-pointer aspect-auto shadow-2xs border border-black/5 hover:opacity-95 transition"
+                                >
+                                  <img
+                                    src={att.url}
+                                    alt={att.name || `Ảnh ${idx + 1}`}
+                                    className={`w-full object-cover transition-transform duration-200 group-hover/media:scale-105 ${
+                                      m.attachments?.length === 1
+                                        ? "max-h-56 rounded-xl"
+                                        : "h-28 rounded-lg"
+                                    }`}
+                                  />
+                                  {/* Overlay hover phóng to ảnh */}
+                                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/media:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span className="p-1.5 rounded-full bg-white/90 text-slate-800 shadow-sm flex items-center gap-1 text-[10px] font-semibold">
+                                      <ZoomIn className="w-3.5 h-3.5" />
+                                      <span>Xem ảnh</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
-                    {/* Nút liên hệ trực tiếp khi chuyển giao chuyên viên tư vấn */}
-                    {m.handoff && (
-                      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
-                        <a
-                          href="tel:02286595959"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition border border-red-200/70 shadow-2xs"
+                          {/* 2. HIỂN THỊ NỘI DUNG VĂN BẢN (LINK & ACTION BUTTONS) */}
+                          {m.text && (
+                            <FormattedMessage
+                              text={m.text}
+                              isUser={isUser}
+                            />
+                          )}
+
+                          {/* 3. THẺ TÓM TẮT PHIẾU HẸN (NLP PREVIEW) */}
+                          {m.bookingDraft && (m.bookingDraft.fullName || m.bookingDraft.timeStr) && !m.bookingDraft.isComplete && (
+                            <div className="mt-2 p-2.5 bg-blue-50/90 border border-blue-200/80 rounded-xl text-[11px] space-y-1 text-slate-800">
+                              <div className="flex items-center justify-between font-semibold text-blue-900">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>
+                                    {m.bookingDraft.fullName ? `Khách: ${m.bookingDraft.fullName}` : ""}{" "}
+                                    {m.bookingDraft.timeStr ? `· ${m.bookingDraft.timeStr} (${m.bookingDraft.dateStr})` : ""}
+                                  </span>
+                                </span>
+                                <span className="text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                  Chờ SĐT
+                                </span>
+                              </div>
+                              <p className="text-slate-600 text-[11px]">
+                                👉 Quý khách nhắn số điện thoại vào chat để em chốt lịch ngay nhé!
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 4. NÚT GOOGLE CALENDAR 1-CHẠM KHI CHỐT LỊCH THÀNH CÔNG */}
+                          {m.customCalendarUrl && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-100">
+                              <a
+                                href={m.customCalendarUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition border border-blue-200 shadow-2xs cursor-pointer"
+                              >
+                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Thêm vào Google Calendar</span>
+                                <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                              </a>
+                            </div>
+                          )}
+
+                          {/* 5. NÚT GỌI HOTLINE KHI HANDOFF TƯ VẤN VIÊN */}
+                          {m.handoff && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-2">
+                              <a
+                                href="tel:02286595959"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-semibold transition border border-rose-200 shadow-2xs"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>Gọi Hotline 0228 659 5959</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* HUY HIỆU REACTION ĐÃ THẢ (REACTION BADGE CHUẨN ZALO / MESSENGER) */}
+                        {m.reaction && (
+                          <button
+                            type="button"
+                            title="Bấm để gỡ cảm xúc"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleReaction(m.id, m.reaction!);
+                            }}
+                            className={`absolute -bottom-2 ${
+                              isUser ? "left-2" : "right-2"
+                            } z-10 flex items-center gap-0.5 bg-white border border-slate-200/90 rounded-full px-1.5 py-0.5 shadow-xs hover:scale-110 active:scale-95 transition-all text-xs`}
+                          >
+                            <span>{m.reaction}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold">1</span>
+                          </button>
+                        )}
+
+                        {/* NÚT KÍCH HOẠT REACTION NHANH (HIỆN KHI HOVER HOẶC BẤM) */}
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 transition-opacity flex items-center gap-1 ${
+                            isUser ? "-left-8" : "-right-8"
+                          }`}
                         >
-                          <Phone className="w-3.5 h-3.5" />
-                          <span>Gọi Hotline 0228 659 5959</span>
-                        </a>
+                          <button
+                            type="button"
+                            title="Thả cảm xúc"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveReactionMenu(isReactionMenuOpen ? null : m.id);
+                            }}
+                            className="w-6 h-6 rounded-full bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-slate-500 hover:text-amber-500 hover:bg-slate-50 transition active:scale-90"
+                          >
+                            <Smile className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* THANH FLOATING REACTION BAR NỔI 6 BIỂU CẢM KINH ĐIỂN */}
+                        {isReactionMenuOpen && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className={`absolute -top-11 z-30 flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-full px-2 py-1 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${
+                              isUser ? "right-0" : "left-0"
+                            }`}
+                          >
+                            {META_REACTIONS.map((r) => (
+                              <button
+                                key={r.id}
+                                type="button"
+                                title={r.label}
+                                onClick={() => handleToggleReaction(m.id, r.emoji)}
+                                className={`text-base sm:text-lg hover:scale-130 active:scale-110 transition-transform p-0.5 rounded-full ${
+                                  m.reaction === r.emoji ? "bg-blue-50 ring-2 ring-blue-400" : ""
+                                }`}
+                              >
+                                {r.emoji}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* DÒNG THỜI GIAN & TRẠNG THÁI GỬI (ĐÃ NHẬN ✓✓) */}
+                    <div
+                      className={`flex items-center gap-1 text-[10px] text-slate-400 mt-1 px-1 ${
+                        isUser ? "justify-end" : "justify-start pl-8"
+                      }`}
+                    >
+                      <span>{m.time}</span>
+                      {isUser && (
+                        <span className="flex items-center text-blue-600 font-medium">
+                          <CheckCheck className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+
+                    {/* AI GỢI Ý 3 CÂU LIÊN QUAN (MUST-BE CỦA BTC) */}
+                    {!isUser && m.suggestedQuestions && m.suggestedQuestions.length > 0 && (
+                      <div className="mt-2 mb-1 max-w-[92%] flex flex-wrap gap-1.5 pl-8">
+                        {m.suggestedQuestions.map((q, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => void sendMessageWithText(q)}
+                            className="text-[11px] px-2.5 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 rounded-full transition shadow-2xs text-left active:scale-95 inline-flex items-center gap-1"
+                          >
+                            <span>💬</span>
+                            <span>{q}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
+                );
+              })}
 
-                  <span className="text-[10px] text-slate-400 mt-1 px-1">
-                    {m.time}
-                  </span>
-
-                  {/* AI gợi ý 3 câu liên quan (Tiêu chí Must-be của BTC) */}
-                  {m.sender === "bot" && m.suggestedQuestions && m.suggestedQuestions.length > 0 && (
-                    <div className="mt-1.5 mb-1 max-w-[90%] flex flex-wrap gap-1.5">
-                      {m.suggestedQuestions.map((q, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => sendMessageWithText(q)}
-                          className="text-[11px] px-2.5 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/90 rounded-full transition shadow-2xs text-left active:scale-95"
-                        >
-                          💬 {q}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
+              {/* Loading Indicator Bot đang gõ */}
               {loading && (
-                <div className="flex items-center gap-1.5 text-slate-400 text-xs px-2 py-1">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" />
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s]" />
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s]" />
-                  <span className="text-[11px] text-slate-400 ml-1">Golden Palace Bot đang gõ...</span>
+                <div className="flex items-center gap-2 text-slate-500 text-xs px-2 py-1">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs text-[11px] font-bold">
+                    GP
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-xs px-3.5 py-2 shadow-2xs flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s]" />
+                    <span className="text-[11px] text-slate-400 ml-1">Golden Palace đang trả lời…</span>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Quick Chips Gợi ý nhanh */}
-            <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-t border-slate-200/70 bg-slate-100/90 py-1.5 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] text-[11px] group-data-[keyboard-open]/chat:hidden max-sm:[@media(max-height:420px)]:hidden">
+            {/* ================= QUICK CHIPS GỢI Ý NHANH ================= */}
+            <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-t border-slate-200/80 bg-slate-100/90 py-1.5 pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))] text-[11px] select-none no-scrollbar">
               <button
                 type="button"
                 onClick={() => openBooking()}
-                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full whitespace-nowrap shadow-xs transition shrink-0 flex items-center gap-1"
+                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full whitespace-nowrap shadow-xs transition shrink-0 flex items-center gap-1 active:scale-95"
               >
                 <Calendar className="w-3 h-3" />
                 <span>Đặt lịch xem sảnh</span>
               </button>
               <button
                 type="button"
-                onClick={() => sendMessageWithText("Thực đơn tiệc cưới bao nhiêu một bàn?")}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0"
+                onClick={() => void sendMessageWithText("Thực đơn tiệc cưới bao nhiêu một bàn?")}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0 active:scale-95"
               >
                 🍽️ Thực đơn bàn tiệc
               </button>
               <button
                 type="button"
-                onClick={() => sendMessageWithText("Cho tôi xem ảnh không gian sảnh tiệc")}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0"
+                onClick={() => void sendMessageWithText("Cho tôi xem ảnh không gian sảnh tiệc")}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0 active:scale-95"
               >
                 🖼️ Ảnh sảnh tiệc
               </button>
               <button
                 type="button"
-                onClick={() => sendMessageWithText("Địa chỉ nhà hàng ở đâu?")}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0"
+                onClick={() => void sendMessageWithText("Địa chỉ nhà hàng ở đâu?")}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0 active:scale-95"
               >
                 📍 98 Đông A Maps
               </button>
               <button
                 type="button"
-                onClick={() => sendMessageWithText("Nhà hàng đón khách lúc mấy giờ?")}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0"
+                onClick={() => void sendMessageWithText("Nhà hàng đón khách lúc mấy giờ?")}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0 active:scale-95"
               >
                 ⏰ Đón khách 8:00-10:30
               </button>
-              <button
-                type="button"
-                onClick={() => sendMessageWithText("Hotline liên hệ trực tiếp")}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full border border-slate-200 whitespace-nowrap shadow-2xs transition shrink-0"
-              >
-                📞 Hotline: 0228 6595 959
-              </button>
             </div>
 
-            {/* Input Footer */}
+            {/* ================= THANH PREVIEW ẢNH ĐANG CHỌN (ATTACHMENT PREVIEW BAR) ================= */}
+            {selectedImages.length > 0 && (
+              <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-t border-slate-200 bg-blue-50/70 p-2 text-xs">
+                {selectedImages.map((img) => (
+                  <div
+                    key={img.id}
+                    className="relative shrink-0 w-14 h-14 rounded-xl border border-blue-200 overflow-hidden bg-white shadow-2xs group/thumb"
+                  >
+                    <img
+                      src={img.dataUrl}
+                      alt={img.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      title="Xóa ảnh này"
+                      onClick={() => handleRemoveSelectedImage(img.id)}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/80 text-white flex items-center justify-center hover:bg-rose-600 transition"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                    <span className="absolute bottom-0 inset-x-0 bg-slate-900/70 text-[8px] text-white text-center truncate px-0.5">
+                      {formatFileSize(img.size)}
+                    </span>
+                  </div>
+                ))}
+
+                {isCompressing && (
+                  <div className="flex items-center gap-1.5 text-xs text-blue-700 px-2 py-1">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang nén ảnh...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {imageError && (
+              <div className="bg-rose-50 text-rose-700 border-t border-rose-200 px-3 py-1.5 text-[11px] flex items-center justify-between">
+                <span>⚠️ {imageError}</span>
+                <button
+                  type="button"
+                  onClick={() => setImageError(null)}
+                  className="text-rose-500 hover:text-rose-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {/* ================= KHAY EMOJI PICKER POPUP ================= */}
+            {emojiOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="border-t border-slate-200 bg-white p-2.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
+                  <div className="flex items-center gap-2">
+                    {EMOJI_GROUPS.map((grp, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveEmojiTab(idx)}
+                        className={`text-xs px-2 py-0.5 rounded-lg transition font-medium ${
+                          activeEmojiTab === idx
+                            ? "bg-blue-100 text-blue-700"
+                            : "text-slate-500 hover:bg-slate-100"
+                        }`}
+                      >
+                        {grp.name}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEmojiOpen(false)}
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-36 overflow-y-auto">
+                  {EMOJI_GROUPS[activeEmojiTab].emojis.map((emoji, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleInsertEmoji(emoji)}
+                      className="text-xl p-1.5 rounded-lg hover:bg-slate-100 active:scale-90 transition flex items-center justify-center"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ================= COMPOSER NHẬP TIN NHẮN PHONG CÁCH ZALO / MESSENGER ================= */}
             <form
               onSubmit={handleSend}
-              className="flex shrink-0 items-center gap-2 border-t border-slate-100 bg-white pl-[max(0.625rem,var(--safe-left))] pr-[max(0.625rem,var(--safe-right))] pt-2.5 pb-[calc(0.625rem+var(--safe-bottom))] group-data-[keyboard-open]/chat:pb-2.5"
+              className="flex shrink-0 items-center gap-1.5 border-t border-slate-200 bg-white pl-[max(0.75rem,var(--safe-left,0px))] pr-[max(0.75rem,var(--safe-right,0px))] pt-2 pb-[calc(0.5rem+var(--safe-bottom,0px))]"
             >
-              <input
-                type="text"
-                aria-label="Nội dung tin nhắn"
-                placeholder="Nhập tin nhắn…"
-                enterKeyHint="send"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="min-w-0 flex-1 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-xl text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                aria-label="Gửi tin nhắn"
-                disabled={!input.trim() || loading}
-                style={{ backgroundColor: customColor }}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white shadow-xs transition hover:opacity-90 disabled:opacity-40"
+              {/* Nút Đính kèm ảnh (Native label cross-platform) */}
+              <label
+                htmlFor="widget-image-upload"
+                title="Đính kèm hình ảnh (JPG, PNG, HEIC)"
+                className="grid h-11 w-11 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer active:scale-90"
               >
-                <Send className="w-3.5 h-3.5" />
+                <ImageIcon className="w-5 h-5" />
+                <input
+                  id="widget-image-upload"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,image/heic,image/heif,.heic,.heif"
+                  multiple
+                  onChange={handleImageInputChange}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Nút Mở Emoji Picker */}
+              <button
+                type="button"
+                title="Chèn biểu tượng cảm xúc"
+                onClick={() => setEmojiOpen(!emojiOpen)}
+                className={`grid h-11 w-11 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full transition active:scale-90 ${
+                  emojiOpen
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                <Smile className="w-5 h-5" />
               </button>
+
+              {/* Input Nhập Nội dung */}
+              <div className="relative min-w-0 flex-1">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  aria-label="Nội dung tin nhắn"
+                  placeholder={
+                    selectedImages.length > 0
+                      ? "Thêm lời nhắn cho ảnh..."
+                      : "Nhập tin nhắn..."
+                  }
+                  enterKeyHint="send"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-100 border border-transparent rounded-full text-base sm:text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                />
+              </div>
+
+              {/* Nút Gửi / Nút Thumbs Up (Like) phong cách Messenger */}
+              {hasContentToSend ? (
+                <button
+                  type="submit"
+                  aria-label="Gửi tin nhắn"
+                  disabled={loading || isCompressing}
+                  style={{ backgroundColor: customColor }}
+                  className="grid h-11 w-11 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Gửi biểu tượng thích"
+                  title="Gửi nút thích 👍"
+                  onClick={handleSendLike}
+                  className="grid h-11 w-11 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full text-blue-600 hover:bg-blue-50 transition active:scale-90"
+                >
+                  <ThumbsUp className="w-5 h-5 fill-blue-600/20" />
+                </button>
+              )}
             </form>
+
+            {/* ================= MODAL LIGHTBOX XEM ẢNH PHÓNG TO (IMAGE VIEWER) ================= */}
+            {previewModalImage && (
+              <div
+                onClick={() => setPreviewModalImage(null)}
+                className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-5 animate-in fade-in duration-200"
+              >
+                {/* Header thanh công cụ Lightbox */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center justify-between w-full max-w-4xl text-white pb-3 border-b border-white/10"
+                >
+                  <div className="flex items-center gap-2 truncate pr-2">
+                    <ImageIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span className="text-xs font-medium truncate">
+                      {previewModalImage.name || "Hình ảnh chi tiết"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Phóng to */}
+                    <button
+                      type="button"
+                      title="Phóng to"
+                      onClick={() => setLightboxZoom((prev) => Math.min(prev + 0.25, 2.5))}
+                      className="p-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                    {/* Thu nhỏ */}
+                    <button
+                      type="button"
+                      title="Thu nhỏ"
+                      onClick={() => setLightboxZoom((prev) => Math.max(prev - 0.25, 0.75))}
+                      className="p-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    {/* Mở tab mới */}
+                    <a
+                      href={previewModalImage.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Mở trong tab mới"
+                      className="p-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    {/* Tải về */}
+                    <a
+                      href={previewModalImage.url}
+                      download={previewModalImage.name || "goldenpalace-photo.jpg"}
+                      title="Tải ảnh về máy"
+                      className="p-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                    {/* Nút Đóng */}
+                    <button
+                      type="button"
+                      title="Đóng xem ảnh"
+                      onClick={() => setPreviewModalImage(null)}
+                      className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition ml-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Vùng hiển thị ảnh phóng to */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 flex items-center justify-center w-full max-h-[78vh] p-2 overflow-auto"
+                >
+                  <img
+                    src={previewModalImage.url}
+                    alt={previewModalImage.name || "Ảnh phóng to"}
+                    style={{ transform: `scale(${lightboxZoom})` }}
+                    className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-150 select-none"
+                  />
+                </div>
+
+                {/* Chú thích chân trang Lightbox */}
+                <div className="text-[11px] text-white/60 pt-2 text-center">
+                  Nhấn <strong>ESC</strong> hoặc chạm ra ngoài để đóng xem ảnh
+                </div>
+              </div>
+            )}
 
             {/* ================= MODAL ĐẶT LỊCH NHANH TRỰC TIẾP (POPUP FORM) ================= */}
             {showBookingModal && (
-              <div className="absolute inset-0 z-50 flex items-end justify-center bg-slate-900/60 pl-[max(0.75rem,var(--safe-left))] pr-[max(0.75rem,var(--safe-right))] pt-[max(0.75rem,var(--safe-top))] pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-xs sm:items-center">
+              <div className="absolute inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs sm:items-center">
                 <div className="max-h-full w-full space-y-3.5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
                   <div className="flex items-start justify-between border-b border-slate-100 pb-2.5">
                     <div>
@@ -723,7 +1330,7 @@ function WebWidgetContent() {
                       type="button"
                       onClick={() => setShowBookingModal(false)}
                       aria-label="Đóng form đặt lịch"
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -849,7 +1456,7 @@ function WebWidgetContent() {
                         type="button"
                         disabled={bookingSubmitting}
                         onClick={() => setShowBookingModal(false)}
-                        className="min-h-11 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
+                        className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition"
                       >
                         Đóng
                       </button>
@@ -857,7 +1464,7 @@ function WebWidgetContent() {
                         type="submit"
                         disabled={bookingSubmitting}
                         style={{ backgroundColor: customColor }}
-                        className="flex min-h-11 items-center gap-1.5 rounded-xl px-4 py-2 font-semibold text-white shadow-xs transition hover:opacity-95 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-xl px-4 py-2 font-semibold text-white shadow-xs transition hover:opacity-95 disabled:opacity-50"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {bookingSubmitting ? "Đang xếp lịch..." : "Xác nhận đặt lịch"}
@@ -869,12 +1476,13 @@ function WebWidgetContent() {
             )}
           </div>
         ) : (
+          /* Nút Mở Widget Tròn Nổi */
           <button
             type="button"
             aria-label="Mở khung chat"
             onClick={() => setIsOpen(true)}
             style={{ backgroundColor: customColor }}
-            className="widget-launcher pointer-events-auto group mt-auto mr-[max(1rem,var(--safe-right))] mb-[max(1rem,var(--safe-bottom))] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:m-0"
+            className="widget-launcher pointer-events-auto group mt-auto mr-[max(1rem,var(--safe-right,0px))] mb-[max(1rem,var(--safe-bottom,0px))] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:m-0"
           >
             <MessageSquare className="w-6 h-6 group-hover:scale-110 transition" />
           </button>

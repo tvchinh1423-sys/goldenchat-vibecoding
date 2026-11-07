@@ -40,6 +40,7 @@ import {
   IndustryPreset,
 } from "@/lib/mock-service";
 import { KnowledgeItem } from "@/types/database";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface ChatMessage {
   id: string;
@@ -52,6 +53,7 @@ interface ChatMessage {
 }
 
 export default function TrainingPage() {
+  const { role } = useAuth();
   // Cấu hình Bot & Ngành nghề
   const [config, setConfig] = useState<BotTrainingConfig>(DEFAULT_BOT_CONFIG);
   const [knowledgeList, setKnowledgeList] = useState<KnowledgeItem[]>(DEFAULT_KNOWLEDGE_BASE);
@@ -229,6 +231,10 @@ export default function TrainingPage() {
 
   // Lưu cấu hình
   const handleSaveConfig = async () => {
+    if (role === "staff") {
+      alert("Chế độ chỉ xem: Chỉ Quản lý và Admin mới có quyền lưu cấu hình bot hệ thống.");
+      return;
+    }
     try {
       await fetch("/api/training/config", {
         method: "POST",
@@ -474,6 +480,17 @@ export default function TrainingPage() {
           </button>
         </div>
       </div>
+
+      {/* Banner thông báo quyền hạn cho Nhân viên */}
+      {role === "staff" && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs">
+          <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-bold">Chế độ Thử Bot (Dành cho Nhân viên tư vấn):</span>{" "}
+            Bạn có quyền thử nghiệm bot tư vấn trực tiếp qua khung Simulator bên phải. Quyền chỉnh sửa Persona, tri thức FAQ và nguyên tắc an toàn bot hệ thống thuộc về Quản lý và Admin.
+          </div>
+        </div>
+      )}
 
       {/* 2. Banner Master Switch (Công tắc tổng) Khớp 100% Ảnh 2 */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">

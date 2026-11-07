@@ -87,11 +87,23 @@ export function CRMDashboard() {
       if (e.key === CRM_STORAGE_KEY || e.key === null) void refresh();
     };
     const crmChange = () => void refresh();
+    const authChange = () => {
+      const isAuth = sessionStorage.getItem("omnichat_staff_auth") === "true";
+      setIsStaffLoggedIn(isAuth);
+      const name = sessionStorage.getItem("omnichat_staff_name");
+      if (name) setStaffName(name);
+      if (isAuth) {
+        setAuth(false);
+        void refresh();
+      }
+    };
     window.addEventListener("storage", storage);
     window.addEventListener("omnichat-crm-change", crmChange);
+    window.addEventListener("omnichat-auth-changed", authChange);
     return () => {
       window.removeEventListener("storage", storage);
       window.removeEventListener("omnichat-crm-change", crmChange);
+      window.removeEventListener("omnichat-auth-changed", authChange);
     };
   }, [refresh]);
   async function mutate(operation: () => Promise<CRMState>, message: string) {

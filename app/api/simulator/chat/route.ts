@@ -15,20 +15,24 @@ export async function POST(req: NextRequest) {
       knowledgeBase = DEFAULT_KNOWLEDGE_BASE,
       businessProfile,
       bookingDraftContext,
+      attachments = [],
     } = await req.json();
 
-    if (!message || !message.trim()) {
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+    const rawMsg = typeof message === "string" ? message : "";
+    const trimmedMsg = rawMsg.trim();
+
+    if (!trimmedMsg && !hasAttachments) {
       return NextResponse.json({ success: false, error: "Tin nhắn trống" }, { status: 400 });
     }
 
-    const trimmedMsg = message.trim();
     const lower = trimmedMsg.toLowerCase();
     const brandName = businessProfile?.name || "Golden Palace";
 
     const respond = <T extends { success: true; suggestedQuestions?: string[] }>(data: T) =>
       NextResponse.json({
         ...data,
-        suggestedQuestions: suggestedQuestions(trimmedMsg, /golden palace/i.test(brandName), data.suggestedQuestions),
+        suggestedQuestions: suggestedQuestions(trimmedMsg || "ảnh đính kèm", /golden palace/i.test(brandName), data.suggestedQuestions),
       });
 
     // 1. Chế độ ngoài giờ
@@ -37,6 +41,19 @@ export async function POST(req: NextRequest) {
         success: true,
         reply: outOfHoursMessage,
         triggeredRule: "out_of_hours",
+      });
+    }
+
+    // 1.1 Khách chỉ gửi ảnh (không kèm lời nhắn)
+    if (!trimmedMsg && hasAttachments) {
+      return respond({
+        success: true,
+        reply: `Dạ em đã nhận được hình ảnh Quý khách gửi ạ! Không gian và mẫu trang trí rất sang trọng và đẹp mắt. Quý khách đang dự kiến tổ chức tiệc cưới, sinh nhật hay sự kiện vào ngày nào và dự kiến khoảng bao nhiêu bàn để em hỗ trợ tư vấn sảnh và báo giá chi tiết nhất nhé ạ? 💕`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Tôi muốn đặt lịch xem sảnh thực tế",
+          "Hotline tư vấn: 0228 6595 959",
+        ],
       });
     }
 

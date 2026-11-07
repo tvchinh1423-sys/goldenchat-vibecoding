@@ -66,13 +66,15 @@ export const DEFAULT_USERS: AppUser[] = [
   },
 ];
 
+let memoryUsers: AppUser[] = [...DEFAULT_USERS];
+
 // Helper to safely access browser localStorage
 function isClient(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
 export function loadUsersFromStorage(): AppUser[] {
-  if (!isClient()) return DEFAULT_USERS;
+  if (!isClient()) return [...memoryUsers];
   try {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
     if (!raw) {
@@ -81,6 +83,7 @@ export function loadUsersFromStorage(): AppUser[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      memoryUsers = parsed;
       return parsed;
     }
   } catch {
@@ -90,6 +93,7 @@ export function loadUsersFromStorage(): AppUser[] {
 }
 
 export function saveUsersToStorage(users: AppUser[]): void {
+  memoryUsers = [...users];
   if (!isClient()) return;
   try {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));

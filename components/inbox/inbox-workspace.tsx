@@ -32,6 +32,10 @@ import { playChatTone } from "@/lib/chat/sound";
 import { extractLeadInfo } from "@/lib/lead-extractor";
 import { applyCRMToInbox } from "@/lib/crm/inbox-adapter";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
+import { useAuth } from "@/lib/auth/auth-context";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
+import { UserManagementModal } from "@/components/users/user-management-modal";
+import { LoginDialog } from "@/components/auth/login-dialog";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -43,6 +47,9 @@ const DEFAULT_FILTERS: InboxFilters = {
 };
 
 export function InboxWorkspace() {
+  const { currentUser, role, users, canManageUsers } = useAuth();
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const viewportRef = useVisualViewport<HTMLElement>();
   const [conversations, setConversations] = useState<Conversation[]>(
     createDemoConversations,
@@ -73,7 +80,13 @@ export function InboxWorkspace() {
   const [storageError, setStorageError] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const notify = useCallback((text: string) => setToast(text), []);
-  const filtered = filterConversations(conversations, filters);
+
+  const effectiveFilters: InboxFilters = {
+    ...filters,
+    currentUserId: currentUser?.id,
+    currentStaffName: currentUser?.name,
+  };
+  const filtered = filterConversations(conversations, effectiveFilters);
   const active =
     filtered.find((conversation) => conversation.id === selectedId) ??
     filtered[0];
@@ -247,6 +260,60 @@ export function InboxWorkspace() {
         conversation.id === id ? update(conversation) : conversation,
       ),
     );
+
+  const handleAssign = useCallback(
+    (conversationId: string, assignedTo: string, staffName?: string) => {
+      const staff = users.find(
+        (u) =>
+          u.id === assignedTo ||
+          u.username.toLowerCase() === assignedTo.toLowerCase() ||
+          u.name === staffName,
+      );
+      const targetName =
+        staff?.name ||
+        staffName ||
+        (assignedTo === "me"
+          ? currentUser?.name || "Bạn"
+          : assignedTo === "team"
+          ? "Đội tư vấn Golden Palace"
+          : "Chưa phân công");
+
+      updateConversation(conversationId, (conversation) => {
+        const roleTitle =
+          role === "admin"
+            ? "Admin"
+            : role === "manager"
+            ? "Quản lý"
+            : "Nhân viên";
+
+        const systemNotice = {
+          id: `sys_assign_${Date.now()}`,
+          sender: "bot" as const,
+          content:
+            assignedTo === "unassigned"
+              ? `🔔 ${currentUser?.name || "Hệ thống"} (${roleTitle}) đã bỏ phân công phiên chat này.`
+              : `🔔 ${currentUser?.name || "Hệ thống"} (${roleTitle}) đã chỉ định phiên chat này cho: ${targetName}.`,
+          createdAt: new Date().toISOString(),
+        };
+
+        return {
+          ...conversation,
+          assignedTo,
+          assignedStaffName: targetName,
+          assignedAt: new Date().toISOString(),
+          assignedBy: currentUser?.name || "Admin",
+          messages: [...conversation.messages, systemNotice],
+        };
+      });
+
+      notify(
+        assignedTo === "unassigned"
+          ? "Đã bỏ phân công phiên chat."
+          : `Đã chỉ định phiên chat cho ${targetName}.`,
+      );
+    },
+    [users, currentUser, role, notify],
+  );
   const updateFilters = (patch: Partial<InboxFilters>) => {
     setFilters((current) => ({ ...current, ...patch }));
     setChatOpen(false);
@@ -258,10 +325,10 @@ export function InboxWorkspace() {
     url.searchParams.set("conversation", id);
     window.history.replaceState(null, "", url.toString());
   }
-  function sendMessage() {
+  function sendMessage(customContent?: string) {
     if (!active || active.status === "archived") return;
-    const content = (drafts[active.id] ?? "").trim();
-    const files = attachments[active.id] ?? [];
+    const content = (typeof customContent === "string" ? customContent : (drafts[active.id] ?? "")).trim();
+    const files = typeof customContent === "string" ? [] : (attachments[active.id] ?? []);
     if (!content && !files.length) return;
     playChatTone();
     cancelDraft();
@@ -281,8 +348,10 @@ export function InboxWorkspace() {
         },
       ],
     }));
-    setDrafts((current) => ({ ...current, [active.id]: "" }));
-    setAttachments((current) => ({ ...current, [active.id]: [] }));
+    if (typeof customContent !== "string") {
+      setDrafts((current) => ({ ...current, [active.id]: "" }));
+      setAttachments((current) => ({ ...current, [active.id]: [] }));
+    }
     notify("Đã thêm tin nhắn demo. AI tự tắt khi tư vấn viên tiếp quản.");
   }
 
@@ -556,12 +625,8 @@ export function InboxWorkspace() {
           notify("Đã cập nhật ghi chú nội bộ trong phiên demo.");
         }}
         onCreateLead={createLead}
-        onAssign={(assignedTo) => {
-          updateConversation(active.id, (conversation) => ({
-            ...conversation,
-            assignedTo,
-          }));
-          notify("Đã cập nhật người phụ trách.");
+        onAssign={(assignedTo, staffName) => {
+          handleAssign(active.id, assignedTo, staffName);
         }}
         notify={notify}
       />
@@ -645,12 +710,10 @@ export function InboxWorkspace() {
             </kbd>
           </div>
           <span className="hidden h-7 w-px bg-border xl:block" />
-          <div
-            title="Ngọc Khánh · Tư vấn viên"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-[#eaf1ff] text-[11px] font-semibold text-primary"
-          >
-            NK
-          </div>
+          <UserProfileMenu
+            onOpenUserManagement={() => setShowUserModal(true)}
+            onOpenLoginModal={() => setShowLoginModal(true)}
+          />
         </div>
       </header>
       {storageError && (
@@ -789,22 +852,49 @@ export function InboxWorkspace() {
                       : "Đã lưu trữ hội thoại. Xem lại bằng bộ lọc Lưu trữ.",
                   );
                 }}
-                onReaction={(id) =>
+                onReaction={(id, reactionType = "love") =>
                   updateConversation(active.id, (conversation) => ({
                     ...conversation,
-                    messages: conversation.messages.map((message) =>
-                      message.id === id
-                        ? { ...message, liked: !message.liked }
-                        : message,
-                    ),
+                    messages: conversation.messages.map((message) => {
+                      if (message.id !== id) return message;
+                      const isSame = message.reaction === reactionType || (reactionType === "love" && message.liked && !message.reaction);
+                      return {
+                        ...message,
+                        liked: !isSame,
+                        reaction: isSame ? undefined : reactionType,
+                      };
+                    }),
                   }))
                 }
+                onPinMessage={(id) => {
+                  updateConversation(active.id, (conversation) => {
+                    const isAlreadyPinned = conversation.pinnedMessageId === id;
+                    const targetMsg = conversation.messages.find((m) => m.id === id);
+                    const newPinnedId = isAlreadyPinned ? undefined : id;
+                    notify(
+                      isAlreadyPinned
+                        ? "Đã bỏ ghim tin nhắn."
+                        : `📌 Đã ghim tin nhắn: "${targetMsg?.content.slice(0, 35) || ""}..."`
+                    );
+                    return {
+                      ...conversation,
+                      pinnedMessageId: newPinnedId,
+                      messages: conversation.messages.map((m) => ({
+                        ...m,
+                        pinned: m.id === newPinnedId,
+                      })),
+                    };
+                  });
+                }}
                 onBack={() => setChatOpen(false)}
                 onInfo={() => setInfoOpen(true)}
                 expanded={expanded}
                 onExpand={() => setExpanded(!expanded)}
                 notify={notify}
                 now={now}
+                onAssign={(assignedTo, staffName) =>
+                  handleAssign(active.id, assignedTo, staffName)
+                }
               />
             ) : (
               <div className="panel flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -885,6 +975,18 @@ export function InboxWorkspace() {
           onClose={() => setChatVisit(null)}
         />
       )}
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        open={showUserModal}
+        onClose={() => setShowUserModal(false)}
+      />
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </main>
   );
 }
