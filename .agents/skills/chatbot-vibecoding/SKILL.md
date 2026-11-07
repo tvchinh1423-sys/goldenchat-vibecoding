@@ -35,6 +35,7 @@ description: >-
 | **Khung Simulator Thử bot** | Test thực đơn, xem sảnh, guardrail, bóc tách SĐT | ✅ Hoàn thành (Chinh) |
 | **Trang Cấu hình Kênh & SLA** | `/settings` quản lý Botcake, Telegram, Web Widget, SLA | ✅ Hoàn thành (Chinh) |
 | **Web Chat Widget nhúng** | `/widget` Khung chat nhúng cho website doanh nghiệp | ✅ Hoàn thành (Chinh) |
+| **Giao diện Chat Meta Business Suite** | Reactions, Ghim tin nhắn, Lightbox media, Quick Like 👍, Emoji Picker | ✅ Hoàn thành 100% (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
@@ -600,3 +601,35 @@ app-root/
   - Unit tests: Bổ sung `tests/widget-chat-ux.test.ts`, nâng tổng số unit test từ 45 lên **48/48 tests pass 100%**.
   - Playwright browser tests: Bổ sung `tests/browser/widget-meta-ux.spec.ts` kiểm thử toàn bộ luồng đính kèm ảnh, reaction, lightbox, emoji picker và Like button. Toàn bộ kịch bản Playwright (desktop và mobile landscape/portrait) đạt 100%.
   - Production build Next.js: **20/20 static pages & dynamic endpoints build thành công 100%**.
+
+### Mốc Nâng Cấp Giao Diện Chat Hộp Thư Chuẩn Meta Business Suite (Reactions, Ghim Tin Nhắn, Media Lightbox, Quick Like & Tối Ưu Bàn Phím Ảo Di Động) — 07/11/2026 (Chinh)
+
+- **1. Giao Diện Khung Chat Chuẩn Meta Business Suite (Messenger / Page Inbox):**
+  - Màu sắc và phong cách bong bóng chat đồng bộ nhận diện Meta:
+    + Tin nhắn khách hàng: Nền xám `#f0f2f5`, chữ đen `#050505`, bo góc `rounded-bl-xs`.
+    + Tin nhắn tư vấn viên / Page: Nền xanh Meta `#0084ff`, chữ trắng, bo góc `rounded-br-xs`.
+  - Nút Thích nhanh 👍 (Quick Like): Khi ô soạn thảo rỗng, hiển thị nút Thích 👍 màu xanh Messenger; bấm 1-chạm gửi ngay biểu tượng Like cho khách. Nút Gửi luôn sẵn sàng, tự kích hoạt khi có nội dung.
+- **2. Tương Tác Cảm Xúc (Meta Reactions) & Reaction Badges:**
+  - Tích hợp 6 biểu cảm kinh điển chuẩn Meta: ❤️ (Yêu thích), 👍 (Thích), 😆 (Haha), 😮 (Wow), 😢 (Buồn), 😡 (Phẫn nộ).
+  - Thanh Floating Meta Reaction Bar nổi bật khi hover hoặc click nút Smile bên cạnh từng tin nhắn với hiệu ứng chuyển động mượt mà.
+  - Huy hiệu cảm xúc (Reaction Badge) hiển thị cố định ở chân tin nhắn, cho phép nhấp để đổi hoặc gỡ cảm xúc.
+- **3. Ghim Tin Nhắn Quan Trọng (Pin / Unpin Messages) & Pinned Banner:**
+  - Nút ghim 📌 trên từng tin nhắn cho phép đánh dấu các mốc thỏa thuận quan trọng (đặt cọc, số lượng mâm cỗ, yêu cầu đặc biệt của khách).
+  - Huy hiệu `📌 Đã ghim` màu vàng hổ phách nổi bật trên bong bóng tin nhắn.
+  - Thanh **Pinned Message Banner** cố định ở đỉnh khung chat (phong cách Meta Page Inbox): hiển thị trích dẫn tin nhắn đã ghim, nút "Xem" tự động cuộn mượt đến vị trí tin nhắn và hiệu ứng highlight màu vàng, kèm nút "Bỏ ghim".
+- **4. Hiển Thị Media, Image Lightbox & Đường Link Tương Tác:**
+  - Hiển thị media dạng gallery gọn gàng, sắc nét.
+  - Khi nhấp vào ảnh trong đoạn chat: Mở ngay Dialog Modal Lightbox phóng to chất lượng cao, kèm nút "Mở ảnh gốc / Tải về".
+  - Đường link clickable qua `FormattedMessage`, nhận diện hotline điện thoại chạm là gọi ngay `tel:`, các nút Action Chips 1-chạm (Thực đơn mẫu, Bản đồ Google Maps chỉ đường đến 98 Đông A, Khảo sát sảnh tiệc...).
+- **5. Khay Emoji Phân Nhóm Phong Phú:**
+  - Popover chọn emoji phân chia theo 3 tab trực quan: Cảm xúc, Cử chỉ, Tiệc cưới & F&B (phù hợp đặc thù nhà hàng tiệc cưới).
+- **6. Tối Ưu Bàn Phím Ảo & Viewport Di Động:**
+  - Xử lý triệt để xung đột khi mở bàn phím ảo trên mobile hoặc thu nhỏ layout viewport (`@media(max-height:420px)` và `data-keyboard-open`):
+    + Co gọn header chat, giảm padding footer, ẩn các banner phụ và chỉ dẫn phím tắt.
+    + Đảm bảo ô nhập tin nhắn và nút gửi luôn hiển thị hoàn toàn bên trên bàn phím ảo (`<= 330px` và `<= 300px`).
+  - Khắc phục lỗi hydration SSR trong `CRMDashboard` bằng cách đồng bộ `sessionStorage` trong `useEffect`.
+  - Căn chỉnh tab bar `MobileBottomNav` với `items-start pt-1` để các liên kết nằm an toàn trên thanh `safe-bottom` (đáy `<= 810px`).
+- **7. Kết Quả Kiểm Thử Toàn Diện:**
+  - **48/48 unit tests pass 100%**.
+  - **28/28 Playwright browser tests pass 100%** (bao gồm cả desktop, mobile portrait, mobile landscape, keyboard viewport, PWA mobile).
+  - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
