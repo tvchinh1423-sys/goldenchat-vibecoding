@@ -15,6 +15,7 @@ import {
   Smartphone,
   UserCheck,
   Lock,
+  Globe,
 } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -149,6 +150,17 @@ export default function DashboardLayout({
               ⌘K
             </kbd>
           </div>
+
+          {/* Nút Chuyển nhanh sang Web Widget Khách Hàng */}
+          <Link
+            href="/widget"
+            title="Mở giao diện Chat Khách Hàng (Web Widget)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200/80 bg-blue-50/80 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition active:scale-95 shadow-2xs"
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden sm:inline">Khung Chat Khách</span>
+            <span className="sm:hidden">Widget</span>
+          </Link>
 
           {/* Chuông Thông Báo trên Web */}
           <NotificationBell />

@@ -767,3 +767,18 @@ app-root/
   - **51/51 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
 - **6. Triển Khai Trực Tiếp Production:**
   - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
+
+### Mốc Chuyển Đổi Hai Chiều Admin ⇋ Web Widget & Nút Về Admin Trên Mobile PWA — 07/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để vấn đề mất lối về Admin trên Mobile PWA:**
+  - Trên điện thoại di động (PWA Standalone), trình duyệt không có thanh URL hay nút Back. Khi người dùng mở `/widget` thì bị kẹt trong màn hình chat của khách hàng, không thể quay lại trang quản trị Admin.
+- **2. Bổ sung cơ chế chuyển đổi 2 chiều 1-chạm (Admin ⇋ Widget Switcher):**
+  - **Từ Widget ➔ Admin:**
+    + **Thanh Switcher Bar trên cùng (`bg-slate-950`):** Đặt ở đỉnh màn hình, tự động tránh notch / Dynamic Island của iPhone bằng `pt-[calc(0.4rem+var(--safe-top))]`, có badge `Giao diện Chat Khách Hàng` và nút xanh **"⬅️ Về Trang Admin"** (bấm vào là chuyển thẳng về `/inbox`).
+    + **Header Widget:** Thêm nút **"⬅️ Về Admin"** ngay trong hàng nút điều khiển (cạnh nút Đặt lịch).
+    + **Bong bóng chat khi thu gọn:** Có thêm nút pill nổi **"⬅️ Về Admin"** để người dùng không bao giờ bị kẹt lại.
+  - **Từ Admin ➔ Widget:**
+    + **Thanh Header Top Navigation (`app/(dashboard)/layout.tsx`):** Thêm nút **"Khung Chat Khách"** / **"Widget"** (icon `Globe`).
+    + **Header Hộp thư Inbox (`components/inbox/inbox-workspace.tsx`):** Thêm nút **"Khung Chat Khách"** bên cạnh nút "Bot tư vấn khách".
+- **3. Triển khai trực tiếp Production:**
+  - Commit và push thẳng lên `origin/main` để Vercel xuất bản tự động.

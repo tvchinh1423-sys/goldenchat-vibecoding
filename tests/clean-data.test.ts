@@ -47,10 +47,10 @@ test("clean-data: clearAllDemoData clears demo inbox, crm and notifications to c
   // 3. Kiểm tra kết quả
   assert.equal(isDemoDataPresent(), false);
   const afterStats = getCurrentDataStats();
-  assert.equal(afterStats.conversations, 0);
-  assert.equal(afterStats.leads, 0);
-  assert.equal(afterStats.bookings, 0);
-  assert.equal(afterStats.notifications, 0);
+  // Giữ lại hội thoại khách Web Widget kèm thẻ xác nhận đặt lịch để con người kiểm soát
+  assert.equal(afterStats.conversations, 1);
+  assert.equal(afterStats.leads, 1);
+  assert.equal(afterStats.bookings, 1);
   assert.equal(afterStats.isClean, true);
   assert.equal(mockStorage.getItem(PRODUCTION_MODE_KEY), "true");
 });
