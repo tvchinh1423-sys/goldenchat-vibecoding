@@ -58,7 +58,31 @@ test("Botcake Webhook GET handles verify token subscription", async () => {
   assert.equal(data.status, "ready");
 });
 
-test("Botcake Webhook POST processes Facebook and Zalo payloads gracefully", async () => {
+test("Botcake Webhook POST reads custom and Messenger-style Facebook events", async () => {
+  const sender = { id: "demo-fb-01" };
+  const message = { text: "Hotline Golden Palace là gì?" };
+  const events = [
+    { platform: "facebook", sender, message },
+    { object: "page", entry: [{ messaging: [{ sender, message }] }] },
+  ];
+
+  for (const body of events) {
+    const res = await postBotcakeWebhook(new NextRequest("http://localhost:3000/api/webhook/botcake", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }));
+    assert.equal(res.status, 200);
+    const json = await res.json();
+    assert.equal(json.success, true);
+    assert.equal(json.data.platform, "facebook");
+    assert.equal(json.data.externalThreadId, sender.id);
+    assert.equal(json.data.messageReceived, message.text);
+    assert.ok(json.data.botReply.trim());
+  }
+});
+
+test("Botcake Webhook POST reads a Zalo customer phone", async () => {
   const req = new NextRequest("http://localhost:3000/api/webhook/botcake", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

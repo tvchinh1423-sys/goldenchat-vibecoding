@@ -568,3 +568,9 @@ app-root/
   - Bổ sung bộ test chuyên sâu `tests/rbac-assignment.test.ts` (3 nhóm test: Kiểm thử ranh giới quyền hạn chính xác của Admin/Manager/Staff, Kiểm thử CRUD tài khoản và chống trùng/tự xóa, Kiểm thử chỉ định chat và lọc tab Của tôi).
   - Kết quả kiểm thử: **45/45 unit tests pass 100%**.
   - Production build Next.js: **20/20 trang tĩnh thành công 100%**, không có lỗi TypeScript hay ESLint.
+
+### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
+
+- Đã nhận `origin/main` tại `47cb8be`, giữ nguyên schema và các file chạy cục bộ chưa commit.
+- Kiểm tra Vercel: `GET /api/webhook/botcake` trả HTTP 200 `ready`; `POST /api/simulator/chat` với kênh `facebook` và câu hỏi mẫu về hotline trả đúng nội dung. Kiểm thử cục bộ xác nhận webhook đọc được payload Facebook dạng custom và `entry[].messaging[]`, trả JSON có `data.botReply`; tổng 49 test đạt. Webhook không tự gửi nội dung đó lên Messenger.
+- Chuẩn bị bài thử có từ khóa riêng và JSON API trong [docs/test-facebook-botcake.md](../../../docs/test-facebook-botcake.md). Dùng câu hỏi cố định, không gửi dữ liệu khách và không ghi Inbox/CRM. Tab Botcake cần người dùng đăng nhập bằng tài khoản quản trị Page; chưa cấu hình flow hoặc xác minh tin nhắn Facebook thật. Bước kế tiếp: chọn Page, chạy flow và đối chiếu phản hồi trực tiếp trong Messenger; kiểm thử đồng bộ Inbox/CRM riêng.
