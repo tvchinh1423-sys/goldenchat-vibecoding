@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function DashboardLayout({
   children,
@@ -148,6 +149,9 @@ export default function DashboardLayout({
               ⌘K
             </kbd>
           </div>
+
+          {/* Chuông Thông Báo trên Web */}
+          <NotificationBell />
 
           {/* User Profile Menu with Role Switcher & Management */}
           <UserProfileMenu

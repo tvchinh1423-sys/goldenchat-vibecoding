@@ -21,6 +21,8 @@ import {
   subscribeInAppNotifications,
   type InAppNotification,
   requestNotificationPermission,
+  updateAppBadge,
+  getStoredNotifications,
 } from "@/lib/notifications";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 
@@ -123,6 +125,17 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
     };
+  }, []);
+
+  // Đồng bộ App Badging API và Title badge
+  useEffect(() => {
+    try {
+      const notifs = getStoredNotifications();
+      const unread = notifs.filter((n) => !n.read).length;
+      updateAppBadge(unread);
+    } catch {
+      // Bỏ qua lỗi
+    }
   }, []);
 
   // Listen to in-app notification triggers

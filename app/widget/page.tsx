@@ -1504,8 +1504,9 @@ export default function WebWidgetPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center text-xs text-slate-400">
-          Đang tải OmniChat Widget...
+        <div className="min-h-screen flex flex-col items-center justify-center gap-2.5 text-xs text-slate-400">
+          <img src="/icon-192.png" alt="OmniChat" className="w-10 h-10 rounded-xl shadow-xs animate-pulse" />
+          <span>Đang tải OmniChat Widget...</span>
         </div>
       }
     >
