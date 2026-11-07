@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
+import { BarChart3, MessageSquare, Bot, Users, Search, Sparkles, Settings, Smartphone } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function DashboardLayout({
@@ -35,6 +35,11 @@ export default function DashboardLayout({
       icon: Users,
     },
     {
+      name: "Báo cáo",
+      href: "/dashboard",
+      icon: BarChart3,
+    },
+    {
       name: "Cài đặt kênh",
       href: "/settings",
       icon: Settings,
@@ -47,9 +52,9 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
+    <div className="app-safe-x min-h-dvh bg-[#f8fafc] flex flex-col font-sans">
       {/* Top Navigation Bar theo chuẩn UI Mẫu */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 pb-2.5 pt-[calc(0.625rem+var(--safe-top))] md:px-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 md:gap-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
@@ -61,7 +66,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex max-w-full items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+          <nav aria-label="Điều hướng quản trị" className="hidden max-w-full items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60 md:flex">
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -69,6 +74,7 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex shrink-0 items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? "bg-white text-slate-900 shadow-sm border border-slate-200/70"
@@ -116,7 +122,7 @@ export default function DashboardLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 max-w-[1700px] w-full mx-auto">
+      <main className="flex-1 p-3 pb-[calc(var(--mobile-nav-height)+1rem)] sm:px-4 sm:pt-4 md:p-6 max-w-[1700px] w-full mx-auto">
         {children}
       </main>
 

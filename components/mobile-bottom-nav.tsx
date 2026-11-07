@@ -3,9 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Bot, Users, Settings, Download } from "lucide-react";
+import { BarChart3, MessageSquare, Bot, Users, Settings, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ className }: { className?: string }) {
   const pathname = usePathname();
 
   const navItems = [
@@ -26,6 +27,11 @@ export function MobileBottomNav() {
       icon: Users,
     },
     {
+      name: "Báo cáo",
+      href: "/dashboard",
+      icon: BarChart3,
+    },
+    {
       name: "Cài đặt",
       href: "/settings",
       icon: Settings,
@@ -40,7 +46,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Thanh điều hướng di động"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/90 flex items-center justify-around py-1.5 px-2 pb-[max(env(safe-area-inset-bottom),6px)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden transition-all"
+      className={cn("fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-6 items-center border-t border-slate-200/90 bg-white/95 pl-[max(0.25rem,var(--safe-left))] pr-[max(0.25rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden", className)}
     >
       {navItems.map((item) => {
         const isActive =
@@ -53,9 +59,10 @@ export function MobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 ${
+            aria-current={isActive ? "page" : undefined}
+            className={`relative flex min-h-11 min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-0.5 ${
               isActive
-                ? "text-blue-600 scale-105 font-bold"
+                ? "text-blue-600 font-bold"
                 : "text-slate-500 hover:text-slate-800 font-medium"
             }`}
           >

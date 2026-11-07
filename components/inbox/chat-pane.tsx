@@ -246,7 +246,7 @@ export function ChatPane({
           </Button>
         </div>
       </header>
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-[#fcfcff] px-4 py-2 text-[10px] text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-[#fcfcff] px-4 py-2 text-[10px] text-muted-foreground max-md:group-data-[keyboard-open]/chat:hidden max-md:[@media(max-height:420px)]:group-data-[chat-open]/chat:hidden">
         <span className="flex items-center gap-1.5">
           <span
             className={cn(
@@ -286,7 +286,7 @@ export function ChatPane({
       </div>
       <div
         ref={streamRef}
-        className="scrollbar-thin flex-1 space-y-5 overflow-y-auto bg-[#fcfcff] p-4 sm:p-5"
+        className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-[#fcfcff] p-4 sm:p-5"
         role="log"
         aria-label="Tin nhắn"
         aria-live="polite"
@@ -554,7 +554,7 @@ export function ChatPane({
               onChange={(event) => onDraft(event.target.value)}
               onKeyDown={onComposerKeyDown}
               maxLength={6000}
-              className="mb-3 min-h-[62px] border-0 p-1 text-[13px] shadow-none focus-visible:ring-0"
+              className="mb-3 min-h-[62px] border-0 p-1 text-base shadow-none focus-visible:ring-0 max-md:group-data-[keyboard-open]/chat:mb-1 max-md:group-data-[keyboard-open]/chat:min-h-10 md:text-[13px]"
             />
             <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative">
@@ -612,7 +612,7 @@ export function ChatPane({
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="rounded-full border border-blue-200 text-[11px]"
+                  className="rounded-full border border-blue-200 px-2 text-[11px] sm:px-3"
                   disabled={generatingDraft}
                   aria-busy={generatingDraft}
                   onClick={() => {
@@ -630,7 +630,7 @@ export function ChatPane({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="rounded-full text-[11px]"
+                  className="rounded-full px-2 text-[11px] sm:px-3"
                   onClick={() => setSnippetsOpen(true)}
                 >
                   / Kho tin
@@ -649,7 +649,7 @@ export function ChatPane({
                 </Button>
               </div>
             </div>
-            <p className="mt-2.5 text-[9px] text-muted-foreground">
+            <p className="mt-2.5 text-[9px] text-muted-foreground max-md:group-data-[keyboard-open]/chat:hidden">
               Enter để gửi · Shift + Enter xuống dòng · Bản nháp cần được duyệt
               trước khi gửi
             </p>

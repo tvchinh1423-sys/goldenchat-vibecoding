@@ -362,6 +362,29 @@ app-root/
   - Sinh 2 file Excel mẫu tĩnh `.xlsx` phục vụ tải trực tiếp: `public/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx` và `knowledge-base/Bo_Tri_Thuc_FAQ_Golden_Palace_Nam_Dinh.xlsx`.
 - **5. Kiểm thử:** 34/34 unit tests pass 100%, Next.js build 17/17 trang tĩnh đạt 100%.
 
+### Mốc Báo cáo thống kê — 06/11/2026 (Hiền)
+
+- Nhận `af4bce8` từ Chinh. Giữ quyết định đấu nối Botcake Fanpage, quét QR Zalo và gắn token Telegram thật ở chặng cuối.
+- `/dashboard` có bốn KPI, phân bổ hội thoại theo Facebook Messenger/Zalo cá nhân/Web Widget và phễu N1 → N3 → N4. Tab Báo cáo có trong điều hướng quản trị và thanh điều hướng di động.
+- Hội thoại đọc từ Inbox demo của trình duyệt, gồm cả hội thoại lưu trữ. Lead đếm hồ sơ ở giai đoạn hiện tại N1–N5. Lịch đếm loại xem sảnh, trừ lịch đã hủy. Hai số đếm CRM theo chế độ CRM của workspace và dùng đăng nhập hiện có khi cần.
+- Tỷ lệ AI 82% và phễu 50 → 20 → 8 được ghi rõ là minh họa. Cần dữ liệu kết quả tự xử lý và lịch sử đổi giai đoạn để tính hai chỉ số thực tế.
+- Kiểm tra production build, lint/TypeScript và Playwright cho tab Báo cáo ở 360 px, số đếm Inbox/CRM, cách loại N0 và lịch hủy, tỷ trọng theo kênh và nhãn minh họa.
+
+### Mốc ô soạn tin trên mobile — 06/11/2026 (Hiền)
+
+- Inbox và Widget toàn màn hình bám kích thước/vị trí `VisualViewport`. Inbox thu gọn thanh điều hướng và phần tiêu đề phụ khi bàn phím chiếm chỗ. Hai ô nhập dùng cỡ chữ 16 px trên mobile. Script nhúng co iframe theo vùng nhìn của trang chủ.
+- Widget hủy bộ hẹn giờ tự mở form khi khách mở form bằng nút hoặc đóng Widget, tránh ghi đè giờ hẹn đang chỉnh. Giữ luồng tự mở form và kiểm tra lịch Google Calendar theo giờ khách đã chọn.
+- Kiểm tra Playwright với chiều rộng 360, 390 và 414 px, mô phỏng vùng nhìn còn 300 px, đóng bàn phím, gửi tin và iframe nhúng. Kiểm tra thêm kiểu thu nhỏ cả bố cục ở 360 px. Chưa kiểm tra bàn phím trên điện thoại thật.
+- Production build, lint, TypeScript, 34 test logic/API/SQL và 17 kịch bản Playwright đạt trên bản cục bộ.
+- Đã mở [PR #1](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/1) từ `hien/frontend-ai` vào `main` và tag Chinh để tiếp nhận hai mốc. Bước kế tiếp là tích hợp, thử bàn phím trên Safari iOS và Chrome Android thật, rồi xác minh bản Vercel.
+
+### Mốc giao diện iPhone và Android — 06/11/2026 (Hiền)
+
+- Làm trên worktree riêng trong lúc workspace chính xử lý merge, sau đó nhận mốc tích hợp `8eef0c9` và tiếp tục bàn giao qua PR #1. Giữ luồng đặt lịch tự động và chuyển giao tư vấn viên từ Chinh.
+- Giao diện quản trị và Inbox chừa vùng an toàn cho tai thỏ/thanh Home. Thanh điều hướng có vùng chạm tối thiểu 44 px theo chiều dọc. Ô nhập trên thiết bị cảm ứng dùng chữ 16 px và trình duyệt cho phép phóng to.
+- Form CRM và form đặt lịch Widget cuộn trong vùng nhìn khi bàn phím mở. Widget có nút lớn hơn và dùng toàn màn hình cả khi điện thoại xoay ngang. Trang Huấn luyện có lối tắt đến phần Thử bot trên mobile.
+- Production build, lint/TypeScript, 41 test logic/API/SQL, 20 kịch bản Chrome và 5 kịch bản mobile WebKit đạt. Đã xem ảnh mô phỏng Widget trên iPhone và Báo cáo trên Android. Kết quả là mô phỏng trên máy tính, cần thử bàn phím và chế độ PWA trên thiết bị thật sau khi tích hợp.
+
 ### Mốc Bổ Sung Nút Xóa Khách Hàng (Delete Lead) & Tối Ưu Hiển Thị Xóa Lịch Hẹn — 06/11/2026 (Chinh)
 
 - **1. Nâng cấp Modal Hồ Sơ Khách Hàng (`components/crm/lead-editor.tsx`):**
@@ -455,11 +478,13 @@ app-root/
   - Bổ sung unit test case kiểm tra cơ chế ngắt AI và Human Handoff trong `tests/chat-ux.test.ts`, nâng tổng số test lên **41/41 tests pass 100%**.
   - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
 
+### Mốc hợp nhất Báo cáo, bàn phím mobile và đặt lịch qua chat — 06/11/2026
 ### Mốc Widget mobile cho URL công khai — 07/11/2026 (Hiền)
 
 - Tách bản phát hành `/widget` từ `origin/main`, đưa phần giao diện Widget đã thử trên iPhone/Android từ `94734cf` vào nhánh phát hành riêng. Phần Báo cáo và giao diện quản trị tiếp tục ở PR #1.
 - Widget chừa vùng an toàn, giữ nút Gửi phía trên bàn phím, tăng chữ ô nhập lên 16 px trên thiết bị cảm ứng, hiện phím Gửi khi bàn phím hỗ trợ và cho cuộn form đặt lịch. Widget đứng và xoay ngang đều dùng vùng nhìn khả dụng, gồm bản nhúng.
 - Production build, 41 test logic/API/SQL, 16 kịch bản Chrome và 2 kịch bản Widget WebKit đạt. Kiểm tra hiển thị mobile dùng mô phỏng trên máy tính.
+- [PR #2](https://github.com/tvchinh1423-sys/goldenchat-vibecoding/pull/2) đã hợp nhất vào `main` tại `beedb21`. Vercel báo triển khai thành công. URL công khai trả HTTP 200 trên WebKit iPhone 13 và Chrome Galaxy S9+ mô phỏng, với ô nhập 16 px, nút Gửi 44 px và không bị che khi mô phỏng bàn phím.
 
 ### Mốc Bảo Vệ Đăng Nhập Quản Trị Lead (/leads), Khắc Phục Lỗi Soạn Nháp AI & Hoàn Thiện Tự Động Trả Lời Khi Bật AI — 07/11/2026 (Chinh)
 
@@ -485,6 +510,6 @@ app-root/
   - Production build Next.js 17/17 trang tĩnh thành công 100%. Khởi động lại daemon server cổng 3000.
 
 
-
-
-
+- Tích hợp `origin/main` tại `bd2b176` vào `hien/frontend-ai` cho PR #1. Giữ Báo cáo và phần xử lý vùng nhìn khi mở bàn phím của Hiền, cùng luồng đặt lịch qua nhiều lượt và hiển thị chuyển giao cho tư vấn viên của Chinh.
+- Widget hỏi tiếp khi còn thiếu dữ liệu. Khách vẫn có thể mở form bằng nút Đặt lịch. Khi đủ thông tin, Widget chờ kết quả lưu trước khi xác nhận và hiện liên kết Calendar.
+- Production build có kiểm tra kiểu dữ liệu, lint và 41 kiểm thử logic/API/SQL đạt. Các kịch bản Playwright đạt sau khi chạy lại kiểm tra đặt lịch với khung giờ không trùng lịch mẫu và nhãn Calendar hiện tại.
