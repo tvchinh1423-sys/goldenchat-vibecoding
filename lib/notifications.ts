@@ -51,12 +51,17 @@ export function updateAppBadge(count: number) {
 
   // 2. Cập nhật Title tab trình duyệt: "(3) OmniChat AI - Hộp thư"
   try {
-    const rawTitle = document.title.replace(/^\(\d+\)\s*/, "");
-    if (count > 0) {
-      document.title = `(${count}) ${rawTitle || "OmniChat AI - Hộp thư"}`;
-    } else {
-      document.title = rawTitle || "OmniChat AI - Hộp thư";
-    }
+    const applyTitle = () => {
+      const rawTitle = document.title.replace(/^\(\d+\)\s*/, "");
+      if (count > 0) {
+        document.title = `(${count}) ${rawTitle || "OmniChat AI — Quản Trị Khách Hàng & Bot Đa Kênh"}`;
+      } else {
+        document.title = rawTitle || "OmniChat AI — Quản Trị Khách Hàng & Bot Đa Kênh";
+      }
+    };
+    applyTitle();
+    setTimeout(applyTitle, 50);
+    setTimeout(applyTitle, 200);
   } catch {
     // Bỏ qua lỗi truy cập title
   }

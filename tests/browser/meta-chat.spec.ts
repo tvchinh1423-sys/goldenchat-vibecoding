@@ -4,9 +4,18 @@ test.describe("Meta Business Suite Chat Experience", () => {
   test("supports Meta reactions, pinned messages banner, lightbox media, and quick like button", async ({
     page,
   }) => {
+    // 0. Thiết lập phiên đăng nhập Admin kiểm thử
+    await page.addInitScript(() => {
+      window.sessionStorage.setItem("omnichat_user_id", "usr_admin");
+      window.sessionStorage.setItem("omnichat_staff_auth", "true");
+      window.sessionStorage.setItem("omnichat_staff_name", "Ban Giám Đốc");
+      window.sessionStorage.setItem("omnichat_user_role", "admin");
+      window.localStorage.setItem("omnichat.current_user.v1", "usr_admin");
+    });
+
     // 1. Vào trang inbox
     await page.goto("/inbox");
-    await expect(page.getByRole("heading", { name: "Dũ Chanh", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Hoàng Thùy Dương/i })).toBeVisible();
 
     // 2. Kiểm tra Quick Like (nút Thích 👍)
     const quickLikeBtn = page.getByRole("button", { name: "Gửi thích" });

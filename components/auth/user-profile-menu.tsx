@@ -10,7 +10,6 @@ import {
   LogOut,
   Users,
   ChevronDown,
-  Sparkles,
   Check,
   UserCheck,
   KeyRound,
@@ -32,12 +31,10 @@ export function UserProfileMenu({
     role,
     isAuthenticated,
     users,
-    quickSwitch,
     logout,
     canManageUsers,
   } = useAuth();
   const [open, setOpen] = useState(false);
-  const [switching, setSwitching] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,17 +67,6 @@ export function UserProfileMenu({
   }
 
   const roleConfig = ROLE_CONFIGS[role];
-
-  const handleSwitch = async (userId: string) => {
-    triggerHaptic("medium");
-    setSwitching(userId);
-    try {
-      await quickSwitch(userId);
-    } finally {
-      setSwitching(null);
-      setOpen(false);
-    }
-  };
 
   const getRoleIcon = (userRole: UserRole) => {
     switch (userRole) {
@@ -185,55 +171,6 @@ export function UserProfileMenu({
             </p>
           </div>
 
-          {/* Quick Switch Demo Roles (Test 1-chạm) */}
-          <div className="mb-2">
-            <div className="flex items-center justify-between px-1 mb-1.5">
-              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Chuyển vai trò test nhanh:</span>
-              </span>
-              <span className="text-[10px] text-slate-400">1-chạm</span>
-            </div>
-            <div className="space-y-1">
-              {users.map((u) => {
-                const isCurrent = u.id === currentUser.id;
-                const isBusy = switching === u.id;
-                const uRoleConfig = ROLE_CONFIGS[u.role];
-                return (
-                  <button
-                    key={u.id}
-                    type="button"
-                    disabled={isCurrent || isBusy}
-                    onClick={() => handleSwitch(u.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                      isCurrent
-                        ? "bg-blue-50/70 border border-blue-200/80 font-semibold text-blue-900 cursor-default"
-                        : "hover:bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs">{getRoleIcon(u.role)}</span>
-                      <div className="text-left truncate">
-                        <span className="font-medium text-[11px]">{u.name}</span>
-                        <span className="text-[10px] text-slate-400 ml-1.5">
-                          ({uRoleConfig.badgeLabel})
-                        </span>
-                      </div>
-                    </div>
-                    {isCurrent ? (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 font-bold shrink-0">
-                        <Check className="w-3 h-3" />
-                        <span>Đang dùng</span>
-                      </span>
-                    ) : isBusy ? (
-                      <span className="text-[10px] text-slate-400">Đang đổi...</span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="pt-2 border-t border-slate-100 space-y-1">
             {/* User Management Action (Admin & Manager only) */}
             {canManageUsers && (
@@ -249,6 +186,19 @@ export function UserProfileMenu({
                 <span>Quản lý người dùng & phân quyền</span>
               </button>
             )}
+
+            {/* Switch Account (requires login) */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                if (onOpenLoginModal) onOpenLoginModal();
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-slate-500" />
+              <span>Đăng nhập tài khoản khác</span>
+            </button>
 
             {/* Logout */}
             <button

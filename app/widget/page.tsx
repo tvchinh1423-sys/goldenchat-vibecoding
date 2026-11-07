@@ -748,7 +748,7 @@ function WebWidgetContent() {
       <div
         ref={viewportRef}
         className={`group/chat fixed inset-x-0 top-[var(--chat-top,0px)] z-50 flex h-[var(--chat-height,100dvh)] flex-col items-end ${
-          isEmbedded ? "" : "widget-viewport sm:inset-auto sm:bottom-6 sm:right-6 sm:h-auto"
+          isEmbedded || !isOpen ? "" : "widget-viewport sm:inset-auto sm:bottom-6 sm:right-6 sm:h-auto"
         } ${isOpen ? "" : "pointer-events-none"}`}
       >
         {isOpen ? (
@@ -1648,7 +1648,7 @@ function WebWidgetContent() {
           </div>
         ) : (
           /* Nút Mở Widget Tròn Nổi & Nút Về Admin khi chat đang thu gọn */
-          <div className="pointer-events-auto flex items-center gap-2 mt-auto mr-[max(1rem,var(--safe-right,0px))] mb-[max(1rem,var(--safe-bottom,0px))] sm:m-0">
+          <div className="pointer-events-auto flex items-center gap-2 mt-auto mr-[max(1rem,var(--safe-right,0px))] mb-[max(1rem,var(--safe-bottom,0px))]">
             {!isEmbedded && (
               <Link
                 href="/inbox"

@@ -70,11 +70,19 @@ test("API chat simulator responds with consultation when user attaches photo wit
   assert.ok(json.reply.length > 20);
 });
 
-test("playBookingSuccessCelebrationTone executes safely in node/SSR without crashing", async () => {
-  const { playBookingSuccessCelebrationTone, playChatTone, playNotificationChime } = await import("@/lib/chat/sound");
+test("playBookingSuccessCelebrationTone and unlockAudioContext execute safely without crashing", async () => {
+  const {
+    playBookingSuccessCelebrationTone,
+    playChatTone,
+    playNotificationChime,
+    unlockAudioContext,
+    isSoundMuted,
+  } = await import("@/lib/chat/sound");
   assert.doesNotThrow(() => {
-    playBookingSuccessCelebrationTone();
+    unlockAudioContext();
+    void playBookingSuccessCelebrationTone(true);
     playChatTone();
     playNotificationChime();
+    assert.equal(typeof isSoundMuted(), "boolean");
   });
 });

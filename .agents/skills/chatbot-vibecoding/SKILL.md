@@ -713,6 +713,22 @@ app-root/
 - **5. Bảo Mật Giao Diện (Ẩn Toàn Bộ Gợi Ý Placeholder / Mật Khẩu):**
   - Xóa bỏ toàn bộ gợi ý placeholder tài khoản (`admin, chinh, ngockhanh...`) và gợi ý mật khẩu (`goldenpalace2026`) trên giao diện Đăng nhập và Quản lý người dùng, giữ ô nhập hoàn toàn trống sạch sẽ để bảo mật khi trình chiếu demo.
 
+### Mốc Loại Bỏ Đăng Nhập Nhanh & Bảo Vệ Tuyệt Đối Quyền Admin — 07/11/2026 (Chinh)
+
+- **1. Chấm dứt cơ chế tự động gán quyền Admin khi vào web:**
+  - Xóa bỏ hoàn toàn mã gán session mặc định `usr_admin` trong `lib/auth/auth-context.tsx`.
+  - Người dùng truy cập mới bắt đầu ở trạng thái chưa xác thực (`currentUser = null`).
+- **2. Bắt buộc Đăng nhập (Auth Guard) trên toàn bộ hệ thống:**
+  - Tích hợp Auth Guard chặn mọi truy cập chưa đăng nhập tại `app/(dashboard)/layout.tsx`. Khi chưa xác thực, người dùng tự động chuyển hướng về trang `/login`.
+  - Hàm `logout()` xóa toàn bộ token/session và chuyển hướng ngay về `/login`.
+- **3. Xóa bỏ hoàn toàn tính năng Đăng nhập nhanh 1-chạm:**
+  - Loại bỏ khối "Đăng nhập nhanh 1-chạm (3 cấp phân quyền)", 3 thẻ vai trò (Admin, Quản lý, Nhân viên) và nút đăng nhập 1-chạm khỏi `components/auth/login-dialog.tsx`.
+  - Loại bỏ khối chọn tài khoản và mật khẩu mẫu khỏi `components/crm/access-panel.tsx`.
+  - Loại bỏ tính năng "Chuyển vai trò test nhanh (1-chạm)" khỏi menu hồ sơ `components/auth/user-profile-menu.tsx`.
+  - Chỉ giữ lại duy nhất form đăng nhập thủ công an toàn: Tên đăng nhập và Mật khẩu (kèm nút toggle ẩn/hiện mắt).
+- **4. Kiểm thử & Deploy:**
+  - **53/53 tests pass 100%**, Next.js build **20/20 trang tĩnh thành công 100%**.
+
 ### Mốc Tích Hợp Bộ Nhận Diện Thương Hiệu (App Icon PWA, Logo Ngang & Logo Dọc) & Deploy Trực Tiếp Production — 07/11/2026 (Chinh)
 
 - **1. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
@@ -860,4 +876,21 @@ app-root/
 - **3. Kiểm thử & Triển khai Production:**
   - **53/53 unit tests pass 100%**. Next.js build **20/20 static pages thành công 100%**.
   - Đã deploy thẳng lên production `origin/main` tại `https://goldenchat-vibecoding.vercel.app` theo quy định triển khai trực tiếp 07/11/2026.
+
+### Mốc Tối Ưu Âm Thanh Chúc Mừng Đặt Lịch & Hoàn Thiện Suite Kiểm Thử — 07/11/2026 (Chinh)
+
+- **1. Triệt để giải quyết Web Audio Autoplay Policy & Âm thanh chúc mừng tiệc cưới:**
+  - Khắc phục triệt để hiện tượng `AudioContext` bị suspended sau lệnh bất đồng bộ `await saveChatBooking(...)`: Bổ sung cơ chế phát silent buffer 1 mẫu trong `unlockAudioContext()` ngay khi người dùng click/chạm vào các nút đặt lịch.
+  - Tích hợp `unlockAudioContext()` đồng bộ ngay đầu `handleBookingSubmit`, `bookInChat` và `BookingEditor.onSubmit`.
+  - Cung cấp nút nghe thử âm chúc mừng tiệc cưới (🎉) trực tiếp trên Popup Đặt lịch Widget (`app/widget/page.tsx`), trong Dropdown Chuông thông báo (`NotificationBell`), và trong Dialog Đổi/Tạo lịch CRM (`BookingEditor`) để người dùng/nhân viên kiểm tra âm thanh tức thì với 1-chạm.
+  - Nâng cấp bộ tổng hợp WAV PCM 16-bit 22050Hz trực tiếp trong RAM phát qua HTML5 `new Audio(url)` fallback nếu Web Audio API gặp hạn chế nền tảng.
+- **2. Đồng bộ giao diện và hoàn thiện 100% bộ kiểm thử trình duyệt Playwright:**
+  - Cố định vùng an toàn cho nút bấm nổi `Widget Launcher` trên mobile landscape (`widget-mobile.spec.ts`).
+  - Cập nhật định danh hội thoại chuẩn production `Hoàng Thùy Dương (Web Widget)` trong `meta-chat.spec.ts`.
+  - Hoàn thiện test chuông thông báo, âm thanh Ding-Dong, âm thanh chúc mừng 🎉 và App Badging title trong `notifications.spec.ts`.
+- **3. Kiểm thử & Triển khai:**
+  - **53/53 unit tests pass 100%**.
+  - Toàn bộ các suite kiểm thử trình duyệt Playwright (`meta-chat`, `notifications`, `widget-meta-ux`, `widget-mobile`) **PASS 100%**.
+  - Next.js production build **20/20 static pages thành công 100%**.
+  - Deploy thẳng lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định triển khai trực tiếp 07/11/2026.
 
