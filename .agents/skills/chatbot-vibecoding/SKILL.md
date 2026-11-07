@@ -801,3 +801,16 @@ app-root/
   - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
 - **5. Triển Khai Trực Tiếp Production:**
   - Commit và push thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
+
+### Mốc Ẩn Câu Hỏi Gợi Ý Khỏi Trang Quản Trị Admin (Chỉ Giữ Lại Trên Web Widget Cho Khách) — 07/11/2026 (Chinh)
+
+- **1. Tối ưu UX chuyên nghiệp cho đội ngũ nhân viên & quản lý:**
+  - 3 câu hỏi gợi ý (`suggestedQuestions`) là tính năng điều hướng nhanh dành riêng cho **KHÁCH HÀNG** khi tương tác trên Web Widget (`/widget`).
+  - Trong trang Quản trị Hộp thư (`/inbox`), nhân viên lễ tân/CSKH là người tiếp quản và trả lời khách, không cần và không nên nhìn thấy các nút câu hỏi gợi ý của khách để tránh gây rối mắt không gian làm việc.
+- **2. Thực hiện điều chỉnh:**
+  - Trong `components/inbox/chat-pane.tsx`: Loại bỏ hoàn toàn khối render `{questions.map((question) => ...)}`.
+  - Giữ lại nút hành động nghiệp vụ `"Đặt lịch xem sảnh / thử món"` khi AI nhận diện ý định đặt lịch để nhân viên thao tác nhanh.
+  - Trên trang Web Widget (`app/widget/page.tsx`): **Giữ nguyên 100%** các nút câu hỏi gợi ý để khách hàng bấm hỏi tiếp nhanh chóng.
+- **3. Kiểm thử & Triển khai Production:**
+  - **52/52 unit tests passed 100%**. Next.js production build **20/20 trang tĩnh thành công 100%**.
+  - Deploy thẳng lên `origin/main` để xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`.
