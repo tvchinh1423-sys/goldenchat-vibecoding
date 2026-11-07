@@ -1,8 +1,9 @@
 /**
- * OmniChat Web Notification & In-App Notification Manager
+ * OmniChat Web Notification, In-App Notification & App Badging Manager
+ * Đồng bộ chuông thông báo, âm thanh Chime, số lượng badge trên App PWA và Web
  */
 
-import { playChatTone } from "@/lib/chat/sound";
+import { playNotificationChime } from "@/lib/chat/sound";
 import { triggerHaptic } from "./mobile/haptics";
 
 export interface InAppNotification {
@@ -12,6 +13,7 @@ export interface InAppNotification {
   url?: string;
   timestamp: number;
   type?: "message" | "booking" | "lead" | "system";
+  read?: boolean;
 }
 
 type NotificationListener = (notification: InAppNotification) => void;
@@ -25,7 +27,146 @@ export function subscribeInAppNotifications(listener: NotificationListener) {
 }
 
 /**
- * Dispatch notification to in-app banner, Web Audio sound and Web Push (if granted)
+ * Cập nhật số lượng thông báo (App Badge & Tab Title)
+ * Hỗ trợ Web App Badging API cho PWA icon trên màn hình chính và thanh Taskbar/Dock
+ */
+export function updateAppBadge(count: number) {
+  if (typeof window === "undefined") return;
+
+  // 1. Web App Badging API
+  try {
+    if ("setAppBadge" in navigator) {
+      if (count > 0) {
+        void (navigator as any).setAppBadge(count).catch(() => {});
+      } else {
+        void (navigator as any).clearAppBadge().catch(() => {});
+      }
+    }
+  } catch {
+    // Không hỗ trợ thì bỏ qua
+  }
+
+  // 2. Cập nhật Title tab trình duyệt: "(3) OmniChat AI - Hộp thư"
+  try {
+    const rawTitle = document.title.replace(/^\(\d+\)\s*/, "");
+    if (count > 0) {
+      document.title = `(${count}) ${rawTitle || "OmniChat AI - Hộp thư"}`;
+    } else {
+      document.title = rawTitle || "OmniChat AI - Hộp thư";
+    }
+  } catch {
+    // Bỏ qua lỗi truy cập title
+  }
+}
+
+/**
+ * Danh sách thông báo mẫu thực tế của Golden Palace cho demo
+ */
+const SEED_NOTIFICATIONS: InAppNotification[] = [
+  {
+    id: "notif-seed-1",
+    title: "Tin nhắn mới từ Dũ Chanh",
+    body: "Nhà em dự kiến khoảng 35 bàn. Bên mình có ưu đãi gì cho tiệc cưới không ạ?",
+    url: "/inbox?conversation=chanh",
+    timestamp: Date.now() - 2 * 60 * 1000, // 2 phút trước
+    type: "message",
+    read: false,
+  },
+  {
+    id: "notif-seed-2",
+    title: "Lịch hẹn mới: Vũ Huyền Trang",
+    body: "Hẹn xem sảnh & thử món cuối tuần lúc 09:30 ngày 12/11 (300 khách)",
+    url: "/leads",
+    timestamp: Date.now() - 5 * 60 * 1000, // 5 phút trước
+    type: "booking",
+    read: false,
+  },
+  {
+    id: "notif-seed-3",
+    title: "Cảnh báo SLA: Chờ phản hồi gấp",
+    body: "Hội thoại với Hoàng Thuỳ Dương trên Web Widget đã quá hạn 15 phút chưa có nhân viên tiếp quản.",
+    url: "/inbox",
+    timestamp: Date.now() - 12 * 60 * 1000, // 12 phút trước
+    type: "lead",
+    read: false,
+  },
+  {
+    id: "notif-seed-4",
+    title: "Chỉ định phiên chat mới",
+    body: "Quản trị viên đã chỉ định phiên chat của khách Đoàn Thị Mai cho bạn.",
+    url: "/inbox",
+    timestamp: Date.now() - 35 * 60 * 1000, // 35 phút trước
+    type: "system",
+    read: true,
+  },
+];
+
+const STORAGE_KEY = "omnichat_notifications_v1";
+
+/**
+ * Lấy danh sách thông báo từ Storage hoặc khởi tạo seed
+ */
+export function getStoredNotifications(): InAppNotification[] {
+  if (typeof window === "undefined") return SEED_NOTIFICATIONS;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_NOTIFICATIONS));
+      return SEED_NOTIFICATIONS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : SEED_NOTIFICATIONS;
+  } catch {
+    return SEED_NOTIFICATIONS;
+  }
+}
+
+/**
+ * Lưu danh sách thông báo và phát sự kiện đồng bộ
+ */
+export function saveStoredNotifications(notifications: InAppNotification[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+    const unread = notifications.filter((n) => !n.read).length;
+    updateAppBadge(unread);
+    window.dispatchEvent(
+      new CustomEvent("omnichat-notifications-updated", {
+        detail: { notifications, unreadCount: unread },
+      })
+    );
+  } catch {
+    // Bỏ qua lỗi
+  }
+}
+
+/**
+ * Đánh dấu 1 thông báo là đã đọc
+ */
+export function markNotificationAsRead(id: string) {
+  const current = getStoredNotifications();
+  const updated = current.map((n) => (n.id === id ? { ...n, read: true } : n));
+  saveStoredNotifications(updated);
+}
+
+/**
+ * Đánh dấu tất cả thông báo là đã đọc
+ */
+export function markAllNotificationsAsRead() {
+  const current = getStoredNotifications();
+  const updated = current.map((n) => ({ ...n, read: true }));
+  saveStoredNotifications(updated);
+}
+
+/**
+ * Xóa toàn bộ lịch sử thông báo
+ */
+export function clearAllNotifications() {
+  saveStoredNotifications([]);
+}
+
+/**
+ * Gửi thông báo hệ thống (Phát âm thanh chuông Chime, rung Haptic, hiển thị Banner và đẩy Notification API)
  */
 export function sendOmniNotification(options: {
   title: string;
@@ -42,32 +183,37 @@ export function sendOmniNotification(options: {
     url: options.url,
     timestamp: Date.now(),
     type: options.type || "message",
+    read: false,
   };
 
-  // 1. Play "Ting" sound
+  // 1. Lưu vào danh sách thông báo
+  const current = getStoredNotifications();
+  saveStoredNotifications([notification, ...current]);
+
+  // 2. Phát hiệu ứng âm thanh chuông đôi Ding-Dong
   if (options.playSound !== false) {
     try {
-      playChatTone();
+      playNotificationChime();
     } catch {
-      // AudioContext might require user gesture
+      // AudioContext requires user gesture
     }
   }
 
-  // 2. Trigger Haptic
+  // 3. Rung Haptic phản hồi trên Mobile
   if (options.haptic !== false) {
     triggerHaptic(options.type === "booking" ? "success" : "light");
   }
 
-  // 3. Dispatch to in-app listeners (top banner / snackbar)
+  // 4. Bắn sự kiện tới in-app listeners (Dynamic Island banner)
   listeners.forEach((listener) => {
     try {
       listener(notification);
     } catch {
-      // Ignore listener error
+      // Ignore
     }
   });
 
-  // 4. Trigger Web Notification API if permitted and document is hidden
+  // 5. Web Push / Native Notification nếu được cho phép
   if (
     typeof window !== "undefined" &&
     "Notification" in window &&
@@ -88,7 +234,7 @@ export function sendOmniNotification(options: {
         nativeNotif.close();
       };
     } catch {
-      // Fallback or iOS Safari limitation
+      // Fallback
     }
   }
 
@@ -96,7 +242,7 @@ export function sendOmniNotification(options: {
 }
 
 /**
- * Request Web Notification permission
+ * Yêu cầu quyền gửi thông báo từ người dùng
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (typeof window === "undefined" || !("Notification" in window)) {

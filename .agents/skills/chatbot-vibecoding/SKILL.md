@@ -15,6 +15,7 @@ description: >-
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
 > 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
 > 4. **TỰ CẬP NHẬT NGỮ CẢNH & ĐỒNG BỘ GITHUB:** Trong mỗi phiên làm việc, tự đọc cập nhật của đối phương trước khi sửa và tự cập nhật skill, kiểm tra, commit, push sau mỗi task nhỏ hoàn thành. Người dùng đã yêu cầu quy trình này ngày 05/11/2026; không hỏi lại cho các bước đồng bộ thông thường. Thực hiện theo quy trình bên dưới để giữ nguyên công việc đang làm.
+> 5. **MỌI LỆNH DEPLOY LÊN LUÔN — KHÔNG CHẠY THỬ NỮA (Chỉ đạo 07/11/2026):** Người dùng (Chinh) đã ra chỉ thị dứt khoát: Mọi lệnh, cập nhật tính năng và sửa lỗi đều **deploy thẳng lên production luôn** (commit và push thẳng lên `origin/main` để Vercel xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`), **không dừng lại ở bước chạy thử nghiệm cục bộ**. Hoàn thành mốc là deploy ngay lập tức.
 
 ---
 
@@ -633,3 +634,10 @@ app-root/
   - **48/48 unit tests pass 100%**.
   - **28/28 Playwright browser tests pass 100%** (bao gồm cả desktop, mobile portrait, mobile landscape, keyboard viewport, PWA mobile).
   - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
+
+### Mốc Quy Chuẩn Deploy Trực Tiếp Lên Production (Không Chạy Thử Nữa) — 07/11/2026 (Chinh)
+
+- **Chỉ đạo cốt lõi từ Chinh (07/11/2026):**
+  - Xóa bỏ hoàn toàn bước chạy thử nghiệm/chạy thử cục bộ dở dang.
+  - Từ nay về sau, **mọi lệnh, code thay đổi, tính năng mới và bản vá lỗi đều phải DEPLOY THẲNG LÊN PRODUCTION LUÔN** (commit và push thẳng lên `origin/main` để kích hoạt Vercel Production Build & Deploy tự động trên tên miền toàn cầu: `https://goldenchat-vibecoding.vercel.app`).
+  - Quy trình hoàn thành chuẩn: Viết code -> Kiểm tra nhanh build/test đạt chuẩn -> Commit với tiền tố ngữ nghĩa (`feat`, `fix`, `docs`, `chore`) -> Push thẳng lên `origin/main` -> Xác minh live deployment phản hồi HTTP 200 -> Báo cáo kết quả ngắn gọn cho Chinh.

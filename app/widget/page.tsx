@@ -657,8 +657,12 @@ function WebWidgetContent() {
               {/* Bot Info Profile */}
               <div className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-full sm:gap-3">
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-sm shadow-xs border border-white/20 text-white">
-                    <Bot className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center font-bold text-sm shadow-xs border border-white/20 bg-white/10">
+                    <img
+                      src="/icon-192.png"
+                      alt="OmniChat Bot"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {/* Chấm trạng thái Online nhấp nháy chuẩn Messenger */}
                   <span
@@ -781,8 +785,12 @@ function WebWidgetContent() {
                     <div className="flex items-end gap-1.5 max-w-[92%] sm:max-w-[88%]">
                       {/* Avatar Bot bên cạnh tin nhắn đầu tiên */}
                       {!isUser && (
-                        <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mb-1 shadow-2xs text-[11px] font-bold">
-                          GP
+                        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-1 shadow-2xs ring-1 ring-slate-200">
+                          <img
+                            src="/icon-192.png"
+                            alt="OmniChat"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       )}
 

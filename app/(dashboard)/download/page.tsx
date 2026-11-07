@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Download,
   Smartphone,
@@ -63,44 +64,64 @@ export default function DownloadPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-semibold text-blue-100">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Đa nền tảng · Chuẩn PWA Native 2026</span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-4 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-semibold text-blue-100">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Đa nền tảng · Chuẩn PWA Native 2026</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Tải & Cài Đặt OmniChat AI
+            </h1>
+            <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
+              Dùng mượt mà như app Zalo trên điện thoại (iPhone, Android) và phần mềm độc lập trên máy tính (Windows, Mac) mà không cần chờ xét duyệt từ cửa hàng ứng dụng.
+            </p>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              {isInstalled ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-semibold text-sm shadow-md">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Ứng dụng đã được cài đặt trên thiết bị này</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleInstallClick}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-50 transition active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Cài Đặt Ngay (1 Chạm)</span>
+                </button>
+              )}
+
+              <Link
+                href="/inbox"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl font-medium text-sm transition"
+              >
+                <span>Vào Hộp thư Chat</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Tải & Cài Đặt OmniChat AI
-          </h1>
-          <p className="text-blue-100 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Dùng mượt mà như app Zalo trên điện thoại (iPhone, Android) và phần mềm độc lập trên máy tính (Windows, Mac) mà không cần chờ xét duyệt từ cửa hàng ứng dụng.
-          </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            {isInstalled ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-semibold text-sm shadow-md">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Ứng dụng đã được cài đặt trên thiết bị này</span>
-              </div>
-            ) : (
-              <button
-                onClick={handleInstallClick}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-50 transition active:scale-95"
-              >
-                <Download className="w-4 h-4" />
-                <span>Cài Đặt Ngay (1 Chạm)</span>
-              </button>
-            )}
-
-            <Link
-              href="/inbox"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl font-medium text-sm transition"
-            >
-              <span>Vào Hộp thư Chat</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+          {/* App Icon Preview Showcase */}
+          <div className="flex md:flex-col items-center justify-center gap-2.5 shrink-0 self-start md:self-center">
+            <div className="relative group">
+              <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-tr from-cyan-400 via-sky-300 to-indigo-400 opacity-60 blur-md group-hover:opacity-80 transition" />
+              <Image
+                src="/icon-512.png"
+                alt="OmniChat AI PWA App Icon"
+                width={112}
+                height={112}
+                className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl shadow-2xl object-cover ring-2 ring-white/30"
+                priority
+              />
+            </div>
+            <span className="text-[11px] font-bold text-blue-100 tracking-wider uppercase">
+              PWA Mobile App
+            </span>
           </div>
         </div>
       </div>
@@ -199,9 +220,16 @@ export default function DownloadPage() {
 
               <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Mở App & Sử Dụng Chuẩn Zalo</p>
                   <p className="text-slate-500 text-xs mt-0.5">Icon <strong>OmniChat AI</strong> sẽ xuất hiện trên màn hình điện thoại. Chạm vào mở là toàn màn hình không có thanh web, nhận thông báo và quản lý chat siêu nhanh.</p>
+                  <div className="flex items-center gap-2.5 mt-2 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <Image src="/icon-192.png" alt="App Icon" width={36} height={36} className="w-9 h-9 rounded-xl shadow-xs object-cover" />
+                    <div>
+                      <strong className="text-xs text-slate-800 block">OmniChat AI</strong>
+                      <span className="text-[10px] text-slate-500">Ứng dụng đã sẵn sàng trên màn hình chính</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -239,9 +267,16 @@ export default function DownloadPage() {
 
               <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Chọn &quot;Thêm vào MH chính&quot; (Add to Home Screen)</p>
                   <p className="text-slate-500 text-xs mt-0.5">Cuộn danh sách xuống và chọn <strong>&quot;Thêm vào MH chính&quot;</strong> ➔ Bấm nút <strong>Thêm (Add)</strong> ở góc trên bên phải.</p>
+                  <div className="flex items-center gap-2.5 mt-2 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <Image src="/apple-touch-icon.png" alt="App Icon" width={36} height={36} className="w-9 h-9 rounded-xl shadow-xs object-cover" />
+                    <div>
+                      <strong className="text-xs text-slate-800 block">OmniChat AI</strong>
+                      <span className="text-[10px] text-slate-500">Mở toàn màn hình không viền Safari</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

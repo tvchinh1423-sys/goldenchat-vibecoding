@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ROLE_CONFIGS, UserRole } from "@/lib/auth/types";
 import {
@@ -125,11 +126,16 @@ export function LoginDialog({
           </button>
         )}
 
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Building2 className="w-6 h-6" />
-          </div>
+        {/* Brand Header với Logo Dọc */}
+        <div className="text-center space-y-3">
+          <Image
+            src="/logo-doc.png"
+            alt="OmniChat AI Logo"
+            width={180}
+            height={108}
+            className="h-20 sm:h-24 w-auto mx-auto object-contain drop-shadow-xs transition-transform hover:scale-105"
+            priority
+          />
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-50 border border-blue-200/80 text-[11px] font-semibold text-blue-700 mb-1">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
