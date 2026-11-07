@@ -30,7 +30,7 @@ import {
 } from "@/lib/crm/model";
 import { BookingEditor } from "@/components/crm/booking-editor";
 import { suggestedQuestions, type visitIntent } from "@/lib/chat/follow-ups";
-import { playChatTone, playBookingSuccessCelebrationTone } from "@/lib/chat/sound";
+import { playChatTone, playBookingSuccessCelebrationTone, unlockAudioContext } from "@/lib/chat/sound";
 import { extractLeadInfo } from "@/lib/lead-extractor";
 import { applyCRMToInbox } from "@/lib/crm/inbox-adapter";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
@@ -593,6 +593,7 @@ export function InboxWorkspace() {
     contact?: { name: string; phone: string },
   ) {
     if (!chatVisit) return;
+    unlockAudioContext();
     const conversation = chatVisit.conversation;
     const saved = await saveChatBooking(
       {
@@ -628,7 +629,7 @@ export function InboxWorkspace() {
         },
       ],
     }));
-    playBookingSuccessCelebrationTone();
+    void playBookingSuccessCelebrationTone(true);
   }
   async function createLead(fields: LeadFields) {
     if (!active) return false;
