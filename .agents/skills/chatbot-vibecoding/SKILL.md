@@ -959,23 +959,29 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Deploy trực tiếp lên `origin/main` (Vercel production).
 
-### Mốc Đồng Bộ Số Lượng Tin Chưa Đọc Thực Tế Cho Badge Navigation (Loại Bỏ Badge Cố Định 18) — 07/11/2026 (Chinh)
+### Mốc Tự Động Đồng Bộ Đa Thiết Bị (Cloud Sync Server), Nút Đặt Lịch Nhanh & Tối Ưu Hộp Thư — 07/11/2026 (Chinh)
 
-- **1. Khắc phục triệt để lỗi hardcode badge "18" tin nhắn:**
-  - Trước đây: `components/mobile-bottom-nav.tsx` và `app/(dashboard)/layout.tsx` hardcode số lượng badge cố định `"18"` trên icon "Tin nhắn" / "Kênh chat". Ngay cả khi hộp thư không có tin nhắn nào chưa đọc (`unread = 0`), badge đỏ vẫn hiện số 18 gây hiểu nhầm cho người dùng.
-  - Khắc phục: Xây dựng hook thời gian thực `useInboxUnreadCount` (`lib/inbox/use-unread-count.ts`) và hàm `getInboxUnreadCount()`.
-- **2. Cơ chế tính toán và hiển thị theo số lượng thực tế (Dynamic Real-time Badge):**
-  - Quét danh sách hội thoại trong bộ nhớ lưu trữ `STORAGE_KEY` (`omnichat.inbox.golden-palace.v1`).
-  - Tính tổng số tin nhắn chưa đọc từ các hội thoại đang mở (`status !== "archived"`).
-  - Khi không còn tin nhắn nào chưa đọc (`unreadCount === 0`): **Ẩn hoàn toàn badge** (không render thẻ số).
-  - Khi có tin nhắn chưa đọc (`unreadCount > 0`): Hiển thị chính xác con số thực tế (nếu > 99 hiển thị `"99+"`).
-  - Đồng bộ tức thì qua các sự kiện: `storage`, `omnichat-inbox-updated`, `omnichat-inbox-cleared`, `omnichat-demo-restored` và BroadcastChannel `omnichat-widget-sync`.
-  - Khi người dùng click vào một hội thoại để đọc tin nhắn, hội thoại được chuyển về `unread: 0` và bắn sự kiện `omnichat-inbox-updated` -> Badge trên Bottom Navigation và Top Navigation biến mất ngay lập tức.
-  - Đồng bộ với `updateAppBadge` trên PWA icon và title của tab trình duyệt.
-- **3. Kiểm thử & Triển khai Production:**
-  - Bổ sung unit test `tests/unread-count.test.ts` kiểm thử các trường hợp unread count = 0, tính tổng unread, và bỏ qua hội thoại lưu trữ.
-  - **57/57 unit tests pass 100%**.
-  - Playwright test `tests/browser/widget-mobile.spec.ts` **2/2 tests pass 100%**.
+- **1. Xây dựng Kiến trúc Cloud Sync Server Đa Thiết Bị (`/api/sync/store`):**
+  - **Vấn đề cốt lõi:** Khi dùng trên nhiều thiết bị khác nhau (iPhone, iPad, máy tính MacBook, PC), dữ liệu CRM (Leads, Bookings) và Hộp thư (Conversations, Messages) không nhìn thấy nhau do trước đây lưu cục bộ trong `localStorage` của từng trình duyệt riêng lẻ.
+  - **Giải pháp Cloud Store:**
+    * Xây dựng máy chủ đồng bộ đám mây `/api/sync/store` (`lib/sync/store.ts` và `app/api/sync/store/route.ts`).
+    * Duy trì snapshot trạng thái tập trung gồm CRM (Leads + Bookings) và Hộp thư (Conversations + Messages) kèm `revision` tăng dần.
+    * Khi bất kỳ thiết bị nào (iPhone hay máy tính) gửi tin nhắn, tạo lead, hoặc đặt lịch: Dữ liệu được đẩy ngay lên `/api/sync/store` (kèm lưu offline `localStorage`).
+    * Hộp thư `/inbox` và Bảng Phễu `/leads` tự động polling nhẹ mỗi 3 giây (kiểm tra `since=revision`, nếu không có thay đổi trả về ngay trong 3ms để tiết kiệm pin di động). Khi có thay đổi từ thiết bị khác, dữ liệu tự động cập nhật lên màn hình mà không cần F5!
+- **2. Nút Đặt Lịch Nhanh 1-Chạm trên Bong Bóng Chat (`/widget`):**
+  - Khi khách gõ ý định đặt lịch (ví dụ: *"chị muốn đặt lịch"*):
+    * Bot phản hồi ngắn gọn, tự nhiên, lịch sự: *"Dạ chị muốn ghé xem sảnh vào ngày giờ nào (nhà hàng đón tiếp 8:00 đến 10:30 sáng), và em xin Tên cùng Số điện thoại của chị nhé ạ?"*.
+    * Kèm **Nút Đặt Lịch 1-Chạm** ngay trên bong bóng chat: `[📅 Mở form chọn ngày giờ xem sảnh]` giúp khách có thể chạm mở form điền lịch trực quan HOẶC tiếp tục chat tự nhiên.
+- **3. Phân Bổ Chuyên Viên Tư Vấn Tránh Kẹt Lịch Trùng:**
+  - Nếu chuyên viên mặc định (Ngọc Khánh) đã kín 2 lịch hẹn trong khung 30 phút, hệ thống tự động kiểm tra và phân bổ lịch cho chuyên viên tư vấn tiếp theo đang trống (Thu Hà, Hoàng Long).
+  - Chỉ khi toàn bộ các chuyên viên đều kín lịch mới phản hồi thông báo bận ngắn gọn: *"Dạ khung giờ này bên em bận rồi ạ, anh/chị vui lòng đổi qua khung giờ khác (8:00 - 10:30) giúp em nhé!"*.
+- **4. Bảo Hiểm Dự Phòng Soạn Nháp AI & Tự Động Phản Hồi Khi Bật AI:**
+  - Nút **"✨ Soạn nháp AI"**: Tự động gọi `/api/ai/draft`, nếu gặp gián đoạn kết nối thì fallback ngay về tri thức FAQ chuẩn Golden Palace (`createFaqDraft`) để điền câu trả lời mẫu vào ô soạn thảo, không bao giờ để ô nhập trống.
+  - Khi bật toggle AI (`aiEnabled`): Kích hoạt bot tự động phản hồi ngay tin nhắn chờ của khách và đồng bộ tức thì sang Cloud Store.
+- **5. Kiểm thử & Triển khai Production:**
+  - Bổ sung `tests/cloud-sync.test.ts` kiểm thử toàn bộ cơ chế Cloud Store load và merge đa thiết bị.
+  - Đạt **59/59 unit tests pass 100%**.
   - Next.js production build **20/20 static pages thành công 100%**.
-  - Đẩy trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app`.
+  - Deploy thẳng lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định ngày 07/11/2026.
+
 

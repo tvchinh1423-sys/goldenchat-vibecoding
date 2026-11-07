@@ -5,6 +5,8 @@ import {
   normalizePhone,
   validateLead,
   validateBooking,
+  APPOINTMENT_DURATION_MS,
+  MAX_CONCURRENT_BOOKINGS_PER_STAFF,
   type LeadInput,
   type BookingInput,
   type CRMBooking,
@@ -22,6 +24,21 @@ import {
 export interface CRMState extends CRMSnapshot {
   mode: "demo" | "supabase";
 }
+
+const AVAILABLE_STAFFS = ["Ngọc Khánh", "Thu Hà", "Hoàng Long"];
+
+async function syncCRMCloudPush(data: CRMSnapshot) {
+  if (typeof window === "undefined") return;
+  try {
+    await fetch("/api/sync/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crm: data }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {}
+}
+
 async function request(path = "", method = "GET", body?: unknown) {
   let response: Response;
   let value;
@@ -50,6 +67,23 @@ async function request(path = "", method = "GET", body?: unknown) {
   return value;
 }
 export async function loadCRM(): Promise<CRMState> {
+  // Thử đồng bộ từ Cloud Store để đảm bảo nhiều thiết bị (iPhone, Mac) đều nhận dữ liệu mới nhất
+  if (typeof window !== "undefined") {
+    try {
+      const syncRes = await fetch("/api/sync/store", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(2500),
+      });
+      if (syncRes.ok) {
+        const syncData = await syncRes.json();
+        if (syncData?.crm) {
+          writeDemoCRM(localStorage, syncData.crm);
+          return { mode: "demo", ...syncData.crm };
+        }
+      }
+    } catch {}
+  }
+
   const result = await request();
   if (result.mode === "demo")
     return { mode: "demo", ...readDemoCRM(localStorage) };
@@ -65,6 +99,7 @@ async function mutate(
   if (result.mode !== "demo") return result;
   const data = local(readDemoCRM(localStorage));
   writeDemoCRM(localStorage, data);
+  void syncCRMCloudPush(data);
   window.dispatchEvent(new Event("omnichat-crm-change"));
   return { mode: "demo", ...data };
 }
@@ -129,8 +164,31 @@ export async function saveChatBooking(
     const lead =
       existing ?? withLead.leads.find((item) => item.phone === fields.phone);
     if (!lead) throw new CRMError("Chưa xác nhận được hồ sơ khách hàng.");
-    const saved = saveDemoBooking(withLead, { ...booking, lead_id: lead.id });
+
+    const start = Date.parse(booking.appointment_time);
+    let assignedStaff = booking.assigned_staff || "Ngọc Khánh";
+    const getStaffOverlaps = (staff: string) => {
+      const target = staff.toLocaleLowerCase("vi").trim();
+      return withLead.bookings.filter(
+        (b) =>
+          isActiveBooking(b) &&
+          b.assigned_staff.toLocaleLowerCase("vi").trim() === target &&
+          Math.abs(Date.parse(b.appointment_time) - start) < APPOINTMENT_DURATION_MS,
+      );
+    };
+
+    if (getStaffOverlaps(assignedStaff).length >= MAX_CONCURRENT_BOOKINGS_PER_STAFF) {
+      const alternativeStaff = AVAILABLE_STAFFS.find(
+        (s) => getStaffOverlaps(s).length < MAX_CONCURRENT_BOOKINGS_PER_STAFF,
+      );
+      if (alternativeStaff) {
+        assignedStaff = alternativeStaff;
+      }
+    }
+
+    const saved = saveDemoBooking(withLead, { ...booking, lead_id: lead.id, assigned_staff: assignedStaff });
     writeDemoCRM(localStorage, saved);
+    void syncCRMCloudPush(saved);
     window.dispatchEvent(new Event("omnichat-crm-change"));
     return { mode: "demo" as const, ...saved };
   }

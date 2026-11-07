@@ -1031,6 +1031,20 @@ function WebWidgetContent() {
                             </div>
                           )}
 
+                          {/* 3.1 NÚT ĐẶT LỊCH 1-CHẠM KHI NHẬN DIỆN Ý ĐỊNH ĐẶT LỊCH */}
+                          {m.visitType && !m.customCalendarUrl && !m.bookingDraft?.isComplete && (
+                            <div className="mt-2 pt-1.5 border-t border-slate-100 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openBooking(m.visitType || "xem_sanh")}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer"
+                              >
+                                <Calendar className="w-3.5 h-3.5" />
+                                <span>📅 Mở form chọn ngày giờ xem sảnh</span>
+                              </button>
+                            </div>
+                          )}
+
                           {/* 4. NÚT GOOGLE CALENDAR 1-CHẠM KHI CHỐT LỊCH THÀNH CÔNG */}
                           {m.customCalendarUrl && (
                             <div className="mt-2.5 pt-2 border-t border-slate-100">

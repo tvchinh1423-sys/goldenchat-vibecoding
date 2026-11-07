@@ -184,6 +184,14 @@ export function saveInboxConversations(conversations: Conversation[]) {
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
     broadcastWidgetUpdate();
+
+    // Đồng bộ tức thì lên Cloud Store để các thiết bị khác (iPhone, Mac) nhận ngay
+    void fetch("/api/sync/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversations }),
+      signal: AbortSignal.timeout(3000),
+    }).catch(() => {});
   } catch (e) {
     console.error("Failed to save inbox conversations:", e);
   }
@@ -399,6 +407,14 @@ export function ensureWidgetBookingInCRM(
 
     localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(parsed));
     window.dispatchEvent(new Event("omnichat-crm-change"));
+
+    // Đồng bộ tức thì lên Cloud Store để các thiết bị khác nhận ngay
+    void fetch("/api/sync/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crm: parsed }),
+      signal: AbortSignal.timeout(3000),
+    }).catch(() => {});
   } catch (err) {
     console.error("Error updating CRM from widget booking:", err);
   }

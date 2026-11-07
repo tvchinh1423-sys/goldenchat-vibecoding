@@ -109,7 +109,14 @@ export function CRMDashboard() {
     window.addEventListener("storage", storage);
     window.addEventListener("omnichat-crm-change", crmChange);
     window.addEventListener("omnichat-auth-changed", authChange);
+
+    // Đồng bộ đa thiết bị tự động mỗi 4 giây
+    const cloudSyncInterval = setInterval(() => {
+      void refresh();
+    }, 4000);
+
     return () => {
+      clearInterval(cloudSyncInterval);
       window.removeEventListener("storage", storage);
       window.removeEventListener("omnichat-crm-change", crmChange);
       window.removeEventListener("omnichat-auth-changed", authChange);

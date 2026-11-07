@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { autoCleanupIfDemo } from "@/lib/clean-data";
 import { ensureWidgetConversationInInbox } from "@/lib/inbox/widget-sync";
-import { createDemoConversations } from "@/lib/inbox/demo-data";
+import { createDemoConversations, createFaqDraft } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
@@ -175,12 +175,59 @@ export function InboxWorkspace() {
       if (currentStored !== nextJson) {
         localStorage.setItem(STORAGE_KEY, nextJson);
         window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
+        // Đẩy lên Cloud Sync để các thiết bị khác (iPhone, Máy tính) nhận ngay
+        void fetch("/api/sync/store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversations }),
+          signal: AbortSignal.timeout(3000),
+        }).catch(() => {});
       }
       setStorageError(false);
     } catch {
       setStorageError(true);
     }
   }, [conversations, ready]);
+
+  // Polling Cloud Sync định kỳ mỗi 3 giây để đồng bộ dữ liệu thời gian thực giữa các thiết bị khác nhau
+  const cloudRevisionRef = useRef(0);
+  useEffect(() => {
+    if (!ready) return;
+    let active = true;
+
+    const pullCloudSync = async () => {
+      try {
+        const res = await fetch(`/api/sync/store?since=${cloudRevisionRef.current}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(3500),
+        });
+        if (!active || !res.ok) return;
+        const data = await res.json();
+        if (data.modified && data.revision > cloudRevisionRef.current) {
+          cloudRevisionRef.current = data.revision;
+          if (Array.isArray(data.conversations) && data.conversations.length > 0) {
+            setConversations(data.conversations);
+          }
+          if (data.crm) {
+            try {
+              localStorage.setItem(
+                CRM_STORAGE_KEY,
+                JSON.stringify({ version: 1, ...data.crm }),
+              );
+              window.dispatchEvent(new Event("omnichat-crm-change"));
+            } catch {}
+          }
+        }
+      } catch {}
+    };
+
+    void pullCloudSync();
+    const interval = setInterval(pullCloudSync, 3000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -310,10 +357,18 @@ export function InboxWorkspace() {
           : "AI đã soạn bản nháp. Hãy duyệt trước khi gửi.",
       );
     } catch (error) {
-      if (!controller.signal.aborted)
-        notify(
-          error instanceof Error ? error.message : "Chưa tạo được bản nháp.",
-        );
+      if (!controller.signal.aborted) {
+        // Fallback tức thì về tạo bản nháp FAQ từ tri thức Golden Palace nếu API gặp sự cố
+        try {
+          const fallbackDraft = createFaqDraft(active.messages);
+          setDrafts((current) => ({ ...current, [id]: fallbackDraft }));
+          notify("Đã điền gợi ý FAQ chuẩn Golden Palace. Hãy duyệt trước khi gửi.");
+        } catch {
+          notify(
+            error instanceof Error ? error.message : "Chưa tạo được bản nháp.",
+          );
+        }
+      }
     } finally {
       if (draftRequest.current === controller) {
         draftRequest.current = null;
