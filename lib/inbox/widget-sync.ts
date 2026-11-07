@@ -154,6 +154,24 @@ export function getInboxConversations(): Conversation[] {
 }
 
 /**
+ * Phát broadcast đồng bộ đa tab tức thì (Zero-latency cross-tab sync)
+ */
+export function broadcastWidgetUpdate(detail?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  try {
+    const bc = new BroadcastChannel("omnichat_sync");
+    bc.postMessage({
+      type: "WIDGET_CHAT_UPDATE",
+      timestamp: Date.now(),
+      ...detail,
+    });
+    bc.close();
+  } catch {
+    // Trình duyệt không hỗ trợ BroadcastChannel thì bỏ qua
+  }
+}
+
+/**
  * Lưu danh sách hội thoại vào Inbox storage và phát sự kiện đồng bộ
  */
 export function saveInboxConversations(conversations: Conversation[]) {
@@ -165,6 +183,7 @@ export function saveInboxConversations(conversations: Conversation[]) {
     );
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
+    broadcastWidgetUpdate();
   } catch (e) {
     console.error("Failed to save inbox conversations:", e);
   }
@@ -172,6 +191,8 @@ export function saveInboxConversations(conversations: Conversation[]) {
 
 /**
  * ĐỒNG BỘ TIN NHẮN TỪ WEB WIDGET SANG HỘP THƯ INBOX THEO THỜI GIAN THỰC
+ * Tự động tìm và cập nhật vào cuộc hội thoại kênh Web trong Inbox (ví dụ: web-duong)
+ * Giữ nguyên vẹn toàn bộ diễn biến hỏi đáp và thẻ xác nhận đặt lịch để con người kiểm soát.
  */
 export function syncWidgetChatToInbox(
   widgetMessages: WidgetMessage[],
@@ -187,27 +208,47 @@ export function syncWidgetChatToInbox(
   if (typeof window === "undefined" || widgetMessages.length === 0) return;
 
   try {
-    const convId = "web-live-chat";
     const currentConversations = getInboxConversations();
 
-    // Map WidgetMessage sang Message của Inbox
+    // 1. Tìm hội thoại kênh Web hiện có trong Hộp thư (ưu tiên web-duong nếu có)
+    const existingIndex = currentConversations.findIndex(
+      (c) => c.channel === "web" || c.id === "web-duong" || c.id === "web-live-chat"
+    );
+    const existingConv = existingIndex >= 0 ? currentConversations[existingIndex] : null;
+    const convId = existingConv?.id || "web-duong";
+
+    const nowIso = new Date().toISOString();
+    const todayYmd = nowIso.slice(0, 10);
+
+    // 2. Chuyển đổi toàn bộ WidgetMessage sang Message chuẩn của Hộp thư
     const inboxMessages: Message[] = widgetMessages.map((msg, index) => {
       const isBooking =
         msg.text.includes("ĐẶT LỊCH THÀNH CÔNG") ||
+        msg.text.includes("XÁC NHẬN ĐÃ NHẬN LỊCH HẸN") ||
         msg.text.includes("🎉") ||
         Boolean(msg.customCalendarUrl);
+
+      // Tạo timestamp chuẩn ISO Date
+      let createdAt = nowIso;
+      if (msg.time && /^\d{1,2}:\d{2}$/.test(msg.time)) {
+        createdAt = `${todayYmd}T${msg.time.padStart(5, "0")}:00+07:00`;
+      }
 
       return {
         id: msg.id || `web-sync-${index}`,
         sender: msg.sender === "user" ? "customer" : "bot",
         content: msg.text,
-        createdAt: new Date().toISOString(),
-        suggestedQuestions: msg.suggestedQuestions,
+        createdAt,
         bookingConfirmation:
           isBooking && bookingInfo
             ? {
                 appointment_time: bookingInfo.appointmentTime,
                 event_type: bookingInfo.eventType as any,
+              }
+            : isBooking && existingConv?.booking
+            ? {
+                appointment_time: existingConv.booking.appointmentTime,
+                event_type: "xem_sanh",
               }
             : undefined,
         attachments: msg.attachments?.map((a) => ({
@@ -218,27 +259,30 @@ export function syncWidgetChatToInbox(
       };
     });
 
-    const customerName = bookingInfo?.fullName
-      ? `${bookingInfo.fullName} (Web Widget)`
-      : "Khách Web (Trực tuyến)";
-
-    const existingIndex = currentConversations.findIndex((c) => c.id === convId);
+    // 3. Tên hiển thị của khách
+    let customerName = "Khách Web (Trực tuyến)";
+    if (bookingInfo?.fullName) {
+      customerName = `${bookingInfo.fullName} (Web Widget)`;
+    } else if (existingConv?.name && !existingConv.name.includes("Khách Web")) {
+      customerName = existingConv.name;
+    }
 
     const updatedConversation: Conversation = {
+      ...(existingConv || {}),
       id: convId,
       name: customerName,
       channel: "web",
-      avatarColor: "lavender",
+      avatarColor: existingConv?.avatarColor || "lavender",
       status: "pending",
-      aiEnabled: true,
-      assignedTo: "me",
-      assignedStaffName: "Ngọc Khánh",
+      aiEnabled: existingConv ? existingConv.aiEnabled : true,
+      assignedTo: existingConv?.assignedTo || "me",
+      assignedStaffName: existingConv?.assignedStaffName || "Ngọc Khánh",
       unread: 1,
       note: bookingInfo
         ? `Khách đã xác nhận đặt lịch xem sảnh ${bookingInfo.eventType} lúc ${formatAppointment(
             bookingInfo.appointmentTime
           )}. SĐT: ${bookingInfo.phone}`
-        : "Khách đang trao đổi trực tiếp trên Web Widget.",
+        : existingConv?.note || "Khách đang trao đổi trực tiếp trên Web Widget.",
       messages: inboxMessages,
       booking: bookingInfo
         ? {
@@ -246,38 +290,117 @@ export function syncWidgetChatToInbox(
             staff: "Ngọc Khánh",
             notes: bookingInfo.notes || "Lịch hẹn từ Web Widget",
           }
-        : existingIndex >= 0
-        ? currentConversations[existingIndex].booking
-        : undefined,
+        : existingConv?.booking,
       lead: bookingInfo?.phone
         ? {
-            id: `lead-${convId}`,
+            id: existingConv?.lead?.id || `lead-${convId}`,
             conversation_id: convId,
             full_name: bookingInfo.fullName,
             phone: bookingInfo.phone,
-            email: "",
+            email: existingConv?.lead?.email || "",
             demand_notes: bookingInfo.notes || "Khách đặt lịch từ Web Widget",
             source: "web",
             status: "new",
-            created_at: new Date().toISOString(),
+            created_at: existingConv?.lead?.created_at || nowIso,
           }
-        : existingIndex >= 0
-        ? currentConversations[existingIndex].lead
-        : undefined,
+        : existingConv?.lead,
     };
 
     let nextConversations: Conversation[];
     if (existingIndex >= 0) {
-      nextConversations = currentConversations.map((c, idx) =>
-        idx === existingIndex ? updatedConversation : c
-      );
+      // Đưa cuộc trò chuyện kênh Web có tin nhắn mới lên đầu danh sách
+      const remaining = currentConversations.filter((_, idx) => idx !== existingIndex);
+      nextConversations = [updatedConversation, ...remaining];
     } else {
       nextConversations = [updatedConversation, ...currentConversations];
     }
 
     saveInboxConversations(nextConversations);
+
+    // Đồng bộ sang CRM nếu có thông tin đặt lịch
+    if (bookingInfo?.phone) {
+      ensureWidgetBookingInCRM(convId, bookingInfo);
+    }
   } catch (err) {
     console.error("Error syncing widget to inbox:", err);
+  }
+}
+
+/**
+ * Cập nhật hồ sơ lead và lịch hẹn vào CRM khi khách đặt lịch trên Widget
+ */
+export function ensureWidgetBookingInCRM(
+  inboxRef: string,
+  booking: {
+    fullName: string;
+    phone: string;
+    appointmentTime: string;
+    eventType: string;
+    guestsCount?: number;
+    notes?: string;
+  }
+) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(CRM_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed?.leads)) return;
+
+    const cleanPhone = booking.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
+    const leadId = `lead-${inboxRef}`;
+
+    const leadIndex = parsed.leads.findIndex(
+      (l: any) => l.phone === cleanPhone || l.inbox_reference === inboxRef
+    );
+
+    const leadRecord = {
+      id: leadIndex >= 0 ? parsed.leads[leadIndex].id : leadId,
+      inbox_reference: inboxRef,
+      full_name: booking.fullName,
+      phone: cleanPhone,
+      email: leadIndex >= 0 ? parsed.leads[leadIndex].email : "",
+      notes: booking.notes || `Khách đặt lịch ${booking.eventType} từ Web Widget`,
+      source: "web" as const,
+      stage: "N3" as const,
+      assigned_to: "Ngọc Khánh",
+      event_date: "",
+      table_count: null,
+      last_touched_at: new Date().toISOString(),
+      created_at: leadIndex >= 0 ? parsed.leads[leadIndex].created_at : new Date().toISOString(),
+    };
+
+    if (leadIndex >= 0) {
+      parsed.leads[leadIndex] = leadRecord;
+    } else {
+      parsed.leads.unshift(leadRecord);
+    }
+
+    if (!Array.isArray(parsed.bookings)) parsed.bookings = [];
+    const bookingIndex = parsed.bookings.findIndex((b: any) => b.lead_id === leadRecord.id);
+
+    const bookingRecord = {
+      id: bookingIndex >= 0 ? parsed.bookings[bookingIndex].id : `booking-${inboxRef}`,
+      lead_id: leadRecord.id,
+      appointment_time: booking.appointmentTime,
+      event_type: booking.eventType,
+      guests_count: booking.guestsCount || 2,
+      assigned_staff: "Ngọc Khánh",
+      notes: booking.notes || "Khách đặt lịch từ Web Widget",
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+
+    if (bookingIndex >= 0) {
+      parsed.bookings[bookingIndex] = bookingRecord;
+    } else {
+      parsed.bookings.unshift(bookingRecord);
+    }
+
+    localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(parsed));
+    window.dispatchEvent(new Event("omnichat-crm-change"));
+  } catch (err) {
+    console.error("Error updating CRM from widget booking:", err);
   }
 }
 

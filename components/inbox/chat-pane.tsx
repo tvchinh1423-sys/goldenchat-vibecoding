@@ -162,10 +162,21 @@ export function ChatPane({
       setTimeout(() => setHighlightedMessageId(null), 2500);
     }
   };
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  const lastMessageContent = lastMessage?.content;
+  const lastMessageId = lastMessage?.id;
+
   useEffect(() => {
     const element = streamRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
-  }, [conversation.id, conversation.messages.length]);
+    if (element) {
+      const scrollBottom = () => {
+        element.scrollTop = element.scrollHeight;
+      };
+      scrollBottom();
+      const timer = setTimeout(scrollBottom, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [conversation.id, conversation.messages.length, lastMessageId, lastMessageContent]);
   const wait = waitingLabel(conversation, now);
   const isArchived = conversation.status === "archived";
   const customerPhone =
@@ -456,7 +467,7 @@ export function ChatPane({
       </div>
       <div
         ref={streamRef}
-        className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-[#fcfcff] p-4 sm:p-5"
+        className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-[#fcfcff] p-4 sm:p-5 pb-8 sm:pb-12"
         role="log"
         aria-label="Tin nhắn"
         aria-live="polite"

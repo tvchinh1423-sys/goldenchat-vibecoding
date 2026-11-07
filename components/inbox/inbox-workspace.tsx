@@ -170,10 +170,11 @@ export function InboxWorkspace() {
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ version: 1, conversations }),
-      );
+      const currentStored = localStorage.getItem(STORAGE_KEY);
+      const nextJson = JSON.stringify({ version: 1, conversations });
+      if (currentStored !== nextJson) {
+        localStorage.setItem(STORAGE_KEY, nextJson);
+      }
       setStorageError(false);
     } catch {
       setStorageError(true);
@@ -193,15 +194,56 @@ export function InboxWorkspace() {
         /* Inbox remains usable; CRM errors are shown when opening/saving CRM. */
       }
     };
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === CRM_STORAGE_KEY || event.key === null)
-        void refreshCRM();
+
+    const reloadInboxFromStorage = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const list = parseSnapshot(saved);
+          if (mounted) {
+            setConversations(list);
+            // Nếu có tin nhắn mới từ web, đảm bảo người dùng nhìn thấy
+            setSelectedId((prev) => {
+              if (prev && list.some((c) => c.id === prev)) return prev;
+              return list[0]?.id || "";
+            });
+          }
+        }
+      } catch {}
     };
+
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key === STORAGE_KEY ||
+        event.key === "omnichat.widget.session.v1" ||
+        event.key === null
+      ) {
+        reloadInboxFromStorage();
+      }
+      if (event.key === CRM_STORAGE_KEY || event.key === null) {
+        void refreshCRM();
+      }
+    };
+
+    // Lắng nghe BroadcastChannel để nhận tin nhắn tức thì từ tab Widget
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("omnichat_sync");
+      bc.onmessage = (e) => {
+        if (e.data?.type === "WIDGET_CHAT_UPDATE") {
+          reloadInboxFromStorage();
+        }
+      };
+    } catch {}
+
     void refreshCRM();
     window.addEventListener("storage", onStorage);
+    window.addEventListener("omnichat-inbox-updated", reloadInboxFromStorage);
     return () => {
       mounted = false;
+      bc?.close();
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener("omnichat-inbox-updated", reloadInboxFromStorage);
     };
   }, [ready]);
 

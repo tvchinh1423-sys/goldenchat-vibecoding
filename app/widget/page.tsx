@@ -413,21 +413,30 @@ function WebWidgetContent() {
       // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
       if (soundEnabled) playBookingSuccessCelebrationTone();
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b-auto-${Date.now()}`,
-          sender: "bot",
-          text: `🎉 **ĐẶT LỊCH THÀNH CÔNG!**\n\n${confirmation}\n\n👤 **Khách hàng:** ${draft.fullName} (${cleanPhone})\n⏰ **Thời gian:** ${formatAppointment(visit.appointment_time)}\n🤝 **Nội dung:** ${BOOKING_TYPES[draft.eventType]} (${draft.guestsCount || 2} người)\n📍 **Địa điểm:** 98 Đông A, KĐT Hòa Vượng, TP. Nam Định.\n\n*Bộ phận lễ tân sẽ gọi điện đón tiếp chu đáo trước giờ hẹn ạ!*`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          customCalendarUrl: calUrl,
-          suggestedQuestions: [
-            "Xem menu thực đơn tiệc cưới",
-            "Mở chỉ đường Google Maps",
-            "Hotline tư vấn: 0228 6595 959",
-          ],
-        },
-      ]);
+      const autoBookMsg: WidgetMessage = {
+        id: `b-auto-${Date.now()}`,
+        sender: "bot",
+        text: `🎉 **ĐẶT LỊCH THÀNH CÔNG!**\n\n${confirmation}\n\n👤 **Khách hàng:** ${draft.fullName} (${cleanPhone})\n⏰ **Thời gian:** ${formatAppointment(visit.appointment_time)}\n🤝 **Nội dung:** ${BOOKING_TYPES[draft.eventType]} (${draft.guestsCount || 2} người)\n📍 **Địa điểm:** 98 Đông A, KĐT Hòa Vượng, TP. Nam Định.\n\n*Bộ phận lễ tân sẽ gọi điện đón tiếp chu đáo trước giờ hẹn ạ!*`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        customCalendarUrl: calUrl,
+        suggestedQuestions: [
+          "Xem menu thực đơn tiệc cưới",
+          "Mở chỉ đường Google Maps",
+          "Hotline tư vấn: 0228 6595 959",
+        ],
+      };
+
+      const updatedMsgs = [...messages, autoBookMsg];
+      setMessages(updatedMsgs);
+      syncWidgetChatToInbox(updatedMsgs, {
+        fullName: draft.fullName,
+        phone: cleanPhone,
+        appointmentTime: visit.appointment_time,
+        eventType: draft.eventType,
+        guestsCount: draft.guestsCount || 2,
+        notes: draft.notes,
+      });
+
       window.dispatchEvent(new Event("storage"));
       setShowBookingModal(false);
       setActiveBookingDraft(null);
@@ -465,7 +474,23 @@ function WebWidgetContent() {
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const nextUserMessages = [...messages, userMsg];
+    setMessages(nextUserMessages);
+    // Đồng bộ tức thì tin nhắn khách gửi sang Hộp thư Admin
+    syncWidgetChatToInbox(
+      nextUserMessages,
+      activeBookingDraft
+        ? {
+            fullName: activeBookingDraft.fullName || "Khách Web",
+            phone: activeBookingDraft.phone || "",
+            appointmentTime: activeBookingDraft.dateTimeIso || getSmartBookingDefault(),
+            eventType: activeBookingDraft.eventType || "xem_sanh",
+            guestsCount: activeBookingDraft.guestsCount || 2,
+            notes: activeBookingDraft.notes || "",
+          }
+        : undefined
+    );
+
     setInput("");
     setSelectedImages([]);
     setImageError(null);
@@ -527,35 +552,63 @@ function WebWidgetContent() {
         }).catch(() => {});
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b-${Date.now()}`,
-          sender: "bot",
-          text: data.autoBooked && data.bookingDraft
-            ? "Dạ em đang lưu lịch hẹn cho anh/chị ạ."
-            : data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          suggestedQuestions: data.suggestedQuestions,
-          visitType: resolvedVisitType,
-          bookingDraft: data.bookingDraft,
-          handoff: isHandoff,
-        },
-      ]);
+      const botReplyMsg: WidgetMessage = {
+        id: `b-${Date.now()}`,
+        sender: "bot",
+        text: data.autoBooked && data.bookingDraft
+          ? "Dạ em đang lưu lịch hẹn cho anh/chị ạ."
+          : data.reply || "Dạ em đã ghi nhận thông tin của anh/chị ạ!",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        suggestedQuestions: data.suggestedQuestions,
+        visitType: resolvedVisitType,
+        bookingDraft: data.bookingDraft,
+        handoff: isHandoff,
+      };
+
+      const nextBotMessages = [...nextUserMessages, botReplyMsg];
+      setMessages(nextBotMessages);
+
+      // Đồng bộ tức thì câu trả lời của Bot sang Hộp thư Admin
+      const effectiveDraft = data.bookingDraft || activeBookingDraft;
+      syncWidgetChatToInbox(
+        nextBotMessages,
+        effectiveDraft
+          ? {
+              fullName: effectiveDraft.fullName || "Khách Web",
+              phone: effectiveDraft.phone || "",
+              appointmentTime: effectiveDraft.dateTimeIso || getSmartBookingDefault(),
+              eventType: effectiveDraft.eventType || "xem_sanh",
+              guestsCount: effectiveDraft.guestsCount || 2,
+              notes: effectiveDraft.notes || "",
+            }
+          : undefined
+      );
 
       if (data.autoBooked && data.bookingDraft) {
         await saveDirectBooking(data.bookingDraft);
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          sender: "bot",
-          text: "Dạ kết nối đang chập chờn, anh/chị liên hệ Hotline 0228 6595 959 để được hỗ trợ tức thì nhé!",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
+      const errBotMsg: WidgetMessage = {
+        id: `err-${Date.now()}`,
+        sender: "bot",
+        text: "Dạ kết nối đang chập chờn, anh/chị liên hệ Hotline 0228 6595 959 để được hỗ trợ tức thì nhé!",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      const withErr = [...nextUserMessages, errBotMsg];
+      setMessages(withErr);
+      syncWidgetChatToInbox(
+        withErr,
+        activeBookingDraft
+          ? {
+              fullName: activeBookingDraft.fullName || "Khách Web",
+              phone: activeBookingDraft.phone || "",
+              appointmentTime: activeBookingDraft.dateTimeIso || getSmartBookingDefault(),
+              eventType: activeBookingDraft.eventType || "xem_sanh",
+              guestsCount: activeBookingDraft.guestsCount || 2,
+              notes: activeBookingDraft.notes || "",
+            }
+          : undefined
+      );
     } finally {
       setLoading(false);
     }
@@ -639,21 +692,30 @@ function WebWidgetContent() {
       // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
       if (soundEnabled) playBookingSuccessCelebrationTone();
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b-confirm-${Date.now()}`,
-          sender: "bot",
-          text: `✅ **XÁC NHẬN ĐÃ NHẬN LỊCH HẸN**\n\n${confirmation}\n\n⏰ **Thời gian:** ${formatAppointment(visit.appointment_time)}\n🤝 **Nội dung:** ${BOOKING_TYPES[bookingType]} (${bookingGuests} người)\n📍 **Địa điểm:** Trung tâm Tiệc cưới & Sự kiện Golden Palace, 98 Đông A, Nam Định.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          customCalendarUrl: calUrl,
-          suggestedQuestions: [
-            "Địa chỉ nhà hàng ở đâu?",
-            "Thực đơn tiệc cưới bao nhiêu một bàn?",
-            "Hotline liên hệ trực tiếp",
-          ],
-        },
-      ]);
+      const confirmMsg: WidgetMessage = {
+        id: `b-confirm-${Date.now()}`,
+        sender: "bot",
+        text: `✅ **XÁC NHẬN ĐÃ NHẬN LỊCH HẸN**\n\n${confirmation}\n\n⏰ **Thời gian:** ${formatAppointment(visit.appointment_time)}\n🤝 **Nội dung:** ${BOOKING_TYPES[bookingType]} (${bookingGuests} người)\n📍 **Địa điểm:** Trung tâm Tiệc cưới & Sự kiện Golden Palace, 98 Đông A, Nam Định.`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        customCalendarUrl: calUrl,
+        suggestedQuestions: [
+          "Địa chỉ nhà hàng ở đâu?",
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Hotline liên hệ trực tiếp",
+        ],
+      };
+
+      const updatedMsgs = [...messages, confirmMsg];
+      setMessages(updatedMsgs);
+      syncWidgetChatToInbox(updatedMsgs, {
+        fullName: bookingName.trim(),
+        phone: cleanPhone,
+        appointmentTime: visit.appointment_time,
+        eventType: bookingType,
+        guestsCount: bookingGuests,
+        notes: bookingNotes.trim(),
+      });
+      window.dispatchEvent(new Event("storage"));
 
       setShowBookingModal(false);
       setBookingNotes("");

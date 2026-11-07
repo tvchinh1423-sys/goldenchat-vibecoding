@@ -36,6 +36,7 @@ description: >-
 | **Khung Simulator Thử bot** | Test thực đơn, xem sảnh, guardrail, bóc tách SĐT | ✅ Hoàn thành (Chinh) |
 | **Trang Cấu hình Kênh & SLA** | `/settings` quản lý Botcake, Telegram, Web Widget, SLA | ✅ Hoàn thành (Chinh) |
 | **Web Chat Widget nhúng** | `/widget` Khung chat nhúng cho website doanh nghiệp | ✅ Hoàn thành (Chinh) |
+| **Đồng bộ thời gian thực Widget ⇋ Inbox** | BroadcastChannel + StorageEvent, tin nhắn & thẻ lịch hẹn tức thì | ✅ Hoàn thành 100% (Chinh) |
 | **Giao diện Chat Meta Business Suite** | Reactions, Ghim tin nhắn, Lightbox media, Quick Like 👍, Emoji Picker | ✅ Hoàn thành 100% (Chinh) |
 | **Chuông Thông Báo & Âm Thanh** | Chuông web dropdown, hiệu ứng Chime đôi, App Badging PWA & Title badge | ✅ Hoàn thành 100% (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
