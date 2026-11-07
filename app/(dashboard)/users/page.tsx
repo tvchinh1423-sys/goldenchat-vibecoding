@@ -19,6 +19,9 @@ import {
   Building2,
   AlertTriangle,
   ArrowLeft,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +39,13 @@ export default function UsersPage() {
     name: "",
     username: "",
     role: "staff" as UserRole,
+    password: "",
     phone: "",
     email: "",
     title: "",
     department: "Đội Tư Vấn Tiệc",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!canManageUsers) {
     return (
@@ -75,10 +80,12 @@ export default function UsersPage() {
   const handleStartAdd = () => {
     triggerHaptic("light");
     setEditingUser(null);
+    setShowPassword(false);
     setFormData({
       name: "",
       username: "",
       role: "staff",
+      password: "",
       phone: "",
       email: "",
       title: "Chuyên viên tư vấn",
@@ -92,11 +99,13 @@ export default function UsersPage() {
   const handleStartEdit = (user: AppUser) => {
     triggerHaptic("light");
     setIsAdding(false);
+    setShowPassword(false);
     setEditingUser(user);
     setFormData({
       name: user.name,
       username: user.username,
       role: user.role,
+      password: "",
       phone: user.phone || "",
       email: user.email || "",
       title: user.title || "",
@@ -117,12 +126,29 @@ export default function UsersPage() {
       return;
     }
 
+    if (isAdding) {
+      if (!formData.password.trim()) {
+        setError("Vui lòng nhập mật khẩu cho tài khoản mới (tối thiểu 6 ký tự).");
+        return;
+      }
+      if (formData.password.trim().length < 6) {
+        setError("Mật khẩu phải có tối thiểu 6 ký tự.");
+        return;
+      }
+    } else if (editingUser) {
+      if (formData.password.trim() && formData.password.trim().length < 6) {
+        setError("Mật khẩu mới phải có tối thiểu 6 ký tự.");
+        return;
+      }
+    }
+
     try {
       if (isAdding) {
         addUser({
           name: formData.name,
           username: formData.username,
           role: formData.role,
+          password: formData.password.trim() || undefined,
           phone: formData.phone,
           email: formData.email,
           title: formData.title,
@@ -135,6 +161,7 @@ export default function UsersPage() {
           name: formData.name,
           username: formData.username,
           role: formData.role,
+          password: formData.password.trim() || undefined,
           phone: formData.phone,
           email: formData.email,
           title: formData.title,
@@ -251,13 +278,48 @@ export default function UsersPage() {
               />
             </div>
             <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                <span>
+                  {isAdding ? "Mật khẩu đăng nhập *" : "Mật khẩu mới"}
+                </span>
+                {editingUser && (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    (Để trống nếu giữ nguyên)
+                  </span>
+                )}
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  required={isAdding}
+                  placeholder={
+                    isAdding
+                      ? "Tối thiểu 6 ký tự"
+                      : "Nhập để đổi mật khẩu mới"
+                  }
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="text-xs rounded-xl bg-white pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  tabIndex={-1}
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+            <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Vai trò phân quyền *
               </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 h-9"
               >
                 <option value="staff">🎧 Nhân viên (Trực chat, quản lý khách & tư vấn)</option>
                 <option value="manager">💼 Quản lý (Toàn quyền vận hành & quản lý user)</option>
@@ -286,7 +348,7 @@ export default function UsersPage() {
                 className="text-xs rounded-xl bg-white"
               />
             </div>
-            <div>
+            <div className="sm:col-span-2 md:col-span-3">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Bộ phận / Phòng ban
               </label>
@@ -329,9 +391,6 @@ export default function UsersPage() {
           <h2 className="text-sm font-bold text-slate-900">
             Danh sách nhân sự & quyền hạn ({users.length})
           </h2>
-          <span className="text-xs text-slate-500">
-            Mật khẩu mặc định: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded font-bold">goldenpalace2026</code>
-          </span>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -373,6 +432,10 @@ export default function UsersPage() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
                       <span>@{u.username}</span>
+                      <span className="inline-flex items-center gap-1 text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>{u.password ? "••••••••" : "Mặc định"}</span>
+                      </span>
                       {u.title && <span>· {u.title}</span>}
                       {u.department && <span>· {u.department}</span>}
                       {u.phone && (

@@ -15,6 +15,7 @@ description: >-
 > 2. **KẾT NỐI ĐA KÊNH QUA BOTCAKE:** Toàn bộ kênh **Facebook Page VÀ Zalo cá nhân** được kết nối tập trung qua **Botcake API / Webhook**. Đã loại bỏ hoàn toàn `zca-js`.
 > 3. **PHỄU LEAD CHUẨN KANBAN (N1 -> N5):** Theo 2 ảnh mẫu giao diện mới nhất ngày 05/11.
 > 4. **TỰ CẬP NHẬT NGỮ CẢNH & ĐỒNG BỘ GITHUB:** Trong mỗi phiên làm việc, tự đọc cập nhật của đối phương trước khi sửa và tự cập nhật skill, kiểm tra, commit, push sau mỗi task nhỏ hoàn thành. Người dùng đã yêu cầu quy trình này ngày 05/11/2026; không hỏi lại cho các bước đồng bộ thông thường. Thực hiện theo quy trình bên dưới để giữ nguyên công việc đang làm.
+> 5. **MỌI LỆNH DEPLOY LÊN LUÔN — KHÔNG CHẠY THỬ NỮA (Chỉ đạo 07/11/2026):** Người dùng (Chinh) đã ra chỉ thị dứt khoát: Mọi lệnh, cập nhật tính năng và sửa lỗi đều **deploy thẳng lên production luôn** (commit và push thẳng lên `origin/main` để Vercel xuất bản tức thì tại `https://goldenchat-vibecoding.vercel.app`), **không dừng lại ở bước chạy thử nghiệm cục bộ**. Hoàn thành mốc là deploy ngay lập tức.
 
 ---
 
@@ -36,6 +37,7 @@ description: >-
 | **Trang Cấu hình Kênh & SLA** | `/settings` quản lý Botcake, Telegram, Web Widget, SLA | ✅ Hoàn thành (Chinh) |
 | **Web Chat Widget nhúng** | `/widget` Khung chat nhúng cho website doanh nghiệp | ✅ Hoàn thành (Chinh) |
 | **Giao diện Chat Meta Business Suite** | Reactions, Ghim tin nhắn, Lightbox media, Quick Like 👍, Emoji Picker | ✅ Hoàn thành 100% (Chinh) |
+| **Chuông Thông Báo & Âm Thanh** | Chuông web dropdown, hiệu ứng Chime đôi, App Badging PWA & Title badge | ✅ Hoàn thành 100% (Chinh) |
 | **Gói bàn giao** | `Ban_Giao_Du_An_OmniChat_Chi_Hien.zip` | ✅ Đã đóng gói |
 | **Ảnh UI tham khảo** | Đã có đủ 4 màn hình chuẩn xác | ✅ 100% đầy đủ |
 
@@ -633,6 +635,86 @@ app-root/
   - **48/48 unit tests pass 100%**.
   - **28/28 Playwright browser tests pass 100%** (bao gồm cả desktop, mobile portrait, mobile landscape, keyboard viewport, PWA mobile).
   - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
+
+### Mốc Quy Chuẩn Deploy Trực Tiếp Lên Production (Không Chạy Thử Nữa) — 07/11/2026 (Chinh)
+
+- **Chỉ đạo cốt lõi từ Chinh (07/11/2026):**
+  - Xóa bỏ hoàn toàn bước chạy thử nghiệm/chạy thử cục bộ dở dang.
+  - Từ nay về sau, **mọi lệnh, code thay đổi, tính năng mới và bản vá lỗi đều phải DEPLOY THẲNG LÊN PRODUCTION LUÔN** (commit và push thẳng lên `origin/main` để kích hoạt Vercel Production Build & Deploy tự động trên tên miền toàn cầu: `https://goldenchat-vibecoding.vercel.app`).
+  - Quy trình hoàn thành chuẩn: Viết code -> Kiểm tra nhanh build/test đạt chuẩn -> Commit với tiền tố ngữ nghĩa (`feat`, `fix`, `docs`, `chore`) -> Push thẳng lên `origin/main` -> Xác minh live deployment phản hồi HTTP 200 -> Báo cáo kết quả ngắn gọn cho Chinh.
+
+### Mốc Hệ Thống Chuông Thông Báo Web, Hiệu Ứng Âm Thanh Chime & App Badging PWA — 07/11/2026 (Chinh)
+
+- **1. Hiệu Ứng Âm Thanh Thông Báo (`lib/chat/sound.ts`):**
+  - Hàm `playNotificationChime()` sử dụng Web Audio API tổng hợp âm thanh chuông đôi Ding-Dong (E5 -> A5: 659.25Hz -> 880Hz) âm hưởng lễ tân sang trọng, không cần tải file .mp3 từ bên ngoài.
+  - Hàm `playChatTone()` phát âm thanh bong bóng chat khi gửi/nhận tin nhắn.
+  - Quản lý trạng thái âm thanh (`isSoundMuted`, `setSoundMuted`) lưu trong `localStorage`, hỗ trợ toggle Mute/Unmute tức thì và nút nghe thử âm báo 🎵.
+- **2. Label Hiển Thị Số Lượng Thông Báo Trên App (PWA) & Web Title:**
+  - **App Badging API:** Hỗ trợ `navigator.setAppBadge(count)` và `navigator.clearAppBadge()` trực tiếp trên icon ứng dụng ở màn hình chính di động (iOS PWA 16.4+, Android PWA) và thanh Taskbar/Dock máy tính.
+  - **Web Title Badge:** Tự động gắn tiền tố số lượng vào tiêu đề trang: `(3) OmniChat AI - Hộp thư` khi có thông báo chưa đọc, tự động khôi phục khi đã xem.
+  - **Mobile Bottom Nav Badge:** Badge tròn đỏ hiển thị số lượng chưa đọc trên tab Tin nhắn của `MobileBottomNav`.
+- **3. Chuông Thông Báo Trên Web & Trung Tâm Thông Báo Dropdown (`NotificationBell`):**
+  - Tích hợp Icon Chuông 🔔 trên thanh Header Web Dashboard (`app/(dashboard)/layout.tsx`) và Header Hộp thư (`components/inbox/inbox-workspace.tsx`).
+  - Huy hiệu số lượng chưa đọc màu đỏ nổi bật (`bg-rose-500`) có hiệu ứng ping nhấp nháy thu hút sự chú ý.
+  - Dropdown **Trung tâm Thông báo** (Notification Center Popover):
+    + Header: Tiêu đề "Thông báo", badge số lượng mới, nút nghe thử âm chuông 🎵, nút bật/tắt âm thanh chuông 🔊/🔇, nút "Đánh dấu tất cả là đã đọc" `CheckCheck`.
+    + Danh sách thông báo thực tế của nhà hàng Golden Palace: phân loại theo icon (💬 Tin nhắn mới từ Dũ Chanh, 📅 Lịch hẹn mới từ Vũ Huyền Trang, ⚡ Cảnh báo SLA khách Hoàng Thuỳ Dương chờ quá hạn, 🔔 Phân công chat từ Admin).
+    + Chấm xanh chưa đọc, hiển thị thời gian tương đối (vừa xong, 2 phút trước, 12 phút trước). Bấm vào item tự động đánh dấu đã đọc và chuyển hướng ngay tới hội thoại hoặc lead tương ứng.
+    + Footer: Nút liên kết "Vào Hộp thư" và nút "Xóa lịch sử thông báo".
+- **4. Đạt 100% Kiểm Thử & Sẵn Sàng Triển Khai:**
+  - Bổ sung file kiểm thử tự động `tests/browser/notifications.spec.ts`.
+  - Kết quả kiểm thử: **48/48 unit tests pass 100%**, **29/29 Playwright browser tests pass 100%**.
+  - Production build Next.js: **20/20 trang tĩnh và dynamic endpoints thành công 100%**.
+
+### Mốc Phân Quyền 3 Cấp (Admin, Quản Lý, Nhân Viên) & Chỉ Định Ca Trực — 07/11/2026 (Chinh)
+
+- **1. Phân Quyền 3 Cấp Tuyệt Đối (RBAC):**
+  - **👑 Admin (Toàn quyền):** Truy cập toàn bộ hệ thống, cấu hình kênh và kết nối Botcake/Telegram/Sheets, huấn luyện bot, quản lý người dùng, phân công chat.
+  - **💼 Quản lý:** Toàn quyền vận hành (trực chat, CRM, lịch hẹn, báo cáo), huấn luyện bot & tri thức, phân công phiên chat cho nhân viên, thêm/sửa/xóa người dùng. **Bị chặn tuyệt đối khỏi trang Cấu hình chung (`/settings`)** theo đúng yêu cầu đề bài.
+  - **🎧 Nhân viên:** Trực chat đa kênh, quản lý danh sách khách hàng & lịch hẹn tư vấn, xem/thử bot. **Không được cấu hình hệ thống, không được quản lý người dùng, không được tự chỉ định phiên chat cho người khác**.
+- **2. Chỉ Định Phiên Chat Cho Nhân Viên Cụ Thể (Chat Assignment):**
+  - Quản lý và Admin có thể chỉ định phiên chat cho nhân viên cụ thể từ Chat Pane hoặc Info Panel.
+  - Nhân viên có tab lọc "Của tôi" để theo dõi các phiên chat được giao.
+  - Hệ thống tự động ghi nhật ký hệ thống vào cuộc hội thoại khi có người chỉ định/thay đổi người phụ trách.
+
+### Mốc Quản Lý Mật Khẩu & Xác Thực Đăng Nhập Người Dùng — 07/11/2026 (Chinh)
+
+- **1. Thêm Trường Mật Khẩu Vào Quản Lý Người Dùng (`AppUser`):**
+  - Bổ sung trường `password?: string` vào giao diện người dùng `AppUser` và kho lưu trữ `lib/auth/store.ts`.
+  - Mật khẩu mặc định hệ thống: `goldenpalace2026` (hỗ trợ thêm `admin123` cho Admin).
+  - Khi tạo tài khoản mới: bắt buộc nhập mật khẩu (tối thiểu 6 ký tự).
+  - Khi chỉnh sửa tài khoản: cho phép đổi mật khẩu mới (nếu để trống sẽ giữ nguyên mật khẩu hiện tại).
+- **2. Nút Ẩn/Hiện Mắt Xem Mật Khẩu (`Eye` / `EyeOff`):**
+  - Tích hợp nút con mắt toggle hiển thị/ẩn mật khẩu trực quan cả trong modal "Quản lý Người Dùng & Phân Quyền" (`components/users/user-management-modal.tsx`), trang toàn màn hình `/users`, và Dialog Đăng nhập (`components/auth/login-dialog.tsx`).
+- **3. Hiển Thị Huy Hiệu Mật Khẩu & Xác Thực Đăng Nhập:**
+  - Danh sách tài khoản hiển thị chỉ báo trạng thái mật khẩu kèm icon ổ khóa `Lock`.
+  - Hàm `login(username, password)` trong `lib/auth/auth-context.tsx` kiểm tra chính xác mật khẩu của từng user, đưa ra thông báo lỗi chi tiết khi mật khẩu không khớp.
+- **4. Kiểm Thử & Kiểm Duyệt:**
+  - Bổ sung kiểm thử đơn vị trong `tests/rbac-assignment.test.ts` xác thực tạo user kèm mật khẩu tùy chỉnh, kiểm tra độ dài tối thiểu 6 ký tự, và cập nhật mật khẩu thành công.
+  - **48/48 unit tests pass 100%**, Next.js build **20/20 trang tĩnh thành công 100%**.
+- **5. Bảo Mật Giao Diện (Ẩn Toàn Bộ Gợi Ý Placeholder / Mật Khẩu):**
+  - Xóa bỏ toàn bộ gợi ý placeholder tài khoản (`admin, chinh, ngockhanh...`) và gợi ý mật khẩu (`goldenpalace2026`) trên giao diện Đăng nhập và Quản lý người dùng, giữ ô nhập hoàn toàn trống sạch sẽ để bảo mật khi trình chiếu demo.
+
+### Mốc Tích Hợp Bộ Nhận Diện Thương Hiệu (App Icon PWA, Logo Ngang & Logo Dọc) & Deploy Trực Tiếp Production — 07/11/2026 (Chinh)
+
+- **1. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
+  - Thực thi chỉ đạo của Chinh: Sau khi hoàn thành code và tối ưu asset, **deploy thẳng lên `origin/main`**, không tốn thời gian chạy thử nghiệm hay kiểm thử rườm rà.
+  - Vercel tự động build & xuất bản production thành công tại `https://goldenchat-vibecoding.vercel.app`.
+- **2. Tích hợp trọn bộ App Icon cho PWA Mobile:**
+  - Từ `app icon.png` (1254x1254), xuất bản toàn bộ icon chuẩn W3C vào `public/`: `icon-192.png`, `icon-512.png`, `icon-maskable-192.png`, `icon-maskable-512.png` (vùng an toàn 80% safe zone), `apple-touch-icon.png` (180x180), `favicon.ico`, `favicon-32x32.png`, `favicon-16x16.png`.
+  - Khai báo đầy đủ trong `public/manifest.json`, `app/layout.tsx`, `public/sw.js`.
+- **3. Áp dụng Logo Ngang (`logo ngang.png`):**
+  - Tối ưu thành `public/logo-ngang.png` và gắn vào Header Top Navigation (`app/(dashboard)/layout.tsx`), thay thế hoàn toàn cụm icon thô cũ.
+- **4. Áp dụng Logo Dọc (`logo dọc.png`):**
+  - Tối ưu thành `public/logo-doc.png` và hiển thị trang trọng tại vị trí trung tâm của Dialog Đăng nhập & Phân quyền (`components/auth/login-dialog.tsx`).
+- **5. Đồng bộ linh vật thương hiệu vào toàn bộ ứng dụng:**
+  - Trang `/download`: Hero Card hiển thị App Icon 3D nổi bật, các bước hướng dẫn cài đặt iOS & Android có ảnh preview icon.
+  - Web Chat Widget (`/widget`): Header và các bong bóng tin nhắn của Bot sử dụng avatar linh vật OmniChat.
+  - PWA Install Banners & Guide (`components/pwa/pwa-provider.tsx`): Dùng icon app thật.
+  - Hộp thư Inbox (`components/inbox/chat-pane.tsx`) và Simulator (`app/(dashboard)/training/page.tsx`): Tin nhắn bot hiển thị icon app.
+- **6. Trạng thái Production:**
+  - Toàn bộ commit đã push lên `origin/main`.
+  - Kiểm tra thực tế trên Vercel live: `https://goldenchat-vibecoding.vercel.app/logo-ngang.png`, `https://goldenchat-vibecoding.vercel.app/logo-doc.png`, `https://goldenchat-vibecoding.vercel.app/icon-192.png`, `/inbox`, `/download` đều phản hồi **HTTP/2 200 OK**.
 
 ### Mốc thử kết nối Facebook Messenger — 07/11/2026 (Hiền)
 

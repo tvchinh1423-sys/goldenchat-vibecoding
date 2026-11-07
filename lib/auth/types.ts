@@ -5,6 +5,7 @@ export interface AppUser {
   username: string;
   name: string;
   role: UserRole;
+  password?: string;
   email?: string;
   phone?: string;
   avatar?: string;

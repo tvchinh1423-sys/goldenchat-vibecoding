@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Download,
@@ -20,6 +21,8 @@ import {
   subscribeInAppNotifications,
   type InAppNotification,
   requestNotificationPermission,
+  updateAppBadge,
+  getStoredNotifications,
 } from "@/lib/notifications";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 
@@ -122,6 +125,17 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
     };
+  }, []);
+
+  // Đồng bộ App Badging API và Title badge
+  useEffect(() => {
+    try {
+      const notifs = getStoredNotifications();
+      const unread = notifs.filter((n) => !n.read).length;
+      updateAppBadge(unread);
+    } catch {
+      // Bỏ qua lỗi
+    }
   }, []);
 
   // Listen to in-app notification triggers
@@ -275,9 +289,13 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         >
           <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-3.5 rounded-2xl shadow-2xl border border-blue-500/40 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md">
-                <Sparkles className="w-5 h-5" />
-              </div>
+              <Image
+                src="/icon-192.png"
+                alt="OmniChat AI Icon"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-xl shadow-md object-cover shrink-0 ring-1 ring-white/20"
+              />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-white tracking-tight">OmniChat AI</span>
@@ -319,9 +337,13 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
           <div className="bg-white rounded-3xl p-5 w-full max-w-sm text-slate-900 space-y-4 shadow-2xl border border-slate-100 mb-2 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold">
-                  <Sparkles className="w-5 h-5" />
-                </div>
+                <Image
+                  src="/apple-touch-icon.png"
+                  alt="OmniChat AI Icon"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-xl shadow-md object-cover ring-1 ring-slate-100"
+                />
                 <div>
                   <h3 id="ios-install-title" className="text-sm font-bold">Cài đặt trên iPhone/iPad</h3>
                   <p className="text-xs text-slate-500">Chỉ mất 5 giây với Safari</p>

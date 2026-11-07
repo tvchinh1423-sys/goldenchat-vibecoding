@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ROLE_CONFIGS, UserRole } from "@/lib/auth/types";
 import {
@@ -14,6 +15,8 @@ import {
   CheckCircle2,
   X,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +40,7 @@ export function LoginDialog({
   const { login, quickSwitch, users } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedDemoRole, setSelectedDemoRole] = useState<UserRole>("admin");
@@ -125,11 +129,16 @@ export function LoginDialog({
           </button>
         )}
 
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Building2 className="w-6 h-6" />
-          </div>
+        {/* Brand Header với Logo Dọc */}
+        <div className="text-center space-y-3">
+          <Image
+            src="/logo-doc.png"
+            alt="OmniChat AI Logo"
+            width={180}
+            height={108}
+            className="h-20 sm:h-24 w-auto mx-auto object-contain drop-shadow-xs transition-transform hover:scale-105"
+            priority
+          />
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-50 border border-blue-200/80 text-[11px] font-semibold text-blue-700 mb-1">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
@@ -166,10 +175,6 @@ export function LoginDialog({
                   disabled={busy}
                   onClick={() => {
                     setSelectedDemoRole(acc.role);
-                    if (acc.user) {
-                      setUsername(acc.user.username);
-                      setPassword("goldenpalace2026");
-                    }
                   }}
                   className={`text-left p-3 rounded-2xl border transition-all relative ${
                     isSelected
@@ -235,7 +240,7 @@ export function LoginDialog({
               type="text"
               autoComplete="username"
               required
-              placeholder="admin, chinh, ngockhanh..."
+              placeholder="Nhập tên đăng nhập"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="text-xs rounded-xl bg-slate-50 focus:bg-white"
@@ -247,15 +252,26 @@ export function LoginDialog({
               <KeyRound className="w-3.5 h-3.5 text-slate-400" />
               <span>Mật khẩu</span>
             </label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="Mật khẩu mặc định: goldenpalace2026"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="text-xs rounded-xl bg-slate-50 focus:bg-white"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                placeholder="Nhập mật khẩu"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="text-xs rounded-xl bg-slate-50 focus:bg-white pr-9"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                tabIndex={-1}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           {error && (

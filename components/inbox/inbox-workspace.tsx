@@ -36,6 +36,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -710,6 +711,7 @@ export function InboxWorkspace() {
             </kbd>
           </div>
           <span className="hidden h-7 w-px bg-border xl:block" />
+          <NotificationBell />
           <UserProfileMenu
             onOpenUserManagement={() => setShowUserModal(true)}
             onOpenLoginModal={() => setShowLoginModal(true)}

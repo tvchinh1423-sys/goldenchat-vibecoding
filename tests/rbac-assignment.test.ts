@@ -94,7 +94,7 @@ test("User Management: default accounts and CRUD operations", () => {
   assert.equal(manager.name, "Trần Vân Chinh");
   assert.equal(staff.name, "Ngọc Khánh");
 
-  // 2. Test Add User
+  // 2. Test Add User (with default password and custom password)
   const newUser = addUser({
     name: "Lê Thị Thu",
     username: "thule",
@@ -104,6 +104,21 @@ test("User Management: default accounts and CRUD operations", () => {
   });
   assert.equal(newUser.name, "Lê Thị Thu");
   assert.equal(newUser.role, "staff");
+  assert.equal(newUser.password, "goldenpalace2026", "Mật khẩu mặc định phải là goldenpalace2026");
+
+  // Reject short password (< 6 chars)
+  assert.throws(
+    () => {
+      addUser({
+        name: "Test Pass",
+        username: "testpass",
+        role: "staff",
+        password: "123",
+      });
+    },
+    /Mật khẩu phải có tối thiểu 6 ký tự/,
+    "Phải từ chối mật khẩu dưới 6 ký tự"
+  );
 
   // 3. Reject duplicate username
   assert.throws(() => {
@@ -114,13 +129,15 @@ test("User Management: default accounts and CRUD operations", () => {
     });
   });
 
-  // 4. Update User
+  // 4. Update User with new password
   const updated = updateUser(newUser.id, {
     title: "Trưởng nhóm tư vấn",
     role: "manager",
+    password: "securePassword999",
   });
   assert.equal(updated.title, "Trưởng nhóm tư vấn");
   assert.equal(updated.role, "manager");
+  assert.equal(updated.password, "securePassword999", "Mật khẩu mới phải được cập nhật");
 
   // 5. Delete User (prevent self delete)
   assert.throws(() => {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Settings,
   Radio,
@@ -824,9 +825,13 @@ export default function SettingsPage() {
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-md">
-                  <Smartphone className="w-5 h-5" />
-                </div>
+                <Image
+                  src="/icon-192.png"
+                  alt="App Icon"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-xl shadow-md object-cover ring-1 ring-slate-200"
+                />
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
                     Trạng thái Ứng dụng PWA Mobile

@@ -20,6 +20,9 @@ import {
   User as UserIcon,
   KeyRound,
   AlertTriangle,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,11 +45,13 @@ export function UserManagementModal({ open, onClose }: Props) {
     name: "",
     username: "",
     role: "staff" as UserRole,
+    password: "",
     phone: "",
     email: "",
     title: "",
     department: "Đội Tư Vấn Tiệc",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!open) return null;
 
@@ -72,10 +77,12 @@ export function UserManagementModal({ open, onClose }: Props) {
   const handleStartAdd = () => {
     triggerHaptic("light");
     setEditingUser(null);
+    setShowPassword(false);
     setFormData({
       name: "",
       username: "",
       role: "staff",
+      password: "",
       phone: "",
       email: "",
       title: "Chuyên viên tư vấn",
@@ -89,11 +96,13 @@ export function UserManagementModal({ open, onClose }: Props) {
   const handleStartEdit = (user: AppUser) => {
     triggerHaptic("light");
     setIsAdding(false);
+    setShowPassword(false);
     setEditingUser(user);
     setFormData({
       name: user.name,
       username: user.username,
       role: user.role,
+      password: "",
       phone: user.phone || "",
       email: user.email || "",
       title: user.title || "",
@@ -114,12 +123,29 @@ export function UserManagementModal({ open, onClose }: Props) {
       return;
     }
 
+    if (isAdding) {
+      if (!formData.password.trim()) {
+        setError("Vui lòng nhập mật khẩu cho tài khoản mới (tối thiểu 6 ký tự).");
+        return;
+      }
+      if (formData.password.trim().length < 6) {
+        setError("Mật khẩu phải có tối thiểu 6 ký tự.");
+        return;
+      }
+    } else if (editingUser) {
+      if (formData.password.trim() && formData.password.trim().length < 6) {
+        setError("Mật khẩu mới phải có tối thiểu 6 ký tự.");
+        return;
+      }
+    }
+
     try {
       if (isAdding) {
         addUser({
           name: formData.name,
           username: formData.username,
           role: formData.role,
+          password: formData.password.trim() || undefined,
           phone: formData.phone,
           email: formData.email,
           title: formData.title,
@@ -132,6 +158,7 @@ export function UserManagementModal({ open, onClose }: Props) {
           name: formData.name,
           username: formData.username,
           role: formData.role,
+          password: formData.password.trim() || undefined,
           phone: formData.phone,
           email: formData.email,
           title: formData.title,
@@ -251,13 +278,48 @@ export function UserManagementModal({ open, onClose }: Props) {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>
+                      {isAdding ? "Mật khẩu đăng nhập *" : "Mật khẩu mới"}
+                    </span>
+                    {editingUser && (
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        (Để trống nếu giữ nguyên)
+                      </span>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      required={isAdding}
+                      placeholder={
+                        isAdding
+                          ? "Tối thiểu 6 ký tự"
+                          : "Nhập để đổi mật khẩu mới"
+                      }
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="text-xs rounded-xl bg-white pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      tabIndex={-1}
+                      title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Vai trò phân quyền *
                   </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 h-9"
                   >
                     <option value="staff">🎧 Nhân viên (Trực chat, quản lý khách & tư vấn)</option>
                     <option value="manager">💼 Quản lý (Toàn quyền vận hành & quản lý user)</option>
@@ -286,7 +348,7 @@ export function UserManagementModal({ open, onClose }: Props) {
                     className="text-xs rounded-xl bg-white"
                   />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Bộ phận / Phòng ban
                   </label>
@@ -377,6 +439,10 @@ export function UserManagementModal({ open, onClose }: Props) {
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
                         <span>@{u.username}</span>
+                        <span className="inline-flex items-center gap-1 text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                          <Lock className="w-2.5 h-2.5" />
+                          <span>{u.password ? "••••••••" : "Mặc định"}</span>
+                        </span>
                         {u.title && <span>· {u.title}</span>}
                         {u.phone && (
                           <span className="flex items-center gap-1">
@@ -421,7 +487,7 @@ export function UserManagementModal({ open, onClose }: Props) {
         {/* Footer */}
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
           <p className="text-[11px]">
-            💡 Quản lý có thể thêm, sửa, xóa người dùng và chỉ định ca trực.
+            💡 Quản lý có thể thêm, sửa, đổi mật khẩu, xóa người dùng và chỉ định ca trực.
           </p>
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
             Đóng

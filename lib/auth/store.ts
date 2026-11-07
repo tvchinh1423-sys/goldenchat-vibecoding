@@ -9,6 +9,7 @@ export const DEFAULT_USERS: AppUser[] = [
     username: "admin",
     name: "Ban Giám Đốc (Admin)",
     role: "admin",
+    password: "goldenpalace2026",
     email: "admin@goldenpalace.vn",
     phone: "0228 6595 959",
     title: "Quản trị viên hệ thống",
@@ -21,6 +22,7 @@ export const DEFAULT_USERS: AppUser[] = [
     username: "chinh",
     name: "Trần Vân Chinh",
     role: "manager",
+    password: "goldenpalace2026",
     email: "chinh.tv@goldenpalace.vn",
     phone: "0912 345 678",
     title: "Quản lý Marketing & Vận hành",
@@ -33,6 +35,7 @@ export const DEFAULT_USERS: AppUser[] = [
     username: "ngockhanh",
     name: "Ngọc Khánh",
     role: "staff",
+    password: "goldenpalace2026",
     email: "khanh.vn@goldenpalace.vn",
     phone: "0934 567 890",
     title: "Chuyên viên tư vấn tiệc cưới",
@@ -45,6 +48,7 @@ export const DEFAULT_USERS: AppUser[] = [
     username: "thuha",
     name: "Thu Hà",
     role: "staff",
+    password: "goldenpalace2026",
     email: "ha.nt@goldenpalace.vn",
     phone: "0945 678 901",
     title: "Chuyên viên sự kiện & hội nghị",
@@ -57,6 +61,7 @@ export const DEFAULT_USERS: AppUser[] = [
     username: "hoanglong",
     name: "Hoàng Long",
     role: "staff",
+    password: "goldenpalace2026",
     email: "long.th@goldenpalace.vn",
     phone: "0967 890 123",
     title: "Chuyên viên chăm sóc khách hàng",
@@ -107,6 +112,7 @@ export function addUser(input: {
   username: string;
   name: string;
   role: UserRole;
+  password?: string;
   email?: string;
   phone?: string;
   title?: string;
@@ -119,11 +125,17 @@ export function addUser(input: {
     throw new Error(`Tên đăng nhập "${input.username}" đã tồn tại. Vui lòng chọn tên khác.`);
   }
 
+  const cleanPassword = input.password?.trim() || "goldenpalace2026";
+  if (cleanPassword.length < 6) {
+    throw new Error("Mật khẩu phải có tối thiểu 6 ký tự.");
+  }
+
   const newUser: AppUser = {
     id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     username: cleanUsername,
     name: input.name.trim(),
     role: input.role,
+    password: cleanPassword,
     email: input.email?.trim() || undefined,
     phone: input.phone?.trim() || undefined,
     title: input.title?.trim() || (input.role === "admin" ? "Quản trị viên" : input.role === "manager" ? "Quản lý" : "Nhân viên tư vấn"),
@@ -154,6 +166,19 @@ export function updateUser(
       throw new Error(`Tên đăng nhập "${updates.username}" đã được sử dụng.`);
     }
     updates.username = cleanUsername;
+  }
+
+  if (updates.password !== undefined) {
+    const cleanPass = updates.password.trim();
+    if (cleanPass.length > 0) {
+      if (cleanPass.length < 6) {
+        throw new Error("Mật khẩu mới phải có tối thiểu 6 ký tự.");
+      }
+      updates.password = cleanPass;
+    } else {
+      // If empty string or whitespaces passed, keep existing password
+      delete updates.password;
+    }
   }
 
   const updatedUser: AppUser = {

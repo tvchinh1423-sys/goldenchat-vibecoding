@@ -516,7 +516,11 @@ export function ChatPane({
                 ) : (
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[8px] font-semibold text-primary">
                     {message.sender === "bot" ? (
-                      <Bot className="h-3.5 w-3.5" />
+                      <img
+                        src="/icon-192.png"
+                        alt="Bot"
+                        className="h-full w-full rounded-full object-cover shadow-2xs"
+                      />
                     ) : (
                       "NK"
                     )}
