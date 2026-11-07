@@ -959,3 +959,23 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Deploy trực tiếp lên `origin/main` (Vercel production).
 
+### Mốc Đồng Bộ Số Lượng Tin Chưa Đọc Thực Tế Cho Badge Navigation (Loại Bỏ Badge Cố Định 18) — 07/11/2026 (Chinh)
+
+- **1. Khắc phục triệt để lỗi hardcode badge "18" tin nhắn:**
+  - Trước đây: `components/mobile-bottom-nav.tsx` và `app/(dashboard)/layout.tsx` hardcode số lượng badge cố định `"18"` trên icon "Tin nhắn" / "Kênh chat". Ngay cả khi hộp thư không có tin nhắn nào chưa đọc (`unread = 0`), badge đỏ vẫn hiện số 18 gây hiểu nhầm cho người dùng.
+  - Khắc phục: Xây dựng hook thời gian thực `useInboxUnreadCount` (`lib/inbox/use-unread-count.ts`) và hàm `getInboxUnreadCount()`.
+- **2. Cơ chế tính toán và hiển thị theo số lượng thực tế (Dynamic Real-time Badge):**
+  - Quét danh sách hội thoại trong bộ nhớ lưu trữ `STORAGE_KEY` (`omnichat.inbox.golden-palace.v1`).
+  - Tính tổng số tin nhắn chưa đọc từ các hội thoại đang mở (`status !== "archived"`).
+  - Khi không còn tin nhắn nào chưa đọc (`unreadCount === 0`): **Ẩn hoàn toàn badge** (không render thẻ số).
+  - Khi có tin nhắn chưa đọc (`unreadCount > 0`): Hiển thị chính xác con số thực tế (nếu > 99 hiển thị `"99+"`).
+  - Đồng bộ tức thì qua các sự kiện: `storage`, `omnichat-inbox-updated`, `omnichat-inbox-cleared`, `omnichat-demo-restored` và BroadcastChannel `omnichat-widget-sync`.
+  - Khi người dùng click vào một hội thoại để đọc tin nhắn, hội thoại được chuyển về `unread: 0` và bắn sự kiện `omnichat-inbox-updated` -> Badge trên Bottom Navigation và Top Navigation biến mất ngay lập tức.
+  - Đồng bộ với `updateAppBadge` trên PWA icon và title của tab trình duyệt.
+- **3. Kiểm thử & Triển khai Production:**
+  - Bổ sung unit test `tests/unread-count.test.ts` kiểm thử các trường hợp unread count = 0, tính tổng unread, và bỏ qua hội thoại lưu trữ.
+  - **57/57 unit tests pass 100%**.
+  - Playwright test `tests/browser/widget-mobile.spec.ts` **2/2 tests pass 100%**.
+  - Next.js production build **20/20 static pages thành công 100%**.
+  - Đẩy trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app`.
+

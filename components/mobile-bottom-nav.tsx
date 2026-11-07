@@ -15,10 +15,12 @@ import {
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useInboxUnreadCount } from "@/lib/inbox/use-unread-count";
 
 export function MobileBottomNav({ className }: { className?: string }) {
   const pathname = usePathname();
   const { role, canAccessSettings, canManageUsers } = useAuth();
+  const unreadCount = useInboxUnreadCount();
 
   const settingsOrUsersItem = canAccessSettings
     ? {
@@ -50,7 +52,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
       name: "Tin nhắn",
       href: "/inbox",
       icon: MessageSquare,
-      badge: "18",
+      badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : String(unreadCount)) : undefined,
     },
     {
       name: "Trợ lý Bot",

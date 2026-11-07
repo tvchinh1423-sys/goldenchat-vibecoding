@@ -23,6 +23,7 @@ import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { useInboxUnreadCount } from "@/lib/inbox/use-unread-count";
 
 export default function DashboardLayout({
   children,
@@ -31,6 +32,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { role, canManageUsers, canAccessSettings } = useAuth();
+  const unreadCount = useInboxUnreadCount();
   const [showUserModal, setShowUserModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -43,7 +45,7 @@ export default function DashboardLayout({
       name: "Kênh chat",
       href: "/inbox",
       icon: MessageSquare,
-      badge: "18",
+      badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : String(unreadCount)) : undefined,
       visible: true,
     },
     {

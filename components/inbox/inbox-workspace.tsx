@@ -174,6 +174,7 @@ export function InboxWorkspace() {
       const nextJson = JSON.stringify({ version: 1, conversations });
       if (currentStored !== nextJson) {
         localStorage.setItem(STORAGE_KEY, nextJson);
+        window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
       }
       setStorageError(false);
     } catch {
