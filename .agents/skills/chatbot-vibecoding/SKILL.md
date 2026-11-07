@@ -692,3 +692,24 @@ app-root/
 - **4. Kiểm Thử & Kiểm Duyệt:**
   - Bổ sung kiểm thử đơn vị trong `tests/rbac-assignment.test.ts` xác thực tạo user kèm mật khẩu tùy chỉnh, kiểm tra độ dài tối thiểu 6 ký tự, và cập nhật mật khẩu thành công.
   - **48/48 unit tests pass 100%**, Next.js build **20/20 trang tĩnh thành công 100%**.
+
+### Mốc Tích Hợp Bộ Nhận Diện Thương Hiệu (App Icon PWA, Logo Ngang & Logo Dọc) & Deploy Trực Tiếp Production — 07/11/2026 (Chinh)
+
+- **1. Tuân thủ tuyệt đối quy định "Deploy Trực Tiếp, Không Chạy Thử":**
+  - Thực thi chỉ đạo của Chinh: Sau khi hoàn thành code và tối ưu asset, **deploy thẳng lên `origin/main`**, không tốn thời gian chạy thử nghiệm hay kiểm thử rườm rà.
+  - Vercel tự động build & xuất bản production thành công tại `https://goldenchat-vibecoding.vercel.app`.
+- **2. Tích hợp trọn bộ App Icon cho PWA Mobile:**
+  - Từ `app icon.png` (1254x1254), xuất bản toàn bộ icon chuẩn W3C vào `public/`: `icon-192.png`, `icon-512.png`, `icon-maskable-192.png`, `icon-maskable-512.png` (vùng an toàn 80% safe zone), `apple-touch-icon.png` (180x180), `favicon.ico`, `favicon-32x32.png`, `favicon-16x16.png`.
+  - Khai báo đầy đủ trong `public/manifest.json`, `app/layout.tsx`, `public/sw.js`.
+- **3. Áp dụng Logo Ngang (`logo ngang.png`):**
+  - Tối ưu thành `public/logo-ngang.png` và gắn vào Header Top Navigation (`app/(dashboard)/layout.tsx`), thay thế hoàn toàn cụm icon thô cũ.
+- **4. Áp dụng Logo Dọc (`logo dọc.png`):**
+  - Tối ưu thành `public/logo-doc.png` và hiển thị trang trọng tại vị trí trung tâm của Dialog Đăng nhập & Phân quyền (`components/auth/login-dialog.tsx`).
+- **5. Đồng bộ linh vật thương hiệu vào toàn bộ ứng dụng:**
+  - Trang `/download`: Hero Card hiển thị App Icon 3D nổi bật, các bước hướng dẫn cài đặt iOS & Android có ảnh preview icon.
+  - Web Chat Widget (`/widget`): Header và các bong bóng tin nhắn của Bot sử dụng avatar linh vật OmniChat.
+  - PWA Install Banners & Guide (`components/pwa/pwa-provider.tsx`): Dùng icon app thật.
+  - Hộp thư Inbox (`components/inbox/chat-pane.tsx`) và Simulator (`app/(dashboard)/training/page.tsx`): Tin nhắn bot hiển thị icon app.
+- **6. Trạng thái Production:**
+  - Toàn bộ commit đã push lên `origin/main`.
+  - Kiểm tra thực tế trên Vercel live: `https://goldenchat-vibecoding.vercel.app/logo-ngang.png`, `https://goldenchat-vibecoding.vercel.app/logo-doc.png`, `https://goldenchat-vibecoding.vercel.app/icon-192.png`, `/inbox`, `/download` đều phản hồi **HTTP/2 200 OK**.
