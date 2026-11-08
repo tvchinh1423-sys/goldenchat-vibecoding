@@ -21,6 +21,18 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Tích hợp Đồng bộ Hai Chiều Facebook Messenger Fanpage & Hộp thư Hợp nhất (/inbox) — 08/11/2026 (Chinh)
+
+- **Nguyên nhân lệch tin nhắn trước đó:**
+  1. Trên môi trường serverless Vercel, các hàm API chạy trên container độc lập nên `/tmp` không chia sẻ giữa webhook handler và endpoint `/api/sync/store`.
+  2. Khi nhân viên nhắn tin trong `/inbox`, hệ thống chỉ lưu cục bộ mà chưa gọi Meta Graph API để đẩy tin ngược lại Messenger của khách hàng.
+- **Giải pháp và Triển khai hoàn tất:**
+  1. **Đồng bộ Live 100% từ Facebook Graph API:** Tạo `lib/facebook/client.ts` gọi trực tiếp `me/conversations?fields=id,updated_time,participants,unread_count,messages.limit(50)` với token chính thức của Page `omnichattest`.
+  2. **Merge thời gian thực vào Hộp thư:** Cập nhật `app/api/sync/store/route.ts` để mỗi lần `/inbox` polling (3s), hệ thống tự động merge các cuộc trò chuyện thật từ Facebook (`Trần Vân Chinh`, `Rita Phạm`...) lên đầu danh sách với đầy đủ tin nhắn deduped, số tin chưa đọc và avatar Facebook chuẩn.
+  3. **Gửi tin nhắn 2 chiều từ Inbox sang Messenger:** Tạo `app/api/facebook/send/route.ts` và tích hợp vào `sendMessage` trong `components/inbox/inbox-workspace.tsx`. Khi nhân viên gõ tin nhắn hoặc bot trả lời trong `/inbox`, tin nhắn được bắn ngay lập tức sang ứng dụng Messenger của khách qua Meta Graph API.
+  4. **Kiểm thử thực tế thành công 100%:** Đã test bắn tin nhắn thật qua Graph API tới PSID của Chinh và Rita Phạm thành công nhận mã `message_id`. `npm run build` đạt 21/21 static pages. Deploy trực tiếp `origin/main`.
+
+
 ### Chuẩn bị Default Reply Facebook — 08/11/2026 (Hiền)
 
 - Theo `tham khảo/CHAT TEST.jpg`, cấu hình trả lời tin nhắn tự do cho Page Vân Chinh. Flow `OmniChat Facebook smoke test` gửi câu hotline cố định, nên giữ để thử bằng từ khóa và tạo flow riêng `OmniChat Facebook - Trả lời tự do`. Trường hệ thống Botcake **Tin nhắn cuối của KH** dùng `{{last_text_input}}`.
