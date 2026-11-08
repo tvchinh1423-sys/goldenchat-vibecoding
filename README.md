@@ -5,8 +5,8 @@
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Automated%20Tests-65%2F65%20Pass-emerald?style=flat&logo=jest)](tests/)
-[![Build](https://img.shields.io/badge/Build-20%2F20%20Pages%20Pass-success?style=flat&logo=next.js)](https://goldenchat-vibecoding.vercel.app)
+[![Tests](https://img.shields.io/badge/Automated%20Tests-72%2F72%20Pass-emerald?style=flat&logo=jest)](tests/)
+[![Build](https://img.shields.io/badge/Build-21%2F21%20Pages%20Pass-success?style=flat&logo=next.js)](https://goldenchat-vibecoding.vercel.app)
 [![Vercel](https://img.shields.io/badge/Live%20Production-Online-blue?style=flat&logo=vercel)](https://goldenchat-vibecoding.vercel.app)
 
 ---
@@ -15,6 +15,9 @@
 
 - 🔗 **Hệ thống Quản trị OmniChat:** [https://goldenchat-vibecoding.vercel.app](https://goldenchat-vibecoding.vercel.app)
 - 💬 **Web Chat Widget Khách hàng:** [https://goldenchat-vibecoding.vercel.app/widget](https://goldenchat-vibecoding.vercel.app/widget)
+- 📱 **Facebook Messenger Fanpage Live:** [https://m.me/omnichattest](https://m.me/omnichattest) *(Page: omnichattest — Kết nối & Đồng bộ 2 chiều với Hộp thư)*
+- 🎬 **Kịch bản Quay Video Demo (1p50s):** [`KICH_BAN_QUAY_VIDEO.md`](./KICH_BAN_QUAY_VIDEO.md)
+- 📑 **Minh chứng Ứng dụng AI:** [`minh-chung-ung-dung-ai.md`](./docs/minh-chung-ung-dung-ai.md)
 - 📱 **Trung tâm Cài đặt Ứng dụng (PWA đa nền tảng):** [https://goldenchat-vibecoding.vercel.app/download](https://goldenchat-vibecoding.vercel.app/download)
 - ⚙️ **Webhook Botcake tiếp nhận FB & Zalo:** `https://goldenchat-vibecoding.vercel.app/api/webhook/botcake`
 - 📦 **Script nhúng 1 dòng mã vào Website:** `https://goldenchat-vibecoding.vercel.app/embed.js`
@@ -49,6 +52,7 @@ Hệ thống OmniChat AI hỗ trợ phân quyền 3 cấp độ (Admin / Manager
 | | Hiệu ứng âm thanh Web Audio "Ting" | Tự động phát âm thanh khi có tin nhắn hoặc đặt lịch thành công bằng Web Audio API thuần (không phụ thuộc asset mạng ngoài). | 🌟 WOW 2 |
 | | Bóc tách quy mô sảnh linh hoạt | Nhận diện thông minh "300 khách", "30 mâm", "35 bàn"... tự động so sánh Sảnh Tầng 3 và Tầng 4 kèm 2 nút xem ảnh trực tiếp. | 🌟 WOW 3 |
 | | Hệ thống Hyperlink & Quick Actions 1-chạm | Tự động chuyển URL/SĐT thành nút bấm mở ngay: Xem Menu, Bản đồ Maps, Xem Sảnh, Dự toán chi phí, Gọi Hotline. | 🌟 WOW 4 |
+| | Kết nối Facebook Messenger & Web 2 chiều | Tích hợp Meta Graph API gửi nhận trực tiếp với khách thật, đồng bộ tức thì qua BroadcastChannel và Cloud Sync Server. | 🌟 WOW 5 |
 | **4. Reverse** *(Né điểm trừ)* | Không tự bịa giá/ưu đãi ngoài chính sách | Thiết lập Guardrail đa tầng: Chặn triệt để khách đòi giảm giá 30%, kiên định bảo vệ chính sách nhà hàng và gửi cảnh báo Telegram. | 🛡️ Chuẩn hóa |
 | | Không đơ/lỗi khi khách gõ không dấu, tiếng lóng | Bộ phân tích ngôn ngữ tự nhiên xử lý tiếng Việt không dấu, nhận diện ý định đa biến thể (`dat lich`, `hen xem sanh`, `muon dat`...). | 🛡️ Chuẩn hóa |
 | | Ngăn chặn trùng lịch của cùng tư vấn viên | Thuật toán kiểm tra xung đột thời gian (exclusion check) ngăn chặn 2 lịch hẹn trùng giờ của cùng 1 chuyên viên. | 🛡️ Chuẩn hóa |
@@ -112,7 +116,7 @@ npm run dev
 
 ### Chạy kiểm thử tự động
 ```bash
-# Chạy toàn bộ 34 bài kiểm tra tự động (Unit / API / CRM / Router)
+# Chạy toàn bộ 72 bài kiểm tra tự động (Unit / API / CRM / Router / Cloud Sync / Live Webhook)
 npm test
 
 # Chạy kiểm tra định dạng và kiểu dữ liệu TypeScript
