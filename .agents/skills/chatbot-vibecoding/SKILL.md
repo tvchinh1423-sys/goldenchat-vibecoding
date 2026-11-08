@@ -21,6 +21,13 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Rà soát sau bản sửa của Chinh — 08/11/2026 (giờ Việt Nam)
+
+- GitHub xác nhận commit `5592479` của Chinh trên `origin/main`, trạng thái Vercel thành công. Kiểm tra trực tiếp production bằng dữ liệu tổng hợp: Simulator từ chối 31/11 và 14:00, trả đúng chính sách giảm 30% cho 40 mâm và phân biệt giờ mở cửa với giờ tư vấn. Vẫn trả `autoBooked: true` và nói đã xác nhận lịch ngày 01/01/2025. API Simulator chỉ tạo phản hồi, chưa lưu lịch trong lần kiểm tra này.
+- **P0 còn mở:** GET `/api/sync/store` không kèm phiên vẫn trả HTTP 200 cùng CRM và danh sách hội thoại. Mã POST chưa kiểm tra quyền và nhận cả yêu cầu thay thế snapshot. Không thử ghi vào kho production. CRM còn tự tạo phiên nhân viên trong trình duyệt. Kho đồng bộ vẫn dùng bộ nhớ tiến trình và `/tmp`. Bản sửa có lọc đúng ID mẫu và nhận ID cần xóa, nhưng không lưu dấu xóa qua các lượt ghi nên thiết bị gửi snapshot cũ có thể thêm lại bản ghi; ghi đè toàn CRM khi xóa cũng có thể mất cập nhật đồng thời.
+- **Còn chờ nghiệm thu:** Đã có sửa giữ bản nháp khi AI lỗi và sửa dọn dữ liệu demo. Chưa kiểm tra lại toàn luồng Widget → Inbox → CRM → tải lại → xóa, giữ nháp khi phản hồi đến muộn hoặc trên hai thiết bị. Con số 65/65 và build 20/20 là kết quả Chinh ghi nhận. CRM và API soạn nháp trên production vẫn trả chế độ demo. API cấu hình vẫn báo thành công khi ghi DB lỗi, chỉ số AI trên Dashboard vẫn cố định 82% khi có hội thoại. Facebook đã có hai ca Messenger FAQ từ lượt trước, chưa nghiệm thu Facebook → Inbox/CRM, Zalo hoặc Telegram thật.
+- **Hồ sơ thi:** Đã có source ZIP, README, kịch bản quay và bản minh chứng AI. Repo/ZIP chưa thấy video hoàn chỉnh hoặc bảng kiểm thử theo mẫu Bảng B có kết quả thực tế cho ba nhóm ca. Minh chứng hiện dài hơn giới hạn một trang và nêu số liệu hiệu quả chưa có nguồn đo kèm theo. Chưa xác minh đã nộp trên cổng đội thi. Hạn BTC 23:59 ngày 09/11/2026 giờ Việt Nam. Chốt hồ sơ theo phạm vi demo minh bạch và chỉ dùng dữ liệu giả cho đến khi đóng điểm chặn quyền truy cập và lưu trữ.
+
 ### Hoàn thành toàn diện các lỗi P0 & P1 và Đóng gói Hồ sơ Dự thi — 07/11/2026, khoảng 22:30 (Chinh)
 
 - **Đã khắc phục triệt để các lỗi P0 & P1 theo báo cáo kiểm thử của Chị Hiền:**
