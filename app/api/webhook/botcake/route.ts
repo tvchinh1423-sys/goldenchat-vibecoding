@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_BOT_CONFIG, DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
+import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import type { Conversation, Message } from "@/lib/inbox/types";
 
 // Verification token cho Botcake (có thể cấu hình trong .env hoặc mặc định)
 const BOTCAKE_VERIFY_TOKEN =
@@ -271,6 +273,92 @@ export async function POST(req: NextRequest) {
           // ignore
         }
       }
+    }
+
+    // Đồng bộ tức thì vào Cloud Store (Hộp thư hợp nhất /inbox)
+    try {
+      const store = loadCloudStore();
+      const channelType = platform === "zalo" ? "zalo" : "facebook";
+      const syncConvId = externalThreadId ? `${channelType}-${externalThreadId}` : `${channelType}-${Date.now()}`;
+      const nowIso = new Date().toISOString();
+
+      const custMsg: Message = {
+        id: `msg-c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        sender: "customer",
+        content: messageText,
+        createdAt: nowIso,
+      };
+      const botMsg: Message = {
+        id: `msg-b-${Date.now() + 1}-${Math.random().toString(36).slice(2, 6)}`,
+        sender: "bot",
+        content: botReplyText || "Đã nhận tin nhắn từ khách hàng",
+        createdAt: new Date(Date.now() + 1000).toISOString(),
+      };
+
+      let existing = store.conversations.find(
+        (c) => c.id === syncConvId || (externalThreadId && c.id.includes(externalThreadId)) || (c.channel === channelType && c.name === customerName)
+      );
+
+      let targetConv: Conversation;
+      if (existing) {
+        targetConv = {
+          ...existing,
+          name: existing.name || customerName,
+          status: "active",
+          unread: (existing.unread || 0) + 1,
+          messages: [...existing.messages, custMsg, botMsg],
+        };
+      } else {
+        targetConv = {
+          id: syncConvId,
+          name: customerName || (channelType === "facebook" ? "Khách Facebook" : "Khách Zalo"),
+          channel: channelType,
+          avatarColor: channelType === "facebook" ? "bg-blue-600" : "bg-sky-500",
+          status: "active",
+          aiEnabled: true,
+          assignedTo: "unassigned",
+          unread: 1,
+          note: `Webhook từ ${channelType.toUpperCase()}`,
+          messages: [custMsg, botMsg],
+        };
+      }
+
+      let leadsToUpdate: any[] = [];
+      if (customerPhone) {
+        targetConv.lead = {
+          id: `lead-${customerPhone.replace(/[\s.-]/g, "")}`,
+          conversation_id: targetConv.id,
+          full_name: targetConv.name,
+          phone: customerPhone,
+          email: detectedEmail || "",
+          demand_notes: messageText,
+          source: channelType,
+          status: "new",
+          created_at: nowIso,
+        };
+        leadsToUpdate.push({
+          id: targetConv.lead.id,
+          full_name: targetConv.name,
+          phone: customerPhone,
+          email: detectedEmail || "",
+          course_interest: "Gói tiệc & Sảnh cưới Golden Palace",
+          stage: "N1",
+          source: channelType,
+          created_at: nowIso,
+          last_touched_at: nowIso,
+          conversation_id: targetConv.id,
+          notes: `Lead từ Webhook ${channelType.toUpperCase()}: "${messageText}"`,
+        });
+      }
+
+      updateCloudStore({
+        conversations: [targetConv],
+        crm: {
+          leads: leadsToUpdate.length > 0 ? leadsToUpdate : undefined,
+        },
+      });
+    } catch (syncErr) {
+      console.warn("Lỗi sync Cloud Store:", syncErr);
     }
 
     return NextResponse.json({

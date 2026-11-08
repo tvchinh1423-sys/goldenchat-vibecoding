@@ -100,6 +100,29 @@ test("Botcake Webhook POST reads a Zalo customer phone", async () => {
   assert.equal(json.data.customerPhone, "0987654321");
 });
 
+test("Chat API automatically syncs Facebook Messenger conversations into Cloud Store Inbox", async () => {
+  const { GET: getChat } = await import("@/app/api/simulator/chat/route");
+  const { loadCloudStore } = await import("@/lib/sync/store");
+
+  const req = new NextRequest(
+    "http://localhost:3000/api/simulator/chat?channel=facebook&message=Nhà%20hàng%20có%20mấy%20sảnh%20tiệc&sender_name=Trần%20Văn%20Chinh&sender_id=chinh_fb_test_123"
+  );
+  const res = await getChat(req);
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.success, true);
+  assert.ok(Array.isArray(json.messages));
+  assert.ok(json.messages[0].text.length > 0);
+
+  // Kiểm tra đã sync vào Inbox
+  const store = loadCloudStore();
+  const foundConv = store.conversations.find((c) => c.id.includes("chinh_fb_test_123"));
+  assert.ok(foundConv, "Phải tìm thấy conversation trong Inbox");
+  assert.equal(foundConv.channel, "facebook");
+  assert.equal(foundConv.name, "Trần Văn Chinh");
+  assert.ok(foundConv.messages.some((m) => m.content.includes("Nhà hàng có mấy sảnh tiệc")));
+});
+
 test("Telegram Alert API validates tokens and returns structured responses", async () => {
   // Test không có token/chatId
   const reqNoAuth = new NextRequest("http://localhost:3000/api/telegram/alert", {

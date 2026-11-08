@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking-extractor";
+import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import type { Conversation, Message } from "@/lib/inbox/types";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -13,7 +15,18 @@ export async function GET(req: NextRequest) {
     searchParams.get("last_input") ||
     "";
   const channel = searchParams.get("channel") || "facebook";
-  return processChatRequest({ message, channel });
+  const sender_name =
+    searchParams.get("sender_name") ||
+    searchParams.get("name") ||
+    searchParams.get("first_name") ||
+    "";
+  const sender_id =
+    searchParams.get("sender_id") ||
+    searchParams.get("id") ||
+    searchParams.get("user_id") ||
+    "";
+  const phone = searchParams.get("phone") || searchParams.get("customer_phone") || "";
+  return processChatRequest({ message, channel, sender_name, sender_id, phone });
 }
 
 export async function POST(req: NextRequest) {
@@ -24,6 +37,169 @@ export async function POST(req: NextRequest) {
     body = {};
   }
   return processChatRequest(body);
+}
+
+function syncExternalChatToInbox({
+  channel,
+  senderId,
+  senderName,
+  userMessage,
+  botReply,
+  bookingInfo,
+  customerPhone,
+}: {
+  channel: "facebook" | "zalo" | "web";
+  senderId?: string;
+  senderName?: string;
+  userMessage: string;
+  botReply: string;
+  bookingInfo?: Partial<BookingDraftInfo> | null;
+  customerPhone?: string;
+}) {
+  try {
+    const store = loadCloudStore();
+    const cleanSenderName =
+      senderName && senderName.trim() && !senderName.includes("{{")
+        ? senderName.trim()
+        : "";
+    const cleanSenderId =
+      senderId && senderId.trim() && !senderId.includes("{{")
+        ? senderId.trim()
+        : "";
+
+    // ID định danh cuộc hội thoại theo channel
+    const convId = cleanSenderId
+      ? `${channel}-${cleanSenderId}`
+      : `${channel}-omnichat-user`;
+
+    // Tên hiển thị của khách
+    const displayName =
+      cleanSenderName ||
+      bookingInfo?.fullName ||
+      (channel === "facebook"
+        ? "Khách Facebook Messenger"
+        : channel === "zalo"
+        ? "Khách Zalo"
+        : "Khách Web Widget");
+
+    const nowIso = new Date().toISOString();
+    const custMsg: Message = {
+      id: `msg-c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sender: "customer",
+      content: userMessage,
+      createdAt: nowIso,
+    };
+    const botMsg: Message = {
+      id: `msg-b-${Date.now() + 1}-${Math.random().toString(36).slice(2, 6)}`,
+      sender: "bot",
+      content: botReply,
+      createdAt: new Date(Date.now() + 1000).toISOString(),
+    };
+
+    let existing = store.conversations.find(
+      (c) =>
+        c.id === convId ||
+        (cleanSenderId && c.id.includes(cleanSenderId)) ||
+        (c.channel === channel && c.name === displayName),
+    );
+
+    let targetConv: Conversation;
+    if (existing) {
+      targetConv = {
+        ...existing,
+        name: existing.name || displayName,
+        status: "active",
+        unread: (existing.unread || 0) + 1,
+        messages: [...existing.messages, custMsg, botMsg],
+      };
+    } else {
+      targetConv = {
+        id: convId,
+        name: displayName,
+        channel,
+        avatarColor:
+          channel === "facebook"
+            ? "bg-blue-600"
+            : channel === "zalo"
+            ? "bg-sky-500"
+            : "bg-emerald-600",
+        status: "active",
+        aiEnabled: true,
+        assignedTo: "unassigned",
+        unread: 1,
+        note: `Hội thoại từ ${channel.toUpperCase()}`,
+        messages: [custMsg, botMsg],
+      };
+    }
+
+    const phone =
+      customerPhone ||
+      bookingInfo?.phone ||
+      targetConv.lead?.phone ||
+      "";
+
+    let leadsToUpdate: any[] = [];
+    if (phone) {
+      targetConv.lead = {
+        id: `lead-${phone.replace(/[\s.-]/g, "")}`,
+        conversation_id: targetConv.id,
+        full_name: targetConv.name,
+        phone,
+        email: "",
+        demand_notes: userMessage,
+        source: channel,
+        status: "new",
+        created_at: nowIso,
+      };
+      leadsToUpdate.push({
+        id: targetConv.lead.id,
+        full_name: targetConv.name,
+        phone,
+        email: "",
+        course_interest: "Gói tiệc & Sảnh cưới Golden Palace",
+        stage: "N1",
+        source: channel,
+        created_at: nowIso,
+        last_touched_at: nowIso,
+        conversation_id: targetConv.id,
+        notes: `Lead từ ${channel.toUpperCase()}: "${userMessage}"`,
+      });
+    }
+
+    let bookingsToUpdate: any[] = [];
+    if (bookingInfo?.dateTimeIso || (bookingInfo as any)?.autoBooked) {
+      const apptTime = bookingInfo?.dateTimeIso || nowIso;
+      targetConv.booking = {
+        appointmentTime: apptTime,
+        staff: "Lễ tân Golden Palace",
+        notes: bookingInfo?.notes || `Khách xem sảnh (${bookingInfo?.guestsCount || 4} khách)`,
+      };
+      bookingsToUpdate.push({
+        id: `bk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        lead_id: targetConv.lead?.id || `lead-${Date.now()}`,
+        customer_name: targetConv.name,
+        customer_phone: phone || "",
+        appointment_time: apptTime,
+        event_type: bookingInfo?.eventType || "xem_sanh",
+        stage: "N3",
+        guests_count: bookingInfo?.guestsCount || 4,
+        assigned_staff: "Lễ tân Golden Palace",
+        notes: targetConv.booking.notes,
+        created_at: nowIso,
+        status: "confirmed",
+      });
+    }
+
+    updateCloudStore({
+      conversations: [targetConv],
+      crm: {
+        leads: leadsToUpdate.length > 0 ? leadsToUpdate : undefined,
+        bookings: bookingsToUpdate.length > 0 ? bookingsToUpdate : undefined,
+      },
+    });
+  } catch (e) {
+    console.warn("syncExternalChatToInbox error:", e);
+  }
 }
 
 async function processChatRequest(payload: any) {
@@ -63,8 +239,26 @@ async function processChatRequest(payload: any) {
     const facebookReplyOnly = channel === "facebook" && replyOnly === true;
     const brandName = businessProfile?.name || "Golden Palace";
 
-    const respond = <T extends { success: true; reply?: string; suggestedQuestions?: string[] }>(data: T) =>
-      NextResponse.json(
+    const respond = <T extends { success: true; reply?: string; suggestedQuestions?: string[]; bookingDraft?: any }>(data: T) => {
+      if (
+        trimmedMsg &&
+        trimmedMsg !== "{{last_input}}" &&
+        trimmedMsg !== "{{last_text_input}}" &&
+        trimmedMsg !== "{{message}}" &&
+        data.reply
+      ) {
+        syncExternalChatToInbox({
+          channel: channel === "zalo" ? "zalo" : channel === "web" ? "web" : "facebook",
+          senderId: payload.sender_id || payload.id || payload.user_id,
+          senderName: payload.sender_name || payload.name || payload.first_name,
+          userMessage: trimmedMsg,
+          botReply: data.reply,
+          bookingInfo: data.bookingDraft,
+          customerPhone: payload.phone,
+        });
+      }
+
+      return NextResponse.json(
         facebookReplyOnly
           ? {
               success: data.success,
@@ -81,6 +275,7 @@ async function processChatRequest(payload: any) {
               ),
             },
       );
+    };
 
     // Nếu tin nhắn trống hoặc là test variable "{{last_input}}" / "{{last_text_input}}" từ Botcake
     if (
