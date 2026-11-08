@@ -1,7 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import { fetchFacebookConversations } from "@/lib/facebook/client";
+import type { Conversation, Message } from "@/lib/inbox/types";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Trộn thông minh tin nhắn Facebook trực tiếp từ Meta Graph API vào danh sách hội thoại
+ */
+function mergeLiveFacebook(
+  conversations: Conversation[],
+  liveFb: Conversation[]
+): Conversation[] {
+  if (!liveFb.length) return conversations;
+
+  const result = [...conversations];
+  for (const fb of liveFb) {
+    const idx = result.findIndex((c) => c.id === fb.id);
+    if (idx >= 0) {
+      const existing = result[idx];
+      // Ghép tin nhắn deduped
+      const mergedMsgs = dedupeMessages(existing.messages, fb.messages);
+      result[idx] = {
+        ...existing,
+        name: fb.name || existing.name,
+        unread: typeof fb.unread === "number" ? fb.unread : existing.unread,
+        messages: mergedMsgs,
+      };
+    } else {
+      // Đưa cuộc trò chuyện Facebook thật lên đầu danh sách
+      result.unshift(fb);
+    }
+  }
+  return result;
+}
+
+function dedupeMessages(current: Message[], incoming: Message[]): Message[] {
+  const all = [...current, ...incoming];
+  const unique: Message[] = [];
+
+  for (const m of all) {
+    if (!m || !m.content) continue;
+    const exists = unique.some((u) => {
+      if (u.id === m.id) return true;
+      if (
+        u.sender === m.sender &&
+        u.content.trim() === m.content.trim() &&
+        Math.abs(Date.parse(u.createdAt) - Date.parse(m.createdAt)) < 15000
+      ) {
+        return true;
+      }
+      return false;
+    });
+    if (!exists) {
+      unique.push(m);
+    }
+  }
+
+  return unique.sort(
+    (a, b) => Date.parse(a.createdAt || "0") - Date.parse(b.createdAt || "0")
+  );
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,7 +68,32 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const since = parseInt(searchParams.get("since") || "0", 10);
 
-    if (since > 0 && since >= store.revision) {
+    // Đồng bộ trực tiếp các cuộc trò chuyện thật từ Facebook Fanpage Messenger
+    let liveFb: Conversation[] = [];
+    try {
+      liveFb = await fetchFacebookConversations();
+    } catch (fbErr) {
+      console.warn("Không thể fetch trực tiếp từ Facebook:", fbErr);
+    }
+
+    let hasFbChanges = false;
+    if (liveFb.length > 0) {
+      const prevMsgsCount = store.conversations
+        .filter((c) => c.channel === "facebook")
+        .reduce((sum, c) => sum + c.messages.length, 0);
+      const newMsgsCount = liveFb.reduce((sum, c) => sum + c.messages.length, 0);
+
+      store.conversations = mergeLiveFacebook(store.conversations, liveFb);
+
+      if (newMsgsCount !== prevMsgsCount || store.conversations.length !== (store as any).__last_conv_count) {
+        store.revision += 1;
+        hasFbChanges = true;
+        (store as any).__last_conv_count = store.conversations.length;
+      }
+    }
+
+    // Nếu client hỏi kể từ revision cũ và không có thay đổi nào, trả về modified: false
+    if (since > 0 && since >= store.revision && !hasFbChanges && !searchParams.get("force")) {
       return NextResponse.json({
         modified: false,
         revision: store.revision,
@@ -26,7 +110,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Lỗi đọc dữ liệu đồng bộ" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -46,7 +130,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Lỗi lưu dữ liệu đồng bộ" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

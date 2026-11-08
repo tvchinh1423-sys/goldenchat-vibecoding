@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
-import type { Conversation, Message } from "@/lib/inbox/types";
-
-const FB_VERIFY_TOKEN =
-  process.env.FB_VERIFY_TOKEN ||
-  process.env.FACEBOOK_VERIFY_TOKEN ||
-  "omnichat_verify_2026";
+import {
+  FB_VERIFY_TOKEN,
+  FB_PAGE_ACCESS_TOKEN,
+  sendFacebookMessage,
+} from "@/lib/facebook/client";
+import type { Message } from "@/lib/inbox/types";
 
 /**
  * GET: Xác thực Webhook với Meta for Developers
@@ -45,95 +45,85 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "IGNORED" }, { status: 200 });
     }
 
-    const pageAccessToken =
-      process.env.FB_PAGE_ACCESS_TOKEN ||
-      process.env.FACEBOOK_PAGE_ACCESS_TOKEN ||
-      "EAAVpOzSTwMsBSz8lGvACq0KGly3h5EFVZCA9s1xRPD9lces8mKLdliDoNqtnV39eggxpMGA3PBvaBEQajKAuwuCXMx2ay05v4LfiXvwZCOlWMrSQ7RkJUoZCclY3gRAXLpJ1vXVyk0XL2ZBDoGyFyjQlboidKQZC0IvqQxY8QK93Rm4WqHrItnrv4qDsixH9TYusCZAwZDZD";
-
     // Duyệt qua tất cả entries
     for (const entry of body.entry || []) {
-      const pageId = entry.id;
-
       for (const messagingEvent of entry.messaging || []) {
-        // Bỏ qua tin nhắn do bot gửi (echo) hoặc tin nhắn giao hàng
-        if (messagingEvent.message?.is_echo || !messagingEvent.message?.text) {
+        // Bỏ qua tin nhắn do bot gửi (echo)
+        if (messagingEvent.message?.is_echo) {
           continue;
         }
 
         const senderId = messagingEvent.sender?.id;
-        const userText = messagingEvent.message.text.trim();
+        const rawText = messagingEvent.message?.text?.trim();
+        const hasAttachments = Array.isArray(messagingEvent.message?.attachments) && messagingEvent.message.attachments.length > 0;
+        const userText = rawText || (hasAttachments ? "[Hình ảnh/Tệp đính kèm]" : "");
 
         if (!senderId || !userText) continue;
 
-        console.log(`📩 [Facebook Webhook] Nhận tin nhắn từ PSID ${senderId}: "${userText}"`);
+        console.log(`📩 [Facebook Webhook] Nhận tin từ PSID ${senderId}: "${userText}"`);
 
-        // Gọi trực tiếp bộ xử lý NLP & FAQ của OmniChat
-        let botReply = "Dạ Golden Palace xin chào Quý khách! Em có thể hỗ trợ tư vấn thực đơn tiệc cưới, giá bàn hay đặt lịch xem sảnh tại 98 Đông A ạ?";
-        try {
-          const simRes = await fetch(
-            `${req.nextUrl.origin}/api/simulator/chat?channel=facebook&message=${encodeURIComponent(
-              userText
-            )}&sender_id=${senderId}`,
-            { method: "GET" }
-          );
-          if (simRes.ok) {
-            const simData = await simRes.json();
-            if (simData.reply) {
-              botReply = simData.reply;
-            }
-          }
-        } catch (e) {
-          console.warn("Lỗi gọi Simulator API:", e);
-        }
+        const convId = `facebook-${senderId}`;
+        const store = loadCloudStore();
+        const existing = store.conversations.find((c) => c.id === convId);
 
-        // 1. Gửi tin nhắn trả lời ngược lại Facebook Messenger qua Meta Graph API
-        if (pageAccessToken) {
+        // Kiểm tra xem hội thoại này AI có đang bật không (nếu nhân viên tắt AI thì không tự động trả lời)
+        const isAiEnabled = existing ? existing.aiEnabled !== false : true;
+
+        let botReply = "";
+
+        if (isAiEnabled) {
+          botReply =
+            "Dạ Golden Palace xin chào Quý khách! Em có thể hỗ trợ tư vấn thực đơn tiệc cưới, giá bàn hay đặt lịch xem sảnh tại 98 Đông A ạ?";
           try {
-            const fbRes = await fetch(
-              `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  recipient: { id: senderId },
-                  messaging_type: "RESPONSE",
-                  message: { text: botReply },
-                }),
-              }
+            const simRes = await fetch(
+              `${req.nextUrl.origin}/api/simulator/chat?channel=facebook&message=${encodeURIComponent(
+                userText
+              )}&sender_id=${senderId}`,
+              { method: "GET" }
             );
-            const fbJson = await fbRes.json();
-            console.log("📤 [Facebook Graph API Send]:", fbJson);
+            if (simRes.ok) {
+              const simData = await simRes.json();
+              if (simData.reply) {
+                botReply = simData.reply;
+              }
+            }
+          } catch (e) {
+            console.warn("Lỗi gọi Simulator API:", e);
+          }
+
+          // 1. Gửi tin nhắn trả lời ngược lại Facebook Messenger qua Meta Graph API
+          try {
+            await sendFacebookMessage(senderId, botReply);
+            console.log(`📤 [Facebook Webhook] Đã gửi trả lời tự động cho PSID ${senderId}`);
           } catch (sendErr) {
             console.error("Lỗi gửi tin qua Meta Graph API:", sendErr);
           }
         } else {
-          console.warn(
-            "⚠️ Chưa cấu hình FB_PAGE_ACCESS_TOKEN! Tin nhắn đã được xử lý và lưu vào Inbox nhưng chưa gửi ra Messenger qua Graph API."
-          );
+          console.log(`ℹ️ [Facebook Webhook] AI đang tắt cho ${convId}, nhân viên tiếp quản thủ công.`);
         }
 
-        // 2. Đồng bộ vào Hộp thư hợp nhất /inbox
+        // 2. Đồng bộ tin nhắn vào Cloud Store
         try {
-          const store = loadCloudStore();
-          const convId = `facebook-${senderId}`;
           const nowIso = new Date().toISOString();
-
           const custMsg: Message = {
             id: `msg-fb-c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             sender: "customer",
             content: userText,
             createdAt: nowIso,
           };
-          const botMsg: Message = {
-            id: `msg-fb-b-${Date.now() + 1}-${Math.random().toString(36).slice(2, 6)}`,
-            sender: "bot",
-            content: botReply,
-            createdAt: new Date(Date.now() + 500).toISOString(),
-          };
 
-          const existing = store.conversations.find((c) => c.id === convId);
+          const newMessages: Message[] = [custMsg];
+          if (isAiEnabled && botReply) {
+            newMessages.push({
+              id: `msg-fb-b-${Date.now() + 1}-${Math.random().toString(36).slice(2, 6)}`,
+              sender: "bot",
+              content: botReply,
+              createdAt: new Date(Date.now() + 500).toISOString(),
+            });
+          }
+
           if (existing) {
-            existing.messages.push(custMsg, botMsg);
+            existing.messages.push(...newMessages);
             existing.unread = (existing.unread || 0) + 1;
             existing.status = "active";
           } else {
@@ -141,13 +131,13 @@ export async function POST(req: NextRequest) {
               id: convId,
               name: `Khách Facebook (${senderId.slice(-4)})`,
               channel: "facebook",
-              avatarColor: "bg-blue-600",
+              avatarColor: "sky",
               status: "active",
-              aiEnabled: true,
+              aiEnabled: isAiEnabled,
               assignedTo: "unassigned",
               unread: 1,
               note: "Tin nhắn trực tiếp qua Meta Webhook",
-              messages: [custMsg, botMsg],
+              messages: newMessages,
             });
           }
 

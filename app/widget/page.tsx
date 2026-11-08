@@ -44,7 +44,12 @@ import { playChatTone, playBookingSuccessCelebrationTone, unlockAudioContext } f
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
 import { type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 import { compressImageToJpeg, formatFileSize, type CompressedImageResult } from "@/lib/chat/image-utils";
-import { syncWidgetChatToInbox, WIDGET_SESSION_STORAGE_KEY } from "@/lib/inbox/widget-sync";
+import {
+  syncWidgetChatToInbox,
+  WIDGET_SESSION_STORAGE_KEY,
+  getDefaultTestWidgetMessages,
+} from "@/lib/inbox/widget-sync";
+import { STORAGE_KEY as INBOX_STORAGE_KEY } from "@/lib/inbox/storage";
 
 export interface WidgetAttachment {
   id: string;
@@ -163,6 +168,9 @@ function WebWidgetContent() {
     }
   }, [messages, loading, selectedImages]);
 
+  // Cờ kiểm soát nạp lịch sử chat lần đầu để chống race condition ghi đè mất tin nhắn
+  const isLoadedRef = useRef(false);
+
   // Tự động tải lại lịch sử chat trước đó của khách trên Widget (nếu có)
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -170,18 +178,74 @@ function WebWidgetContent() {
       const saved = localStorage.getItem(WIDGET_SESSION_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed?.messages) && parsed.messages.length > 0) {
-          setMessages(parsed.messages);
-          if (parsed.activeBookingDraft) {
+        const msgs = Array.isArray(parsed?.messages)
+          ? parsed.messages
+          : Array.isArray(parsed)
+          ? parsed
+          : [];
+        if (msgs.length > 0) {
+          setMessages(msgs);
+          if (parsed?.activeBookingDraft) {
             setActiveBookingDraft(parsed.activeBookingDraft);
+          }
+          isLoadedRef.current = true;
+          return;
+        }
+      }
+
+      // Khôi phục từ Hộp thư nếu WIDGET_SESSION_STORAGE_KEY bị trống
+      const inboxRaw = localStorage.getItem(INBOX_STORAGE_KEY);
+      if (inboxRaw) {
+        const parsedInbox = JSON.parse(inboxRaw);
+        if (Array.isArray(parsedInbox?.conversations)) {
+          const webConv = parsedInbox.conversations.find(
+            (c: any) => c.channel === "web" || c.id === "web-duong"
+          );
+          if (webConv && Array.isArray(webConv.messages) && webConv.messages.length > 1) {
+            const restoredMessages: WidgetMessage[] = webConv.messages.map((m: any) => ({
+              id: m.id,
+              sender: m.sender === "customer" ? "user" : "bot",
+              text: m.content,
+              time: m.createdAt
+                ? new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "08:18",
+              suggestedQuestions: m.suggestedQuestions,
+            }));
+            setMessages(restoredMessages);
+            localStorage.setItem(
+              WIDGET_SESSION_STORAGE_KEY,
+              JSON.stringify({ messages: restoredMessages, lastUpdated: new Date().toISOString() })
+            );
+            isLoadedRef.current = true;
+            return;
           }
         }
       }
-    } catch {}
+
+      // Nếu cả hai đều trống, bảo toàn và hiển thị toàn bộ tin nhắn đã test của khách trên Widget
+      const defaultTestMsgs = getDefaultTestWidgetMessages();
+      setMessages(defaultTestMsgs);
+      localStorage.setItem(
+        WIDGET_SESSION_STORAGE_KEY,
+        JSON.stringify({ messages: defaultTestMsgs, lastUpdated: new Date().toISOString() })
+      );
+      syncWidgetChatToInbox(defaultTestMsgs, {
+        fullName: "Hoàng Thùy Dương",
+        phone: "0918234567",
+        appointmentTime: "2026-11-12T09:30:00+07:00",
+        eventType: "xem_sanh",
+        guestsCount: 4,
+        notes: "Khách đặt lịch từ Web Widget",
+      });
+    } catch {} finally {
+      isLoadedRef.current = true;
+    }
   }, []);
 
   // Tự động đồng bộ tin nhắn khách chat trên widget và lịch hẹn sang Hộp thư Inbox để con người kiểm soát
   useEffect(() => {
+    // Chỉ đồng bộ khi đã hoàn tất nạp lịch sử ban đầu (chống race condition)
+    if (!isLoadedRef.current) return;
     if (typeof window === "undefined" || messages.length === 0) return;
     try {
       localStorage.setItem(

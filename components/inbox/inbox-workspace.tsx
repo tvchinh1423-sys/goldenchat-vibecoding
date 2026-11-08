@@ -17,7 +17,10 @@ import {
   DEMO_LEAD_IDS,
   DEMO_BOOKING_IDS,
 } from "@/lib/clean-data";
-import { ensureWidgetConversationInInbox } from "@/lib/inbox/widget-sync";
+import {
+  ensureWidgetConversationInInbox,
+  createDefaultWidgetConversation,
+} from "@/lib/inbox/widget-sync";
 import { createFaqDraft } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
@@ -214,10 +217,21 @@ export function InboxWorkspace() {
         if (data.modified && data.revision > cloudRevisionRef.current) {
           cloudRevisionRef.current = data.revision;
           if (Array.isArray(data.conversations)) {
-            const cleanConvs = data.conversations.filter(
+            let cleanConvs = data.conversations.filter(
               (c: any) => !DEMO_CONVERSATION_IDS.includes(c.id)
             );
+            // Bảo toàn hội thoại và lịch hẹn Web Widget nếu danh sách chưa có kênh Web
+            const hasWeb = cleanConvs.some((c: any) => c.channel === "web");
+            if (!hasWeb) {
+              const defaultWeb = createDefaultWidgetConversation();
+              cleanConvs = [defaultWeb, ...cleanConvs];
+            }
             setConversations(cleanConvs);
+            setSelectedId((prev) => {
+              if (!prev && cleanConvs.length > 0) return cleanConvs[0].id;
+              if (prev && !cleanConvs.some((c: any) => c.id === prev)) return cleanConvs[0]?.id || "";
+              return prev;
+            });
           }
           if (data.crm) {
             try {
@@ -227,6 +241,37 @@ export function InboxWorkspace() {
               const cleanBookings = (data.crm.bookings || []).filter(
                 (b: any) => !DEMO_BOOKING_IDS.includes(b.id)
               );
+              const defaultWeb = createDefaultWidgetConversation();
+              if (defaultWeb.lead && !cleanLeads.some((l: any) => l.inbox_reference === "web-duong" || l.phone === defaultWeb.lead?.phone)) {
+                cleanLeads.unshift({
+                  id: defaultWeb.lead.id,
+                  inbox_reference: defaultWeb.id,
+                  full_name: defaultWeb.lead.full_name,
+                  phone: defaultWeb.lead.phone,
+                  email: defaultWeb.lead.email,
+                  notes: defaultWeb.lead.demand_notes,
+                  source: "web" as const,
+                  stage: "N3" as const,
+                  assigned_to: "Ngọc Khánh",
+                  event_date: "12/2026",
+                  table_count: 35,
+                  last_touched_at: "2026-11-07T08:18:45.000Z",
+                  created_at: "2026-11-07T08:18:45.000Z",
+                });
+              }
+              if (defaultWeb.booking && !cleanBookings.some((b: any) => b.lead_id === "lead-web-duong")) {
+                cleanBookings.unshift({
+                  id: "booking-web-duong",
+                  lead_id: "lead-web-duong",
+                  appointment_time: "2026-11-12T02:30:00.000Z",
+                  event_type: "xem_sanh" as const,
+                  guests_count: 4,
+                  assigned_staff: "Ngọc Khánh",
+                  notes: "Khách đặt lịch từ Web Widget ghé xem sảnh & thử món tiệc cưới 35 bàn.",
+                  status: "pending" as const,
+                  created_at: "2026-11-07T08:18:45.000Z",
+                });
+              }
               localStorage.setItem(
                 CRM_STORAGE_KEY,
                 JSON.stringify({ version: 1, leads: cleanLeads, bookings: cleanBookings }),
@@ -497,13 +542,18 @@ export function InboxWorkspace() {
     url.searchParams.set("conversation", id);
     window.history.replaceState(null, "", url.toString());
   }
-  function sendMessage(customContent?: string) {
+  async function sendMessage(customContent?: string) {
     if (!active || active.status === "archived") return;
     const content = (typeof customContent === "string" ? customContent : (drafts[active.id] ?? "")).trim();
     const files = typeof customContent === "string" ? [] : (attachments[active.id] ?? []);
     if (!content && !files.length) return;
     playChatTone();
     cancelDraft();
+
+    const isFacebook = active.channel === "facebook" || active.id.startsWith("facebook-");
+    const newMsgId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+
     updateConversation(active.id, (conversation) => ({
       ...conversation,
       aiEnabled: false,
@@ -512,19 +562,45 @@ export function InboxWorkspace() {
       messages: [
         ...conversation.messages,
         {
-          id: crypto.randomUUID(),
+          id: newMsgId,
           sender: "agent",
           content,
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso,
           ...(files.length ? { attachments: files } : {}),
         },
       ],
     }));
+
     if (typeof customContent !== "string") {
       setDrafts((current) => ({ ...current, [active.id]: "" }));
       setAttachments((current) => ({ ...current, [active.id]: [] }));
     }
-    notify("Đã thêm tin nhắn demo. AI tự tắt khi tư vấn viên tiếp quản.");
+
+    if (isFacebook) {
+      const recipientId = active.id.replace(/^facebook-/, "");
+      try {
+        notify("Đang chuyển tin nhắn tới Facebook Messenger...");
+        const res = await fetch("/api/facebook/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId,
+            message: content,
+            conversationId: active.id,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Lỗi gửi tin Facebook");
+        }
+        notify("✅ Đã gửi trực tiếp tới Facebook Messenger của khách!");
+      } catch (err: any) {
+        console.error("Lỗi gửi tin Facebook:", err);
+        notify("⚠️ Gửi tin qua Facebook chưa thành công: " + (err.message || "Kiểm tra kết nối"));
+      }
+    } else {
+      notify("Đã thêm tin nhắn tư vấn viên. AI tự tắt khi tư vấn viên tiếp quản.");
+    }
   }
 
   async function triggerBotReply(
@@ -588,6 +664,20 @@ export function InboxWorkspace() {
         ],
       }));
       playChatTone();
+
+      // Nếu là hội thoại Facebook, đồng bộ câu trả lời của Bot ra Messenger của khách
+      if (active.channel === "facebook" || active.id.startsWith("facebook-")) {
+        const recipientId = active.id.replace(/^facebook-/, "");
+        void fetch("/api/facebook/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId,
+            message: data.reply,
+            conversationId: active.id,
+          }),
+        }).catch((err) => console.warn("Lỗi gửi bot reply FB:", err));
+      }
 
       if (isAiTurnedOff) {
         notify(
@@ -661,6 +751,20 @@ export function InboxWorkspace() {
         ],
       }));
       playChatTone();
+
+      // Nếu là hội thoại Facebook, đồng bộ câu trả lời của Bot ra Messenger của khách
+      if (active.channel === "facebook" || active.id.startsWith("facebook-")) {
+        const recipientId = active.id.replace(/^facebook-/, "");
+        void fetch("/api/facebook/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId,
+            message: data.reply,
+            conversationId: active.id,
+          }),
+        }).catch((err) => console.warn("Lỗi gửi bot reply FB:", err));
+      }
 
       if (isAiTurnedOff) {
         notify("⚡ Câu hỏi ngoài phạm vi tri thức: Bot đã tự động ngắt AI để tư vấn viên tiếp quản (tránh trả lời lung tung).");

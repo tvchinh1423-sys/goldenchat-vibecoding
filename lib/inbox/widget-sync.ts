@@ -18,7 +18,7 @@ export interface WidgetMessage {
   time: string;
   suggestedQuestions?: string[];
   customCalendarUrl?: string;
-  visitType?: string;
+  visitType?: "xem_sanh" | "thu_mon";
   bookingDraft?: any;
   handoff?: boolean;
   attachments?: Array<{
@@ -136,6 +136,22 @@ export function createDefaultWidgetConversation(): Conversation {
       created_at: "2026-11-07T08:18:45+07:00",
     },
   };
+}
+
+/**
+ * Trả về danh sách tin nhắn mẫu của Web Widget để hiển thị và bảo toàn lịch sử chat
+ */
+export function getDefaultTestWidgetMessages(): WidgetMessage[] {
+  const defaultConv = createDefaultWidgetConversation();
+  return defaultConv.messages.map((m) => ({
+    id: m.id,
+    sender: m.sender === "customer" ? ("user" as const) : ("bot" as const),
+    text: m.content,
+    time: m.createdAt
+      ? new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "08:18",
+    suggestedQuestions: m.suggestedQuestions,
+  }));
 }
 
 /**
@@ -481,22 +497,24 @@ export function ensureWidgetConversationInInbox() {
     const list = getInboxConversations();
     const hasWebConv = list.some((c) => c.channel === "web");
     if (!hasWebConv) {
-      // Kiểm tra xem khách đã từng nhắn tin trên Widget chưa
+      // 1. Kiểm tra xem khách đã từng nhắn tin trên Widget chưa
       const widgetSessionRaw = localStorage.getItem(WIDGET_SESSION_STORAGE_KEY);
       if (widgetSessionRaw) {
         try {
-          const msgs = JSON.parse(widgetSessionRaw);
-          if (Array.isArray(msgs) && msgs.length > 0) {
+          const parsed = JSON.parse(widgetSessionRaw);
+          const msgs = Array.isArray(parsed?.messages)
+            ? parsed.messages
+            : Array.isArray(parsed)
+            ? parsed
+            : [];
+          if (msgs.length > 0) {
             syncWidgetChatToInbox(msgs);
             return;
           }
         } catch {}
       }
 
-      // Nếu đang ở chế độ vận hành thật (production mode) thì không tự tạo hội thoại mẫu
-      const isProduction = localStorage.getItem("omnichat.production_mode") === "true";
-      if (isProduction) return;
-
+      // 2. Bảo toàn hội thoại và lịch hẹn Web Widget để con người luôn kiểm soát được
       const defaultWebConv = createDefaultWidgetConversation();
       saveInboxConversations([defaultWebConv, ...list]);
       ensureWidgetDataInCRM();

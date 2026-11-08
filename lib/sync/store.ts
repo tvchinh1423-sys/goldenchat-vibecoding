@@ -1,5 +1,4 @@
-import { seedCRM } from "@/lib/crm/demo-store";
-import { createDemoConversations } from "@/lib/inbox/demo-data";
+import { createDefaultWidgetConversation } from "@/lib/inbox/widget-sync";
 import type { CRMSnapshot, CRMLead, CRMBooking } from "@/lib/crm/model";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
@@ -37,12 +36,48 @@ declare global {
 }
 
 function getInitialStore(): CloudStoreData {
+  const defaultWeb = createDefaultWidgetConversation();
   return {
     version: 1,
     revision: 1,
     lastUpdated: new Date().toISOString(),
-    crm: seedCRM(),
-    conversations: createDemoConversations(),
+    crm: {
+      leads: defaultWeb.lead
+        ? [
+            {
+              id: defaultWeb.lead.id,
+              inbox_reference: defaultWeb.id,
+              full_name: defaultWeb.lead.full_name,
+              phone: defaultWeb.lead.phone,
+              email: defaultWeb.lead.email,
+              notes: defaultWeb.lead.demand_notes,
+              source: "web" as const,
+              stage: "N3" as const,
+              assigned_to: "Ngọc Khánh",
+              event_date: "12/2026",
+              table_count: 35,
+              last_touched_at: "2026-11-07T08:18:45.000Z",
+              created_at: "2026-11-07T08:18:45.000Z",
+            },
+          ]
+        : [],
+      bookings: defaultWeb.booking
+        ? [
+            {
+              id: "booking-web-duong",
+              lead_id: "lead-web-duong",
+              appointment_time: "2026-11-12T02:30:00.000Z",
+              event_type: "xem_sanh" as const,
+              guests_count: 4,
+              assigned_staff: "Ngọc Khánh",
+              notes: "Khách đặt lịch từ Web Widget ghé xem sảnh Hoàng Gia & thử món tiệc cưới 35 bàn.",
+              status: "pending" as const,
+              created_at: "2026-11-07T08:18:45.000Z",
+            },
+          ]
+        : [],
+    },
+    conversations: [defaultWeb],
   };
 }
 
