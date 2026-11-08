@@ -21,6 +21,11 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Chuẩn bị Default Reply Facebook — 08/11/2026 (Hiền)
+
+- Theo `tham khảo/CHAT TEST.jpg`, cấu hình trả lời tin nhắn tự do cho Page Vân Chinh. Flow `OmniChat Facebook smoke test` gửi câu hotline cố định, nên giữ để thử bằng từ khóa và tạo flow riêng `OmniChat Facebook - Trả lời tự do`. Trường hệ thống Botcake **Tin nhắn cuối của KH** dùng `{{last_text_input}}`.
+- Simulator hỗ trợ `{ "channel": "facebook", "replyOnly": true }` để trả văn bản FAQ cho Botcake. Với yêu cầu lịch, phản hồi dẫn tới Widget hoặc hotline để chọn lịch. Câu ngoài tri thức đưa hotline, tránh thông báo đã chuyển chuyên viên khi flow chưa có thao tác phân công. Chế độ này không tạo lịch, lead hay hội thoại CRM.
+
 ### Rà soát sau bản sửa của Chinh — 08/11/2026 (giờ Việt Nam)
 
 - GitHub xác nhận commit `5592479` của Chinh trên `origin/main`, trạng thái Vercel thành công. Kiểm tra trực tiếp production bằng dữ liệu tổng hợp: Simulator từ chối 31/11 và 14:00, trả đúng chính sách giảm 30% cho 40 mâm và phân biệt giờ mở cửa với giờ tư vấn. Vẫn trả `autoBooked: true` và nói đã xác nhận lịch ngày 01/01/2025. API Simulator chỉ tạo phản hồi, chưa lưu lịch trong lần kiểm tra này.

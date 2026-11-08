@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
     const {
       message,
       channel = "zalo",
+      replyOnly = false,
       isWorkingHours = true,
       persona = "",
       outOfHoursMessage = "Dạ hiện tại đã ngoài giờ làm việc. Em đã ghi nhận thông tin, tư vấn viên sẽ gọi lại vào 8h30 sáng mai nhé!",
@@ -21,6 +22,14 @@ export async function POST(req: NextRequest) {
     const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
     const rawMsg = typeof message === "string" ? message : "";
     const trimmedMsg = rawMsg.trim();
+    const facebookReplyOnly = channel === "facebook" && replyOnly === true;
+
+    if (facebookReplyOnly && (!trimmedMsg || trimmedMsg === "{{last_text_input}}")) {
+      return NextResponse.json({
+        success: true,
+        reply: "Dạ anh/chị nhắn lại câu hỏi bằng văn bản giúp em nhé. Hotline Golden Palace là 0228 659 5959 ạ.",
+      });
+    }
 
     if (!trimmedMsg && !hasAttachments) {
       return NextResponse.json({ success: false, error: "Tin nhắn trống" }, { status: 400 });
@@ -29,8 +38,8 @@ export async function POST(req: NextRequest) {
     const lower = trimmedMsg.toLowerCase();
     const brandName = businessProfile?.name || "Golden Palace";
 
-    const respond = <T extends { success: true; suggestedQuestions?: string[] }>(data: T) =>
-      NextResponse.json({
+    const respond = <T extends { success: true; reply: string; suggestedQuestions?: string[] }>(data: T) =>
+      NextResponse.json(facebookReplyOnly ? { success: data.success, reply: data.reply } : {
         ...data,
         suggestedQuestions: suggestedQuestions(trimmedMsg || "ảnh đính kèm", /golden palace/i.test(brandName), data.suggestedQuestions),
       });
@@ -156,6 +165,13 @@ export async function POST(req: NextRequest) {
       (/\b(bao nhiêu|bn|thế nào|sao|như thế nào|mấy|hết bao|quy trình)\b/i.test(lower) || !hasBookingKeywords);
 
     if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !hasDepositInquiry) {
+      if (facebookReplyOnly) {
+        return respond({
+          success: true,
+          reply: "Dạ anh/chị có thể chọn lịch xem sảnh hoặc tư vấn từ 8:00 đến 10:30 tại https://goldenchat-vibecoding.vercel.app/widget hoặc gọi 0228 659 5959 để được hỗ trợ ạ.",
+        });
+      }
+
       // 3.0. KIỂM TRA TÍNH HỢP LỆ CỦA NGÀY / GIỜ HẸN
       if (bookingDetails.isInvalidDate) {
         return respond({
@@ -855,7 +871,9 @@ export async function POST(req: NextRequest) {
     // 7. Câu hỏi nằm ngoài phạm vi tri thức / không trả lời được -> Tự động tắt AI & Chuyển giao nhân viên thật tiếp quản (Human Handoff)
     return respond({
       success: true,
-      reply: `Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!`,
+      reply: facebookReplyOnly
+        ? "Dạ em chưa có thông tin cho câu hỏi này. Anh/chị có thể gọi 0228 659 5959 để trao đổi với chuyên viên Golden Palace ạ."
+        : "Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!",
       aiEnabled: false,
       handoff: true,
       requiresHuman: true,
