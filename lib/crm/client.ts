@@ -76,7 +76,76 @@ async function request(path = "", method = "GET", body?: unknown) {
     );
   return value;
 }
+export function mergeCRMSnapshots(local: CRMSnapshot, incoming: CRMSnapshot): CRMSnapshot {
+  // 1. Gộp danh sách Leads: Bảo toàn 100% Leads của cả local và cloud
+  const leadsMap = new Map<string, CRMLead>();
+  const phoneToId = new Map<string, string>();
+
+  for (const l of local.leads || []) {
+    if (!l || !l.id) continue;
+    leadsMap.set(l.id, l);
+    if (l.phone) {
+      phoneToId.set(normalizePhone(l.phone), l.id);
+    }
+  }
+
+  for (const inc of incoming.leads || []) {
+    if (!inc || !inc.id) continue;
+    const normPhone = inc.phone ? normalizePhone(inc.phone) : "";
+    const matchedId = leadsMap.has(inc.id)
+      ? inc.id
+      : (normPhone && phoneToId.has(normPhone) ? phoneToId.get(normPhone) : null);
+
+    if (matchedId && leadsMap.has(matchedId)) {
+      const existing = leadsMap.get(matchedId)!;
+      const existingTime = Date.parse(existing.last_touched_at || existing.created_at || "0");
+      const incomingTime = Date.parse(inc.last_touched_at || inc.created_at || "0");
+      const chosen = incomingTime >= existingTime ? { ...existing, ...inc } : { ...inc, ...existing };
+      leadsMap.set(matchedId, chosen);
+    } else {
+      leadsMap.set(inc.id, inc);
+      if (normPhone) phoneToId.set(normPhone, inc.id);
+    }
+  }
+
+  // 2. Gộp danh sách Bookings: Bảo toàn 100% Lịch hẹn
+  const bookingsMap = new Map<string, CRMBooking>();
+  const slotToId = new Map<string, string>();
+
+  for (const b of local.bookings || []) {
+    if (!b || !b.id) continue;
+    bookingsMap.set(b.id, b);
+    slotToId.set(`${b.lead_id}_${b.appointment_time}`, b.id);
+  }
+
+  for (const inc of incoming.bookings || []) {
+    if (!inc || !inc.id) continue;
+    const slotKey = `${inc.lead_id}_${inc.appointment_time}`;
+    const matchedId = bookingsMap.has(inc.id)
+      ? inc.id
+      : (slotToId.has(slotKey) ? slotToId.get(slotKey) : null);
+
+    if (matchedId && bookingsMap.has(matchedId)) {
+      const existing = bookingsMap.get(matchedId)!;
+      const existingTime = Date.parse(existing.created_at || "0");
+      const incomingTime = Date.parse(inc.created_at || "0");
+      const chosen = incomingTime >= existingTime ? { ...existing, ...inc } : { ...inc, ...existing };
+      bookingsMap.set(matchedId, chosen);
+    } else {
+      bookingsMap.set(inc.id, inc);
+      slotToId.set(slotKey, inc.id);
+    }
+  }
+
+  return {
+    leads: Array.from(leadsMap.values()),
+    bookings: Array.from(bookingsMap.values()),
+  };
+}
+
 export async function loadCRM(): Promise<CRMState> {
+  const localData = typeof window !== "undefined" ? readDemoCRM(localStorage) : { leads: [], bookings: [] };
+
   // Thử đồng bộ từ Cloud Store để đảm bảo nhiều thiết bị (iPhone, Mac) đều nhận dữ liệu mới nhất
   if (typeof window !== "undefined") {
     try {
@@ -87,8 +156,18 @@ export async function loadCRM(): Promise<CRMState> {
       if (syncRes.ok) {
         const syncData = await syncRes.json();
         if (syncData?.crm) {
-          writeDemoCRM(localStorage, syncData.crm);
-          return { mode: "demo", ...syncData.crm };
+          const merged = mergeCRMSnapshots(localData, syncData.crm);
+          writeDemoCRM(localStorage, merged);
+
+          // Nếu máy local có dữ liệu người dùng mà server chưa kịp có, tự động đẩy lên server
+          if (
+            (localData.leads?.length || 0) > (syncData.crm.leads?.length || 0) ||
+            (localData.bookings?.length || 0) > (syncData.crm.bookings?.length || 0)
+          ) {
+            void syncCRMCloudPush(merged);
+          }
+
+          return { mode: "demo", ...merged };
         }
       }
     } catch {}
@@ -173,9 +252,30 @@ export async function saveChatBooking(
       }
     : fields;
   if (crm.mode === "demo") {
-    const withLead = existing ? crm : saveDemoLead(crm, contact, linked?.id);
-    const lead =
-      existing ?? withLead.leads.find((item) => item.phone === fields.phone);
+    let withLead = crm;
+    let lead = existing;
+
+    if (existing) {
+      const updatedLead: CRMLead = {
+        ...existing,
+        full_name: fields.full_name || existing.full_name,
+        phone: fields.phone || existing.phone,
+        stage: "N3" as const,
+        notes: fields.notes || existing.notes,
+        last_touched_at: new Date().toISOString(),
+      };
+      withLead = {
+        ...crm,
+        leads: crm.leads.map((l) => (l.id === existing.id ? updatedLead : l)),
+      };
+      lead = updatedLead;
+    } else {
+      withLead = {
+        mode: "demo" as const,
+        ...saveDemoLead(crm, { ...contact, stage: "N3" }, linked?.id),
+      };
+      lead = withLead.leads.find((item) => normalizePhone(item.phone) === fields.phone);
+    }
     if (!lead) throw new CRMError("Chưa xác nhận được hồ sơ khách hàng.");
 
     const start = Date.parse(booking.appointment_time);
@@ -203,6 +303,7 @@ export async function saveChatBooking(
     writeDemoCRM(localStorage, saved);
     void syncCRMCloudPush(saved);
     window.dispatchEvent(new Event("omnichat-crm-change"));
+    window.dispatchEvent(new Event("storage"));
     return { mode: "demo" as const, ...saved };
   }
   const withLead = existing ? crm : await saveCRMLead(contact, linked?.id);

@@ -898,8 +898,8 @@ export function ChatPane({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Đính kèm ảnh demo"
-                title="Ảnh demo, tối đa 700 KB/ảnh"
+                aria-label="Đính kèm ảnh"
+                title="Đính kèm ảnh, tối đa 700 KB/ảnh"
                 onClick={() => fileRef.current?.click()}
                 disabled={readingImage}
                 className="text-slate-500 hover:text-blue-600 hover:bg-blue-50"

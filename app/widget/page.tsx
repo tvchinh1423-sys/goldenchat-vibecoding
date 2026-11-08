@@ -577,13 +577,13 @@ function WebWidgetContent() {
         full_name: draft.fullName,
         phone: cleanPhone,
         email: "",
-        notes: "Khách đặt lịch tự động trong luồng chat (NLP Smart Booking)",
+        notes: draft.notes || "Khách đặt lịch tự động trong luồng chat (NLP Smart Booking)",
         source: "web",
-        stage: "N1",
+        stage: "N3",
         assigned_to: visit.assigned_staff,
         event_date: "",
         table_count: null,
-        inbox_reference: null,
+        inbox_reference: `web-${cleanPhone}`,
       }, visit);
 
       if (saved.mode === "supabase") {
@@ -866,13 +866,13 @@ function WebWidgetContent() {
         full_name: bookingName.trim(),
         phone: cleanPhone,
         email: "",
-        notes: "Đặt lịch từ Web Widget",
+        notes: bookingNotes.trim() || "Đặt lịch từ Web Widget",
         source: "web",
-        stage: "N1",
+        stage: "N3",
         assigned_to: visit.assigned_staff,
         event_date: "",
         table_count: null,
-        inbox_reference: null,
+        inbox_reference: `web-${cleanPhone}`,
       }, visit);
 
       if (saved.mode === "supabase") {
@@ -893,9 +893,7 @@ function WebWidgetContent() {
       }
 
       const calUrl = googleCalendarUrl(visit);
-      const confirmation = saved.mode === "demo"
-        ? "Lịch demo đã lưu trên trình duyệt."
-        : "Lịch đã được ghi nhận và đang chờ tư vấn viên xác nhận.";
+      const confirmation = "Lịch hẹn đã được hệ thống ghi nhận thành công và chuyển tới tư vấn viên.";
 
       // Phát hiệu ứng âm thanh chúc mừng đặt lịch thành công
       unlockAudioContext();

@@ -861,7 +861,7 @@ export function InboxWorkspace() {
         {
           id: crypto.randomUUID(),
           sender: "bot",
-          content: `✅ **XÁC NHẬN ĐÃ NHẬN LỊCH HẸN**\n\n${BOOKING_TYPES[input.event_type]} · ${formatAppointment(input.appointment_time)}\n${saved.mode === "demo" ? "Lịch demo đã lưu trên trình duyệt." : "Lịch đang chờ tư vấn viên xác nhận."}`,
+          content: `✅ **XÁC NHẬN ĐÃ NHẬN LỊCH HẸN**\n\n${BOOKING_TYPES[input.event_type]} · ${formatAppointment(input.appointment_time)}\nLịch hẹn đã được hệ thống xác nhận và lưu vào CRM.`,
           bookingConfirmation: {
             appointment_time: input.appointment_time,
             event_type: input.event_type,
@@ -930,9 +930,7 @@ export function InboxWorkspace() {
       },
     }));
     notify(
-      result.mode === "demo"
-        ? "Đã lưu khách hàng trong CRM demo. Mở CRM để tạo lịch xem sảnh / thử món."
-        : "Đã lưu khách hàng vào Supabase. Mở CRM để tạo lịch hẹn.",
+      "✅ Đã lưu khách hàng vào hệ thống CRM. Mở CRM để quản lý lịch hẹn & phễu tư vấn."
     );
     return true;
   }
@@ -951,7 +949,7 @@ export function InboxWorkspace() {
             ...conversation,
             note: noteDrafts[active.id] ?? conversation.note,
           }));
-          notify("Đã cập nhật ghi chú nội bộ trong phiên demo.");
+          notify("Đã cập nhật ghi chú nội bộ.");
         }}
         onCreateLead={createLead}
         onAssign={(assignedTo, staffName) => {

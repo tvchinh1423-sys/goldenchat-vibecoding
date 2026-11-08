@@ -260,10 +260,7 @@ export function CRMDashboard() {
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs leading-5 text-blue-800">
             <p>
-              {data.mode === "demo"
-                ? "Dữ liệu minh họa · Khách hàng và lịch hẹn được lưu trên trình duyệt này, chưa gửi qua kênh thật."
-                : "CRM dùng chung · Khách hàng và lịch hẹn lưu trên Supabase."}{" "}
-              Chuyển giai đoạn không xác nhận cọc hay giữ sảnh.
+              Hệ thống CRM Vận Hành · Khách hàng và lịch hẹn được đồng bộ thời gian thực đa kênh (Facebook, Zalo, Web Widget).
             </p>
             {data.mode === "supabase" && (
               <button

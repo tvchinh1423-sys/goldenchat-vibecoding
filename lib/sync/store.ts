@@ -87,8 +87,89 @@ function getInitialStore(): CloudStoreData {
   };
 }
 
+/**
+ * Đảm bảo các khách hàng đã để lại SĐT hoặc đặt lịch trong hội thoại
+ * đều tự động hiện diện trên phễu Leads và danh sách Lịch hẹn CRM
+ */
+function syncConversationsIntoCRM(store: CloudStoreData): void {
+  if (!store || !store.crm || !Array.isArray(store.conversations)) return;
+
+  const existingLeads = store.crm.leads || [];
+  const existingBookings = store.crm.bookings || [];
+
+  for (const conv of store.conversations) {
+    if (!conv) continue;
+    const phone = conv.lead?.phone || "";
+    const cleanPhone = phone ? phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") : "";
+    if (!cleanPhone) continue;
+
+    const leadIndex = existingLeads.findIndex(
+      (l) =>
+        (l.id && conv.lead?.id && l.id === conv.lead.id) ||
+        (l.phone && l.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") === cleanPhone)
+    );
+
+    const leadId = leadIndex >= 0 ? existingLeads[leadIndex].id : conv.lead?.id || `lead-${cleanPhone}`;
+
+    if (leadIndex < 0) {
+      const newLead: CRMLead = {
+        id: leadId,
+        inbox_reference: conv.id,
+        full_name: conv.lead?.full_name || conv.name || "Khách hàng",
+        phone: cleanPhone,
+        email: conv.lead?.email || "",
+        notes: conv.lead?.demand_notes || (conv.booking ? `Khách đặt lịch: ${conv.booking.notes || ""}` : "Khách hàng từ tin nhắn"),
+        source: (["facebook", "zalo", "web", "manual"].includes(conv.channel) ? conv.channel : "web") as any,
+        stage: conv.booking ? "N3" : "N1",
+        assigned_to: conv.assignedStaffName || "Ngọc Khánh",
+        event_date: "",
+        table_count: null,
+        last_touched_at: conv.lead?.created_at || new Date().toISOString(),
+        created_at: conv.lead?.created_at || new Date().toISOString(),
+      };
+      existingLeads.unshift(newLead);
+    } else if (conv.booking && existingLeads[leadIndex].stage !== "N3") {
+      // Nâng cấp lên N3 nếu đã có đặt lịch
+      existingLeads[leadIndex] = {
+        ...existingLeads[leadIndex],
+        stage: "N3",
+        last_touched_at: new Date().toISOString(),
+      };
+    }
+
+    if (conv.booking?.appointmentTime) {
+      const apptTime = conv.booking.appointmentTime.includes("T")
+        ? conv.booking.appointmentTime
+        : `${new Date().toISOString().slice(0, 10)}T${conv.booking.appointmentTime}:00+07:00`;
+
+      const bookingExists = existingBookings.some(
+        (b) => b.lead_id === leadId || (b.appointment_time === apptTime && b.notes === conv.booking?.notes)
+      );
+
+      if (!bookingExists) {
+        const newBooking: CRMBooking = {
+          id: `booking-${conv.id}-${cleanPhone}`,
+          lead_id: leadId,
+          appointment_time: apptTime,
+          event_type: "xem_sanh",
+          guests_count: 2,
+          assigned_staff: conv.booking.staff || "Ngọc Khánh",
+          notes: conv.booking.notes || "Khách đặt lịch từ tin nhắn",
+          status: "pending",
+          created_at: conv.lead?.created_at || new Date().toISOString(),
+        };
+        existingBookings.unshift(newBooking);
+      }
+    }
+  }
+
+  store.crm.leads = existingLeads;
+  store.crm.bookings = existingBookings;
+}
+
 export function loadCloudStore(): CloudStoreData {
   if (globalThis.__omnichat_cloud_store__) {
+    syncConversationsIntoCRM(globalThis.__omnichat_cloud_store__);
     return globalThis.__omnichat_cloud_store__;
   }
 
@@ -99,6 +180,7 @@ export function loadCloudStore(): CloudStoreData {
       const raw = fs.readFileSync(TMP_FILE, "utf-8");
       const parsed = JSON.parse(raw) as CloudStoreData;
       if (parsed && parsed.version === 1 && parsed.crm && Array.isArray(parsed.conversations)) {
+        syncConversationsIntoCRM(parsed);
         globalThis.__omnichat_cloud_store__ = parsed;
         return parsed;
       }
@@ -108,6 +190,7 @@ export function loadCloudStore(): CloudStoreData {
   }
 
   const initial = getInitialStore();
+  syncConversationsIntoCRM(initial);
   globalThis.__omnichat_cloud_store__ = initial;
   saveCloudStore(initial);
   return initial;
@@ -291,6 +374,9 @@ export function updateCloudStore(patch: {
     store.conversations = mergeConversations(store.conversations, patch.conversations);
   }
 
+  if (!patch.replaceCrm) {
+    syncConversationsIntoCRM(store);
+  }
   saveCloudStore(store);
   return store;
 }

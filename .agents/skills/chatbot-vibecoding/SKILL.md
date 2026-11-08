@@ -1083,4 +1083,28 @@ app-root/
   - Production build **21/21 static pages thành công 100%**.
   - Triển khai trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo đúng quy định.
 
+### Mốc Khắc Phục Triệt Để Lỗi Đồng Bộ Khách Đặt Lịch Từ Widget Sang CRM (/leads) & Bảo Toàn Dữ Liệu Đa Thiết Bị — 08/11/2026 (Chinh)
+
+- **1. Phân tích nguyên nhân gốc rễ (Root Cause Analysis):**
+  - **Lỗi 1 (Ghi đè hủy diệt trong `loadCRM`):** Hàm `loadCRM()` (`lib/crm/client.ts`) trước đây khi fetch từ `/api/sync/store` đã ghi đè toàn bộ `localStorage` bằng dữ liệu từ Cloud Store (`writeDemoCRM(localStorage, syncData.crm)`). Khi serverless container trên Vercel khởi động lại (cold start) hoặc chứa snapshot cũ, nó lập tức xóa sạch khách hàng mới (như chị Hà My `0947288299`) vừa được lưu trên trình duyệt của người dùng!
+  - **Lỗi 2 (Tranh chấp `inbox_reference`):** Hàm `ensureWidgetBookingInCRM` dùng điều kiện `l.phone === cleanPhone || l.inbox_reference === inboxRef`. Do `inboxRef` mặc định là `web-duong`, khi khách mới (Hà My) đặt lịch, nó bắt nhầm vào hồ sơ cũ và ghi đè tên/SĐT thay vì tạo Lead mới riêng biệt.
+  - **Lỗi 3 (Lệch Stage phễu N1 vs N3):** Luồng `saveDirectBooking` và `handleBookingSubmit` trước đây gán `stage: "N1"` thay vì `stage: "N3"` (Khảo sát 1-1: Đã hẹn lịch xem sảnh & thử món).
+  - **Lỗi 4 (Thiếu trường Lead trong Simulator Chat):** Bộ phận bóc tách tự động `/api/simulator/chat` khi tạo lead cập nhật CRM thiếu một số trường bắt buộc (`inbox_reference`, `assigned_to`, `table_count`), dẫn đến việc `parseCRM` từ chối bản ghi.
+- **2. Giải pháp kỹ thuật khắc phục toàn diện:**
+  - **Cơ chế Gộp thông minh (`mergeCRMSnapshots`):**
+    * Viết mới hàm `mergeCRMSnapshots` bảo toàn 100% Leads và Bookings của cả local trình duyệt và cloud server.
+    * Mọi Lead và Booking tạo cục bộ (offline hoặc chưa sync kịp) đều được giữ nguyên tuyệt đối, không bao giờ bị xóa bởi polling.
+    * Khi phát hiện dữ liệu local có thêm khách hàng mới so với Cloud Store, `loadCRM()` tự động kích hoạt đẩy ngược lên server (`syncCRMCloudPush`) để các thiết bị khác cùng nhận được.
+  - **Tự động Trích xuất Lead & Lịch hẹn từ Hội thoại vào CRM (`syncConversationsIntoCRM`):**
+    * Máy chủ Cloud Store (`lib/sync/store.ts`) tự động duyệt qua toàn bộ các cuộc trò chuyện. Nếu khách đã để lại SĐT hoặc đặt lịch trong tin nhắn (như trường hợp Hà My `0947288299`), hệ thống tự động đưa khách vào `store.crm.leads` (cột N3) và tạo phiếu hẹn trong `store.crm.bookings`.
+  - **Độc lập hóa hồ sơ khách Web Widget:**
+    * `ensureWidgetBookingInCRM` tìm kiếm chính xác theo SĐT chuẩn hóa. Mỗi SĐT nhận một mã Lead độc nhất `lead-web-{SĐT}` và lịch hẹn `booking-web-{SĐT}`.
+    * Tự động gửi thông báo chuông Chime và notification hệ thống cho nhân viên ngay khi khách chốt lịch.
+- **3. Kiểm thử & Triển khai:**
+  - Bổ sung 2 bài test tự động chuyên sâu trong `tests/cloud-sync.test.ts` kiểm thử việc tự động đồng bộ từ conversation sang CRM N3 và cơ chế `mergeCRMSnapshots` chống mất dữ liệu.
+  - Đạt **70/70 unit tests pass 100%**.
+  - Next.js production build **21/21 trang tĩnh biên dịch thành công 100%**.
+  - Triển khai trực tiếp lên `origin/main` (Vercel production).
+
+
 

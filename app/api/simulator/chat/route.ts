@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking-extractor";
+import { extractLeadInfo } from "@/lib/lead-extractor";
 import { loadCloudStore, updateCloudStore, loadBotTrainingData } from "@/lib/sync/store";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
@@ -231,10 +232,19 @@ function syncExternalChatToInbox({
       ? `${channel}-${cleanSenderId}`
       : `${channel}-omnichat-user`;
 
+    // Quét tìm SĐT và thông tin Lead từ tin nhắn khách
+    const PHONE_REGEX = /(?<![\w])(?:\+84|84|0)[\s.-]?[35789](?:[\s.-]?\d){8}(?!\d)/g;
+    const matchedPhones = userMessage.match(PHONE_REGEX);
+    const extractedPhone = matchedPhones
+      ? matchedPhones[0].replace(/[\s.-]/g, "").replace(/^\+?84/, "0")
+      : "";
+    const extractedLead = extractLeadInfo(userMessage);
+
     // Tên hiển thị của khách
     const displayName =
       cleanSenderName ||
       bookingInfo?.fullName ||
+      extractedLead.fullName ||
       (channel === "facebook"
         ? "Khách Facebook Messenger"
         : channel === "zalo"
@@ -294,58 +304,85 @@ function syncExternalChatToInbox({
     const phone =
       customerPhone ||
       bookingInfo?.phone ||
+      extractedPhone ||
       targetConv.lead?.phone ||
       "";
+    const cleanPhone = phone ? phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") : "";
+    const hasBooking = Boolean(bookingInfo?.dateTimeIso || (bookingInfo as any)?.autoBooked);
+    const targetLeadId = targetConv.lead?.id || `lead-${cleanPhone || Date.now()}`;
 
     let leadsToUpdate: any[] = [];
-    if (phone) {
+    if (cleanPhone) {
+      const leadStage = hasBooking ? "N3" : (extractedLead.tableCount || extractedLead.eventDate ? "N2" : "N1");
       targetConv.lead = {
-        id: `lead-${phone.replace(/[\s.-]/g, "")}`,
+        id: targetLeadId,
         conversation_id: targetConv.id,
         full_name: targetConv.name,
-        phone,
-        email: "",
+        phone: cleanPhone,
+        email: targetConv.lead?.email || "",
         demand_notes: userMessage,
         source: channel,
         status: "new",
-        created_at: nowIso,
+        created_at: targetConv.lead?.created_at || nowIso,
       };
       leadsToUpdate.push({
-        id: targetConv.lead.id,
+        id: targetLeadId,
+        inbox_reference: targetConv.id,
         full_name: targetConv.name,
-        phone,
-        email: "",
-        course_interest: "Gói tiệc & Sảnh cưới Golden Palace",
-        stage: "N1",
-        source: channel,
-        created_at: nowIso,
-        last_touched_at: nowIso,
-        conversation_id: targetConv.id,
+        phone: cleanPhone,
+        email: targetConv.lead?.email || "",
         notes: `Lead từ ${channel.toUpperCase()}: "${userMessage}"`,
+        source: (["facebook", "zalo", "web", "manual"].includes(channel) ? channel : "web"),
+        stage: leadStage,
+        assigned_to: "Ngọc Khánh",
+        event_date: extractedLead.eventDate || "",
+        table_count: extractedLead.tableCount || null,
+        created_at: targetConv.lead?.created_at || nowIso,
+        last_touched_at: nowIso,
       });
+
+      // Bắn cảnh báo Telegram nếu có SĐT mới
+      const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+      const tgChatId = process.env.TELEGRAM_CHAT_ID;
+      if (tgToken && tgChatId) {
+        try {
+          fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: tgChatId,
+              text: `🎯 *[OMNICHAT] LEAD MỚI (${channel.toUpperCase()})!*\n━━━━━━━━━━━━━━━━━━\n👤 *Khách:* ${targetConv.name}\n📞 *SĐT:* \`${cleanPhone}\`\n🌐 *Kênh:* #${channel.toUpperCase()}\n💬 *Tin nhắn:* _"${userMessage}"_\n🏛️ *Dịch vụ:* Gói tiệc & Sảnh cưới Golden Palace`,
+              parse_mode: "Markdown",
+            }),
+          }).catch(() => {});
+        } catch {}
+      }
     }
 
     let bookingsToUpdate: any[] = [];
-    if (bookingInfo?.dateTimeIso || (bookingInfo as any)?.autoBooked) {
-      const apptTime = bookingInfo?.dateTimeIso || nowIso;
+    if (hasBooking) {
+      const rawAppt = bookingInfo?.dateTimeIso || nowIso;
+      const apptTime = rawAppt.includes("T")
+        ? rawAppt
+        : `${new Date().toISOString().slice(0, 10)}T${rawAppt}:00+07:00`;
+
       targetConv.booking = {
         appointmentTime: apptTime,
-        staff: "Lễ tân Golden Palace",
-        notes: bookingInfo?.notes || `Khách xem sảnh (${bookingInfo?.guestsCount || 4} khách)`,
+        staff: "Ngọc Khánh",
+        notes: bookingInfo?.notes || `Khách xem sảnh (${bookingInfo?.guestsCount || 2} khách)`,
       };
       bookingsToUpdate.push({
-        id: `bk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        lead_id: targetConv.lead?.id || `lead-${Date.now()}`,
-        customer_name: targetConv.name,
-        customer_phone: phone || "",
+        id: `booking-${targetConv.id}-${cleanPhone || Date.now()}`,
+        lead_id: targetLeadId,
         appointment_time: apptTime,
-        event_type: bookingInfo?.eventType || "xem_sanh",
-        stage: "N3",
-        guests_count: bookingInfo?.guestsCount || 4,
-        assigned_staff: "Lễ tân Golden Palace",
+        event_type: (bookingInfo?.eventType && ["xem_sanh", "thu_mon", "tu_van_su_kien"].includes(bookingInfo.eventType)
+          ? (bookingInfo.eventType as any)
+          : "xem_sanh"),
+        guests_count: bookingInfo?.guestsCount || 2,
+        assigned_staff: "Ngọc Khánh",
         notes: targetConv.booking.notes,
         created_at: nowIso,
-        status: "confirmed",
+        status: "pending",
       });
     }
 

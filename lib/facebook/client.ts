@@ -56,6 +56,35 @@ export async function sendFacebookMessage(recipientId: string, text: string) {
 }
 
 /**
+ * Tra cứu thông tin họ tên thật của người dùng Facebook qua Graph API
+ */
+export async function fetchFacebookProfile(
+  senderId: string
+): Promise<{ name?: string; profilePic?: string } | null> {
+  const cleanId = senderId.replace(/^facebook-/, "").replace(/^t_/, "");
+  if (!cleanId || !/^\d+$/.test(cleanId)) return null;
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${cleanId}?fields=name,first_name,last_name,profile_pic&access_token=${FB_PAGE_ACCESS_TOKEN}`,
+      { method: "GET", cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const fullName =
+      json.name ||
+      (json.first_name
+        ? `${json.last_name || ""} ${json.first_name}`.trim()
+        : undefined);
+    return {
+      name: fullName,
+      profilePic: json.profile_pic,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Đọc toàn bộ danh sách hội thoại và tin nhắn thật từ Facebook Fanpage
  */
 export async function fetchFacebookConversations(): Promise<Conversation[]> {

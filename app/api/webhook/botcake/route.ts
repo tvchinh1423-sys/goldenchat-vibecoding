@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_BOT_CONFIG, DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import { extractLeadInfo } from "@/lib/lead-extractor";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
 // Verification token cho Botcake (có thể cấu hình trong .env hoặc mặc định)
@@ -112,17 +113,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Bóc tách nhanh SĐT & Email từ tin nhắn (Regex)
-    const phoneRegex = /(0[3|5|7|8|9][0-9]{8})\b/g;
+    // 2. Bóc tách nhanh SĐT & Email từ tin nhắn (Regex linh hoạt chuẩn hóa)
+    const phoneRegex = /(?<![\w])(?:\+84|84|0)[\s.-]?[35789](?:[\s.-]?\d){8}(?!\d)/g;
     const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 
     const matchedPhones = messageText.match(phoneRegex);
     const matchedEmails = messageText.match(emailRegex);
+    const extractedLead = extractLeadInfo(messageText);
 
     if (matchedPhones && matchedPhones.length > 0 && !customerPhone) {
-      customerPhone = matchedPhones[0];
+      customerPhone = matchedPhones[0].replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
+    } else if (customerPhone) {
+      customerPhone = customerPhone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
     }
     const detectedEmail = matchedEmails ? matchedEmails[0] : undefined;
+    if (extractedLead.fullName && (!customerName || customerName.includes("Khách hàng"))) {
+      customerName = extractedLead.fullName;
+    }
 
     // 3. Tìm hoặc Tạo Cuộc hội thoại trong Supabase
     let conversationId = "";
@@ -325,6 +332,7 @@ export async function POST(req: NextRequest) {
 
       let leadsToUpdate: any[] = [];
       if (customerPhone) {
+        const leadStage = extractedLead.tableCount || extractedLead.eventDate ? "N2" : "N1";
         targetConv.lead = {
           id: `lead-${customerPhone.replace(/[\s.-]/g, "")}`,
           conversation_id: targetConv.id,
@@ -338,12 +346,16 @@ export async function POST(req: NextRequest) {
         };
         leadsToUpdate.push({
           id: targetConv.lead.id,
+          inbox_reference: targetConv.id,
           full_name: targetConv.name,
           phone: customerPhone,
           email: detectedEmail || "",
           course_interest: "Gói tiệc & Sảnh cưới Golden Palace",
-          stage: "N1",
+          stage: leadStage,
           source: channelType,
+          assigned_to: "Ngọc Khánh",
+          event_date: extractedLead.eventDate || "",
+          table_count: extractedLead.tableCount || null,
           created_at: nowIso,
           last_touched_at: nowIso,
           conversation_id: targetConv.id,

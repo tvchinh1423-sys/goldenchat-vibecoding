@@ -4,9 +4,17 @@ import {
   FB_VERIFY_TOKEN,
   FB_PAGE_ACCESS_TOKEN,
   sendFacebookMessage,
+  fetchFacebookProfile,
 } from "@/lib/facebook/client";
 import { processChatRequest } from "@/app/api/simulator/chat/route";
-import type { Message } from "@/lib/inbox/types";
+import { extractLeadInfo } from "@/lib/lead-extractor";
+import { supabase } from "@/lib/supabase";
+import type { Message, Conversation } from "@/lib/inbox/types";
+import type { CRMLead } from "@/lib/crm/model";
+
+// Regex chuẩn hóa bắt số điện thoại và email Việt Nam linh hoạt
+const PHONE_REGEX = /(?<![\w])(?:\+84|84|0)[\s.-]?[35789](?:[\s.-]?\d){8}(?!\d)/g;
+const EMAIL_REGEX = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 
 /**
  * GET: Xác thực Webhook với Meta for Developers
@@ -100,7 +108,31 @@ export async function POST(req: NextRequest) {
           console.log(`ℹ️ [Facebook Webhook] AI đang tắt cho ${convId}, nhân viên tiếp quản thủ công.`);
         }
 
-        // 2. Đồng bộ tin nhắn vào Cloud Store
+        // 2. Bóc tách thông tin Khách & Lead (Số điện thoại, Email, Số bàn, Ngày cưới)
+        const matchedPhones = userText.match(PHONE_REGEX);
+        const matchedEmails = userText.match(EMAIL_REGEX);
+        const customerPhone = matchedPhones
+          ? matchedPhones[0].replace(/[\s.-]/g, "").replace(/^\+?84/, "0")
+          : "";
+        const customerEmail = matchedEmails ? matchedEmails[0] : "";
+        const leadInfo = extractLeadInfo(userText);
+
+        // Lấy họ tên khách hàng thật từ Facebook Graph API nếu chưa có
+        let customerName = existing?.name;
+        if (!customerName || customerName.includes("Khách Facebook")) {
+          try {
+            const profile = await fetchFacebookProfile(senderId);
+            if (profile?.name) {
+              customerName = profile.name;
+            }
+          } catch {}
+        }
+        if (!customerName) {
+          customerName =
+            leadInfo.fullName || `Khách Facebook (${senderId.slice(-4)})`;
+        }
+
+        // 3. Đồng bộ tin nhắn và Lead vào Cloud Store
         try {
           const nowIso = new Date().toISOString();
           const custMsg: Message = {
@@ -120,26 +152,103 @@ export async function POST(req: NextRequest) {
             });
           }
 
+          let targetConv: Conversation;
           if (existing) {
+            existing.name = customerName;
             existing.messages.push(...newMessages);
             existing.unread = (existing.unread || 0) + 1;
             existing.status = "active";
+            targetConv = existing;
           } else {
-            store.conversations.unshift({
+            targetConv = {
               id: convId,
-              name: `Khách Facebook (${senderId.slice(-4)})`,
+              name: customerName,
               channel: "facebook",
               avatarColor: "sky",
               status: "active",
               aiEnabled: isAiEnabled,
               assignedTo: "unassigned",
               unread: 1,
-              note: "Tin nhắn trực tiếp qua Meta Webhook",
+              note: "Hội thoại Fanpage Messenger trực tiếp",
               messages: newMessages,
-            });
+            };
+            store.conversations.unshift(targetConv);
           }
 
-          updateCloudStore({ conversations: store.conversations });
+          // 4. ĐẢM BẢO 100% GHI NHẬN VÀO LEAD CRM KHI CÓ SỐ ĐIỆN THOẠI
+          let leadsToUpdate: CRMLead[] = [];
+          if (customerPhone) {
+            targetConv.lead = {
+              id: `lead-${customerPhone}`,
+              conversation_id: convId,
+              full_name: customerName,
+              phone: customerPhone,
+              email: customerEmail || "",
+              demand_notes: userText,
+              source: "facebook",
+              status: "new",
+              created_at: targetConv.lead?.created_at || nowIso,
+            };
+
+            const newCrmLead: CRMLead = {
+              id: targetConv.lead.id,
+              inbox_reference: convId,
+              full_name: customerName,
+              phone: customerPhone,
+              email: customerEmail || "",
+              notes: `Lead từ Facebook Messenger: "${userText}"`,
+              source: "facebook",
+              stage: leadInfo.tableCount || leadInfo.eventDate ? "N2" : "N1",
+              assigned_to: "Ngọc Khánh",
+              event_date: leadInfo.eventDate || "",
+              table_count: leadInfo.tableCount || null,
+              created_at: nowIso,
+              last_touched_at: nowIso,
+            };
+            leadsToUpdate.push(newCrmLead);
+            console.log(`🎯 [Facebook Webhook] Đã tạo Lead CRM cho SĐT ${customerPhone} (${customerName})`);
+
+            // Gửi cảnh báo Telegram Alert tức thì cho Quản lý tiệc
+            const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+            const tgChatId = process.env.TELEGRAM_CHAT_ID;
+            if (tgToken && tgChatId) {
+              try {
+                fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: tgChatId,
+                    text: `🎯 *[OMNICHAT] LEAD FACEBOOK MỚI!*\n━━━━━━━━━━━━━━━━━━\n👤 *Khách:* ${customerName}\n📞 *SĐT:* \`${customerPhone}\`\n🌐 *Kênh:* #FACEBOOK\n💬 *Tin nhắn:* _"${userText}"_\n🏛️ *Dịch vụ:* Gói tiệc & Sảnh cưới Golden Palace`,
+                    parse_mode: "Markdown",
+                  }),
+                }).catch(() => {});
+              } catch {}
+            }
+
+            // Lưu Lead vào Supabase nếu có kết nối
+            try {
+              await supabase.from("leads").upsert(
+                {
+                  full_name: customerName,
+                  phone: customerPhone,
+                  email: customerEmail || undefined,
+                  course_interest: "Gói tiệc & Sảnh sự kiện Golden Palace",
+                  stage: newCrmLead.stage,
+                  source: "facebook",
+                  conversation_id: convId,
+                  notes: `Lead Facebook Messenger: "${userText}"`,
+                },
+                { onConflict: "phone" }
+              );
+            } catch (dbErr) {
+              // ignore db error in standalone mode
+            }
+          }
+
+          updateCloudStore({
+            conversations: store.conversations,
+            crm: leadsToUpdate.length > 0 ? { leads: leadsToUpdate } : undefined,
+          });
         } catch (syncErr) {
           console.warn("Lỗi đồng bộ Cloud Store từ FB Webhook:", syncErr);
         }

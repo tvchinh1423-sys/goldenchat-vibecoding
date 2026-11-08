@@ -8,6 +8,9 @@ import { STORAGE_KEY as INBOX_STORAGE_KEY } from "./storage";
 import type { Conversation, Message } from "./types";
 import { formatAppointment, BOOKING_TYPES } from "@/lib/crm/model";
 import { CRM_STORAGE_KEY } from "@/lib/crm/demo-store";
+import { sendOmniNotification } from "@/lib/notifications";
+import { detectContact } from "./helpers";
+import { extractLeadInfo } from "@/lib/lead-extractor";
 
 export const WIDGET_SESSION_STORAGE_KEY = "omnichat.widget.session.v1";
 
@@ -283,12 +286,32 @@ export function syncWidgetChatToInbox(
       };
     });
 
-    // 3. Tên hiển thị của khách
+    // 3. Tự động bóc tách thông tin liên hệ và nhu cầu tiệc từ các tin nhắn của khách
+    const customerMessages = inboxMessages.filter((m) => m.sender === "customer");
+    const contactInfo = detectContact(customerMessages);
+    const customerText = customerMessages.map((m) => m.content).join("\n");
+    const leadFacts = extractLeadInfo(customerText);
+
+    const detectedPhone =
+      bookingInfo?.phone ||
+      contactInfo.phones[0] ||
+      existingConv?.lead?.phone ||
+      "";
+    const cleanPhone = detectedPhone
+      ? detectedPhone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0")
+      : "";
+
     let customerName = "Khách Web (Trực tuyến)";
     if (bookingInfo?.fullName) {
       customerName = `${bookingInfo.fullName} (Web Widget)`;
+    } else if (leadFacts.fullName) {
+      customerName = `${leadFacts.fullName} (Web Widget)`;
+    } else if (contactInfo.fullName) {
+      customerName = `${contactInfo.fullName} (Web Widget)`;
     } else if (existingConv?.name && !existingConv.name.includes("Khách Web")) {
       customerName = existingConv.name;
+    } else if (cleanPhone) {
+      customerName = `Khách Web (${cleanPhone.slice(-4)})`;
     }
 
     // Giữ lại và bảo toàn các tin nhắn do nhân viên tư vấn đã gửi từ Hộp thư
@@ -325,14 +348,14 @@ export function syncWidgetChatToInbox(
             notes: bookingInfo.notes || "Lịch hẹn từ Web Widget",
           }
         : existingConv?.booking,
-      lead: bookingInfo?.phone
+      lead: cleanPhone
         ? {
             id: existingConv?.lead?.id || `lead-${convId}`,
             conversation_id: convId,
-            full_name: bookingInfo.fullName,
-            phone: bookingInfo.phone,
-            email: existingConv?.lead?.email || "",
-            demand_notes: bookingInfo.notes || "Khách đặt lịch từ Web Widget",
+            full_name: customerName.replace(" (Web Widget)", ""),
+            phone: cleanPhone,
+            email: contactInfo.emails[0] || existingConv?.lead?.email || "",
+            demand_notes: bookingInfo?.notes || customerText.slice(0, 300) || "Khách trao đổi qua Web Widget",
             source: "web",
             status: "new",
             created_at: existingConv?.lead?.created_at || nowIso,
@@ -351,12 +374,94 @@ export function syncWidgetChatToInbox(
 
     saveInboxConversations(nextConversations);
 
-    // Đồng bộ sang CRM nếu có thông tin đặt lịch
-    if (bookingInfo?.phone) {
-      ensureWidgetBookingInCRM(convId, bookingInfo);
+    // ĐẢM BẢO 100% GHI NHẬN VÀO CRM KHI CÓ THÔNG TIN
+    if (cleanPhone) {
+      if (bookingInfo?.phone) {
+        ensureWidgetBookingInCRM(convId, bookingInfo);
+      } else {
+        ensureWidgetLeadInCRM(convId, {
+          fullName: customerName.replace(" (Web Widget)", ""),
+          phone: cleanPhone,
+          email: contactInfo.emails[0],
+          notes: customerText.slice(0, 300),
+          eventDate: leadFacts.eventDate || undefined,
+          tableCount: leadFacts.tableCount || null,
+        });
+      }
     }
   } catch (err) {
     console.error("Error syncing widget to inbox:", err);
+  }
+}
+
+/**
+ * Cập nhật hồ sơ lead vào CRM ngay khi khách để lại SĐT qua chat (dù chưa bấm form đặt lịch)
+ */
+export function ensureWidgetLeadInCRM(
+  inboxRef: string,
+  lead: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    notes?: string;
+    stage?: "N1" | "N2" | "N3";
+    eventDate?: string;
+    tableCount?: number | null;
+  }
+) {
+  if (typeof window === "undefined" || !lead.phone) return;
+  try {
+    const raw = localStorage.getItem(CRM_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : { version: 1, leads: [], bookings: [] };
+    if (!Array.isArray(parsed?.leads)) parsed.leads = [];
+    if (!Array.isArray(parsed?.bookings)) parsed.bookings = [];
+
+    const cleanPhone = lead.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
+    const leadId = `lead-web-${cleanPhone || inboxRef || Date.now()}`;
+
+    const leadIndex = parsed.leads.findIndex(
+      (l: any) =>
+        (cleanPhone && l.phone && l.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") === cleanPhone) ||
+        (inboxRef && l.inbox_reference === inboxRef)
+    );
+
+    const leadStage = lead.stage || (lead.tableCount || lead.eventDate ? "N2" : "N1");
+    const nowIso = new Date().toISOString();
+
+    const leadRecord = {
+      id: leadIndex >= 0 ? parsed.leads[leadIndex].id : leadId,
+      inbox_reference: inboxRef,
+      full_name: lead.fullName,
+      phone: cleanPhone,
+      email: lead.email || (leadIndex >= 0 ? parsed.leads[leadIndex].email : ""),
+      notes: lead.notes || "Khách chat qua Web Widget",
+      source: "web" as const,
+      stage: leadIndex >= 0 && parsed.leads[leadIndex].stage === "N3" ? "N3" : leadStage,
+      assigned_to: "Ngọc Khánh",
+      event_date: lead.eventDate || (leadIndex >= 0 ? parsed.leads[leadIndex].event_date : ""),
+      table_count: lead.tableCount !== undefined ? lead.tableCount : (leadIndex >= 0 ? parsed.leads[leadIndex].table_count : null),
+      last_touched_at: nowIso,
+      created_at: leadIndex >= 0 ? parsed.leads[leadIndex].created_at : nowIso,
+    };
+
+    if (leadIndex >= 0) {
+      parsed.leads[leadIndex] = leadRecord;
+    } else {
+      parsed.leads.unshift(leadRecord);
+    }
+
+    localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(parsed));
+    window.dispatchEvent(new Event("omnichat-crm-change"));
+    window.dispatchEvent(new Event("storage"));
+
+    void fetch("/api/sync/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crm: { leads: [leadRecord] } }),
+      signal: AbortSignal.timeout(3000),
+    }).catch(() => {});
+  } catch (err) {
+    console.error("Error updating CRM lead from widget:", err);
   }
 }
 
@@ -377,15 +482,18 @@ export function ensureWidgetBookingInCRM(
   if (typeof window === "undefined") return;
   try {
     const raw = localStorage.getItem(CRM_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed?.leads)) return;
+    const parsed = raw ? JSON.parse(raw) : { version: 1, leads: [], bookings: [] };
+    if (!Array.isArray(parsed?.leads)) parsed.leads = [];
+    if (!Array.isArray(parsed?.bookings)) parsed.bookings = [];
 
     const cleanPhone = booking.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0");
-    const leadId = `lead-${inboxRef}`;
+    const leadId = `lead-web-${cleanPhone || inboxRef || Date.now()}`;
 
+    // Tìm kiếm chính xác theo số điện thoại đã chuẩn hóa
     const leadIndex = parsed.leads.findIndex(
-      (l: any) => l.phone === cleanPhone || l.inbox_reference === inboxRef
+      (l: any) =>
+        (cleanPhone && l.phone && l.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") === cleanPhone) ||
+        (inboxRef && l.inbox_reference === inboxRef && (!l.phone || l.phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") === cleanPhone))
     );
 
     const leadRecord = {
@@ -394,12 +502,12 @@ export function ensureWidgetBookingInCRM(
       full_name: booking.fullName,
       phone: cleanPhone,
       email: leadIndex >= 0 ? parsed.leads[leadIndex].email : "",
-      notes: booking.notes || `Khách đặt lịch ${booking.eventType} từ Web Widget`,
+      notes: booking.notes || `Khách đặt lịch ${BOOKING_TYPES[booking.eventType as keyof typeof BOOKING_TYPES] || booking.eventType} từ Web Widget`,
       source: "web" as const,
       stage: "N3" as const,
       assigned_to: "Ngọc Khánh",
-      event_date: "",
-      table_count: null,
+      event_date: leadIndex >= 0 ? parsed.leads[leadIndex].event_date : "",
+      table_count: leadIndex >= 0 ? parsed.leads[leadIndex].table_count : null,
       last_touched_at: new Date().toISOString(),
       created_at: leadIndex >= 0 ? parsed.leads[leadIndex].created_at : new Date().toISOString(),
     };
@@ -410,19 +518,26 @@ export function ensureWidgetBookingInCRM(
       parsed.leads.unshift(leadRecord);
     }
 
-    if (!Array.isArray(parsed.bookings)) parsed.bookings = [];
-    const bookingIndex = parsed.bookings.findIndex((b: any) => b.lead_id === leadRecord.id);
+    const bookingId = `booking-web-${cleanPhone || inboxRef || Date.now()}`;
+    const bookingIndex = parsed.bookings.findIndex(
+      (b: any) => b.lead_id === leadRecord.id || b.id === bookingId
+    );
+
+    const rawAppt = booking.appointmentTime;
+    const apptTime = rawAppt.includes("T")
+      ? rawAppt
+      : `${new Date().toISOString().slice(0, 10)}T${rawAppt}:00+07:00`;
 
     const bookingRecord = {
-      id: bookingIndex >= 0 ? parsed.bookings[bookingIndex].id : `booking-${inboxRef}`,
+      id: bookingIndex >= 0 ? parsed.bookings[bookingIndex].id : bookingId,
       lead_id: leadRecord.id,
-      appointment_time: booking.appointmentTime,
-      event_type: booking.eventType,
+      appointment_time: apptTime,
+      event_type: (["xem_sanh", "thu_mon", "tu_van_su_kien"].includes(booking.eventType) ? booking.eventType : "xem_sanh") as any,
       guests_count: booking.guestsCount || 2,
       assigned_staff: "Ngọc Khánh",
       notes: booking.notes || "Khách đặt lịch từ Web Widget",
       status: "pending",
-      created_at: new Date().toISOString(),
+      created_at: bookingIndex >= 0 ? parsed.bookings[bookingIndex].created_at : new Date().toISOString(),
     };
 
     if (bookingIndex >= 0) {
@@ -433,6 +548,17 @@ export function ensureWidgetBookingInCRM(
 
     localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(parsed));
     window.dispatchEvent(new Event("omnichat-crm-change"));
+    window.dispatchEvent(new Event("storage"));
+
+    // Bắn thông báo chuông Chime và notification cho nhân viên
+    try {
+      sendOmniNotification({
+        title: `📅 Lịch hẹn mới từ Web: ${booking.fullName}`,
+        body: `Khách đặt lịch lúc ${formatAppointment(apptTime)}. SĐT: ${cleanPhone}`,
+        url: "/leads?view=bookings",
+        type: "booking",
+      });
+    } catch {}
 
     // Đồng bộ tức thì lên Cloud Store để các thiết bị khác nhận ngay
     void fetch("/api/sync/store", {
