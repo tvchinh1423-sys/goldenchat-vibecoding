@@ -5,6 +5,7 @@ import {
   FB_PAGE_ACCESS_TOKEN,
   sendFacebookMessage,
 } from "@/lib/facebook/client";
+import { processChatRequest } from "@/app/api/simulator/chat/route";
 import type { Message } from "@/lib/inbox/types";
 
 /**
@@ -75,20 +76,17 @@ export async function POST(req: NextRequest) {
           botReply =
             "Dạ Golden Palace xin chào Quý khách! Em có thể hỗ trợ tư vấn thực đơn tiệc cưới, giá bàn hay đặt lịch xem sảnh tại 98 Đông A ạ?";
           try {
-            const simRes = await fetch(
-              `${req.nextUrl.origin}/api/simulator/chat?channel=facebook&message=${encodeURIComponent(
-                userText
-              )}&sender_id=${senderId}`,
-              { method: "GET" }
-            );
-            if (simRes.ok) {
-              const simData = await simRes.json();
-              if (simData.reply) {
-                botReply = simData.reply;
-              }
+            const simRes = await processChatRequest({
+              channel: "facebook",
+              message: userText,
+              sender_id: senderId,
+            });
+            const simData = await simRes.json();
+            if (simData?.reply) {
+              botReply = simData.reply;
             }
           } catch (e) {
-            console.warn("Lỗi gọi Simulator API:", e);
+            console.warn("Lỗi xử lý chatbot FAQ:", e);
           }
 
           // 1. Gửi tin nhắn trả lời ngược lại Facebook Messenger qua Meta Graph API

@@ -14,40 +14,34 @@ function normalizeVietnamese(s: string): string {
     .replace(/Đ/g, "d");
 }
 
-const TOPIC_PHRASES: Record<string, string[]> = {
-  thuc_don: [
-    "thuc don", "gia ban", "mam co", "mon an", "menu", "bao nhieu mot ban",
-    "bao nhieu 1 ban", "bao nhieu tien", "gia mam", "set tiec",
-  ],
-  dat_coc: [
-    "dat coc", "tien coc", "giu sanh", "quy trinh dat", "bao nhieu coc",
-    "coc bao nhieu", "coc giu cho", "dat coc bao nhieu",
-  ],
-  uu_dai: [
-    "uu dai", "khuyen mai", "giam gia", "chiet khau", "qua tang",
-  ],
-  do_xe: [
-    "do xe", "gui xe", "o to", "bai xe", "cho de xe",
-  ],
-  photobooth: [
-    "photobooth", "chup anh lay ngay", "may chup anh",
-  ],
-  mc: [
-    "thue mc", "ca si", "ban nhac", "nhac cong", "am thanh anh sang",
-  ],
-  vat: [
-    "vat", "thue", "hoa don do", "thue gia tri gia tang",
-  ],
-  thu_mon: [
-    "thu mon", "an thu", "dung thu",
-  ],
-  dia_chi: [
-    "dia chi", "o dau", "duong di", "vi tri", "dong a", "nam dinh",
-  ],
-  decor: [
-    "decor", "trang tri", "don vi ngoai",
-  ],
-};
+const DIRECT_PHRASES: Array<[string[], string]> = [
+  [["thuc don", "gia ban", "mam co", "mon an", "menu", "bao nhieu mot ban", "bao nhieu 1 ban", "gia mam", "set tiec", "gia co", "mon tiec"], "gp-1"],
+  [["dia chi", "o dau", "dong a", "gio don khach", "gio mo cua", "vi tri nha hang"], "gp-2"],
+  [["do xe", "gui xe", "o to", "bai xe", "cho de xe", "bai do xe", "gui xe may", "do xe may"], "gp-3"],
+  [["tang 2", "hoi truong tang 2", "sanh tang 2"], "gp-4"],
+  [["tang 3", "hoi truong tang 3", "sanh tang 3"], "gp-5"],
+  [["tang 4", "hoi truong tang 4", "sanh tang 4"], "gp-6"],
+  [["quay bar", "bar tang 1", "bar"], "gp-7"],
+  [["phong vip", "khong gian vip"], "gp-8"],
+  [["vat", "thue vat", "hoa don do", "thue gia tri gia tang", "xuat hoa don"], "gp-9"],
+  [["an thu", "thu mon", "dung thu", "an thu mam co", "nem thu"], "gp-10"],
+  [["do uong", "mang ruou", "mang bia", "phi nut chai", "nut chai", "nuoc ngot"], "gp-11"],
+  [["photobooth", "chup anh lay ngay", "may chup anh", "in anh lay ngay"], "gp-12"],
+  [["thue mc", "ca si", "ban nhac", "nhac cong", "am thanh anh sang", "mc", "vu doan", "dan nhac"], "gp-13"],
+  [["rot gao", "laser", "flycam", "nghi thuc", "phao dien", "khoi lanh"], "gp-14"],
+  [["dat coc", "tien coc", "giu sanh", "quy trinh dat", "bao nhieu coc", "coc bao nhieu", "coc giu cho", "dat coc bao nhieu", "tien dat coc"], "gp-15"],
+  [["decor", "trang tri ngoai", "thue ngoai", "don vi ngoai", "decor ngoai", "mang decor"], "gp-16"],
+  [["thiep cuoi online", "thiep online", "video phong led", "phong led", "man hinh led"], "gp-17"],
+  [["uu dai", "khuyen mai", "giam gia", "chiet khau", "qua tang", "chuong trinh khuyen mai"], "gp-18"],
+  [["thu 7", "chu nhat", "ngay le", "phu thu", "cuoi tuan"], "gp-19"],
+  [["300 khach", "30 mam", "tu van sanh", "sanh nao", "sanh cuoi", "suc chua sanh"], "gp-20"],
+  [["du toan", "tinh chi phi", "30 giay", "tu tinh", "chi phi tron goi", "bang du toan"], "gp-21"],
+  [["trao nhan", "nhan cuoi", "hieu ung san khau"], "gp-22"],
+  [["can tru", "thanh toan hop dong", "dot thanh toan", "thanh toan"], "gp-23"],
+  [["duong di", "google maps", "ban do", "chi duong"], "gp-24"],
+  [["hoa tuoi", "gallery", "ban gallery"], "gp-25"],
+  [["xe hoa", "xe don dau", "xe ruoc dau"], "gp-26"],
+];
 
 /**
  * Tìm câu trả lời phù hợp nhất từ kho Tri thức Huấn luyện (FAQ Knowledge Base)
@@ -57,22 +51,22 @@ function findBestKnowledgeMatch(query: string, items: any[]): any | null {
   const qClean = query.toLowerCase().replace(/[?,.!:;()"]/g, "").trim();
   const qNorm = normalizeVietnamese(qClean);
 
-  // 1. Nhận diện chủ đề trọng tâm (Topic Recognition) để đối chiếu chính xác
-  for (const [topic, phrases] of Object.entries(TOPIC_PHRASES)) {
-    const isTopicMatched = phrases.some((p) => qNorm.includes(p));
-    if (isTopicMatched) {
-      const topicItem = items.find((item) => {
-        if (item.is_active === false) return false;
-        const cat = String(item.category || "").toLowerCase();
-        if (cat === topic || cat.includes(topic)) return true;
-        if (Array.isArray(item.tags) && item.tags.some((t: string) => String(t).toLowerCase().includes(topic))) {
-          return true;
-        }
-        return false;
-      });
-      if (topicItem && topicItem.answer) {
-        return topicItem;
+  // 1. Nhận diện theo cụm từ chủ đề chuẩn xác nhất (Trọng số theo độ dài cụm từ)
+  const matchedDirect: Array<{ score: number; targetId: string }> = [];
+  for (const [phrases, targetId] of DIRECT_PHRASES) {
+    for (const p of phrases) {
+      if (qNorm.includes(p)) {
+        matchedDirect.push({ score: p.length, targetId });
       }
+    }
+  }
+
+  if (matchedDirect.length > 0) {
+    matchedDirect.sort((a, b) => b.score - a.score);
+    const bestDirect = matchedDirect[0];
+    const item = items.find((it) => it.id === bestDirect.targetId && it.is_active !== false);
+    if (item && item.answer) {
+      return item;
     }
   }
 
@@ -129,7 +123,7 @@ function findBestKnowledgeMatch(query: string, items: any[]): any | null {
       }
     }
 
-    if (score > maxScore && score >= 2) {
+    if (score > maxScore && score >= 4) {
       maxScore = score;
       bestMatch = item;
     }
@@ -367,7 +361,7 @@ function syncExternalChatToInbox({
   }
 }
 
-async function processChatRequest(payload: any) {
+export async function processChatRequest(payload: any) {
   try {
     const trainingData = loadBotTrainingData();
 
@@ -592,7 +586,8 @@ async function processChatRequest(payload: any) {
       (/\b(bao nhiêu|bn|thế nào|sao|như thế nào|mấy|hết bao|quy trình)\b/i.test(lower) || !hasBookingKeywords);
 
     // 2.9. ƯU TIÊN HÀNG ĐẦU: Khớp câu hỏi với Kho Tri Thức Huấn Luyện (Trained Knowledge Base)
-    if (!isContinuingDraft && !hasExplicitBookingDetails) {
+    // Lưu ý: Nếu khách có ý định đặt lịch hẹn xem sảnh/thử món (và không phải hỏi về cọc), ưu tiên luồng xử lý booking
+    if (!isContinuingDraft && !hasExplicitBookingDetails && !(hasBookingKeywords && !hasDepositInquiry)) {
       const kbMatch = findBestKnowledgeMatch(trimmedMsg, effectiveKnowledgeBase);
       if (kbMatch && kbMatch.answer) {
         return respond({

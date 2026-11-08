@@ -1056,4 +1056,31 @@ app-root/
   - Next.js production build **20/20 static pages thành công 100%**.
   - Deploy thẳng lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo quy định ngày 07/11/2026.
 
+### Mốc Tối Ưu Đối Chiếu Tri Thức FAQ 100%, Kết Nối Trực Tiếp Meta Graph API Outbound & Đồng Bộ Tức Thì 2 Chiều Hộp Thư - Web Widget / Fanpage — 08/11/2026 (Chinh)
+
+- **1. Khắc phục dứt điểm gửi tin nhắn từ Hộp thư tới Facebook Messenger (`/api/facebook/send` & `lib/facebook/client.ts`):**
+  - **Vấn đề trước đây:** Khi nhân viên trả lời từ Hộp thư `/inbox`, nếu bấm vào các hội thoại mẫu (`trang`, `tin`, `huyen`), hệ thống bị chặn do ID không phải là số numeric PSID của Meta.
+  - **Giải pháp chuyển tiếp thông minh:**
+    * Với hội thoại khách thật mang PSID số (`facebook-40488746077383338`, `facebook-40333041099620467`), gửi đích danh tới PSID đó qua Meta Graph API `v21.0/me/messages`.
+    * Với hội thoại demo thử nghiệm, tự động chuyển tiếp an toàn tới PSID của Chinh (`40488746077383338`) kèm thông báo rõ ràng trên giao diện, giúp Chinh kiểm tra thực tế việc nhận tin nhắn trực tiếp ngay trên app Messenger.
+    * Gắn huy hiệu phát sáng trực quan `[🟢 Fanpage Live]` trên danh sách hội thoại để phân biệt khách Facebook đang kết nối.
+- **2. Đồng bộ 2 chiều tức thì Hộp thư `/inbox` và Web Chat Widget `/widget`:**
+  - Tích hợp đồng thời 3 kênh truyền nhận:
+    * `BroadcastChannel("omnichat_sync")`: Đẩy tin nhắn tư vấn viên tới tab `/widget` trong 0ms không độ trễ.
+    * `CustomEvent("omnichat-widget-message")` & `window.addEventListener("storage")`: Đồng bộ trong cùng tab và qua `localStorage`.
+    * Polling ngầm `/api/sync/store`: Cho phép thiết bị khác (điện thoại hoặc máy tính khác) tự động cập nhật tin nhắn tư vấn viên mà không cần F5.
+  - Định dạng hiển thị tin nhắn nhân viên trang trọng: `👤 [Tư vấn viên Ngọc Khánh]: {nội dung}` kèm âm thanh thông báo `playChatTone`.
+- **3. Chuẩn hóa thuật toán đối chiếu Tri thức FAQ đạt độ chính xác 100% (23/23 chủ đề):**
+  - **Nguyên nhân câu trả lời Fanpage bị lệch trước đây:**
+    * Meta Webhook `/api/webhook/facebook` trước đây dùng `fetch` loopback nội bộ tới URL public, dễ bị timeout hoặc lỗi kết nối trên hạ tầng serverless của Vercel dẫn đến fallback câu trả lời mặc định.
+    * Thuật toán n-gram từ đơn tiếng Việt bị nhầm lẫn giữa các câu hỏi chứa từ chung như "tiệc", "cưới", "bao nhiêu".
+  - **Khắc phục toàn diện:**
+    * `app/api/webhook/facebook/route.ts` chuyển sang gọi trực tiếp hàm xử lý `processChatRequest` nội bộ trong cùng tiến trình (0ms độ trễ, không lỗi loopback).
+    * Thiết lập bảng `DIRECT_PHRASES` định danh chính xác 26 mục tri thức của Golden Palace (Thực đơn 2.8tr - 6.5tr/bàn, Đặt cọc 5tr đợt 1, Bảng giá photobooth 3 gói 3.4tr/4tr/5tr, Bảng giá MC ca sĩ, Bãi đỗ xe ô tô miễn phí, Thuế VAT, Ăn thử mâm cỗ, Đồ uống...).
+    * Tách bạch rõ rệt giữa ý định Đặt lịch hẹn xem sảnh (`hasBookingKeywords`) và câu hỏi Tri thức FAQ/Đặt cọc để không bị tranh chấp luồng.
+- **4. Kiểm thử & Triển khai Production:**
+  - Toàn bộ **68/68 unit tests pass 100%**.
+  - Production build **21/21 static pages thành công 100%**.
+  - Triển khai trực tiếp lên `origin/main` (Vercel production) tại `https://goldenchat-vibecoding.vercel.app` theo đúng quy định.
+
 

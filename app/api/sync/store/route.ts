@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import { loadCloudStore, updateCloudStore, saveCloudStore } from "@/lib/sync/store";
 import { fetchFacebookConversations } from "@/lib/facebook/client";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
@@ -89,6 +89,7 @@ export async function GET(req: NextRequest) {
         store.revision += 1;
         hasFbChanges = true;
         (store as any).__last_conv_count = store.conversations.length;
+        saveCloudStore(store);
       }
     }
 

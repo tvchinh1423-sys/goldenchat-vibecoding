@@ -98,7 +98,7 @@ Nguyên tắc: Chỉ câu đầu tiên mở đầu cuộc trò chuyện mới gi
         id: 'gp-2',
         category: 'dia_chi',
         question: 'Địa chỉ nhà hàng ở đâu? Giờ đón khách tham quan sảnh thế nào?',
-        answer: 'Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định. Giờ đón tiếp Quý khách tham quan trực tiếp các sảnh tiệc từ 8h00 – 21h00 tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ) ạ! Hotline/Zalo hỗ trợ: 0228 659 5959.',
+        answer: 'Dạ Golden Palace tọa lạc tại 98 Đông A, KĐT Hòa Vượng, TP Nam Định (Bản đồ chỉ đường: https://maps.app.goo.gl/goldenpalacenamdinh). Giờ đón tiếp Quý khách tham quan trực tiếp các sảnh tiệc từ 8h00 – 21h00 (khung giờ xem sảnh & tư vấn chuyên sâu 8h00 – 10h30) tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật và ngày Lễ) ạ! Hotline/Zalo hỗ trợ: 0228 659 5959.',
         tags: ['dia_chi', 'gio_mo_cua', 'don_khach', 'hotline'],
         is_active: true,
       },

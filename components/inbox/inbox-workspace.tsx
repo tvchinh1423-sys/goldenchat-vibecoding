@@ -577,33 +577,42 @@ export function InboxWorkspace() {
     }
 
     if (isFacebook) {
-      const recipientId = active.id.replace(/^facebook-/, "");
-      if (!/^\d+$/.test(recipientId)) {
-        notify("ℹ️ Đây là hội thoại demo mẫu. Để gửi tin nhắn thật tới Facebook Messenger, vui lòng chọn cuộc trò chuyện của khách thật (Trần Vân Chinh hoặc Rita Phạm)!");
-      } else {
-        try {
-          notify("Đang chuyển tin nhắn tới Facebook Messenger...");
-          const res = await fetch("/api/facebook/send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              recipientId,
-              message: content,
-              conversationId: active.id,
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || "Lỗi gửi tin Facebook");
-          }
-          notify(`✅ Đã gửi trực tiếp tới Facebook Messenger của ${active.name}!`);
-        } catch (err: any) {
-          console.error("Lỗi gửi tin Facebook:", err);
-          notify("⚠️ Gửi tin qua Facebook chưa thành công: " + (err.message || "Kiểm tra kết nối"));
+      const rawRecipientId = active.id.replace(/^facebook-/, "");
+      const isNumeric = /^\d+$/.test(rawRecipientId);
+      // Nếu là hội thoại khách thật, gửi tới PSID đó. Nếu là hội thoại demo/mẫu, tự động chuyển phát tới Messenger của Chinh (40488746077383338) để kiểm tra thực tế
+      const targetPsid = isNumeric ? rawRecipientId : "40488746077383338";
+
+      try {
+        notify(
+          isNumeric
+            ? `Đang chuyển tin nhắn tới Facebook Messenger của ${active.name}...`
+            : "Đang gửi tin nhắn thử nghiệm tới Messenger của Chinh (PSID: 40488746077383338)..."
+        );
+        const res = await fetch("/api/facebook/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId: targetPsid,
+            message: content,
+            conversationId: active.id,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Lỗi gửi tin Facebook");
         }
+        notify(
+          isNumeric
+            ? `✅ Đã gửi trực tiếp tới Facebook Messenger của ${active.name}!`
+            : "✅ Đã chuyển phát thử nghiệm tới Facebook Messenger của Chinh!"
+        );
+      } catch (err: any) {
+        console.error("Lỗi gửi tin Facebook:", err);
+        notify("⚠️ Gửi tin qua Facebook chưa thành công: " + (err.message || "Kiểm tra kết nối"));
       }
     } else if (active.channel === "web" || active.id.startsWith("web-")) {
       try {
+        const staffName = currentUser?.name || "Ngọc Khánh";
         const widgetRaw = localStorage.getItem("omnichat.widget.session.v1");
         if (widgetRaw) {
           const parsed = JSON.parse(widgetRaw);
@@ -611,7 +620,7 @@ export function InboxWorkspace() {
           msgs.push({
             id: newMsgId,
             sender: "bot",
-            text: `👤 [Tư vấn viên ${currentUser?.name || "Ngọc Khánh"}]:\n${content}`,
+            text: `👤 [Tư vấn viên ${staffName}]:\n${content}`,
             time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           });
           localStorage.setItem(
@@ -619,9 +628,22 @@ export function InboxWorkspace() {
             JSON.stringify({ ...parsed, messages: msgs, lastUpdated: nowIso })
           );
         }
+
+        // Bắn qua BroadcastChannel để tab Web Widget nhận ngay lập tức 0ms
+        try {
+          const bc = new BroadcastChannel("omnichat_sync");
+          bc.postMessage({
+            type: "AGENT_MESSAGE",
+            id: newMsgId,
+            content,
+            staffName,
+          });
+          setTimeout(() => bc.close(), 1000);
+        } catch {}
+
         window.dispatchEvent(
           new CustomEvent("omnichat-widget-message", {
-            detail: { id: newMsgId, content },
+            detail: { id: newMsgId, content, staffName },
           })
         );
         notify("✅ Đã gửi tin nhắn tới Web Chat Widget của khách!");
