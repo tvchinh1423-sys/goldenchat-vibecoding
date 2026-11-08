@@ -1,9 +1,17 @@
-import fs from "node:fs";
-import path from "node:path";
 import { seedCRM } from "@/lib/crm/demo-store";
 import { createDemoConversations } from "@/lib/inbox/demo-data";
 import type { CRMSnapshot, CRMLead, CRMBooking } from "@/lib/crm/model";
 import type { Conversation, Message } from "@/lib/inbox/types";
+
+function getServerFs() {
+  if (typeof window !== "undefined") return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require("fs");
+  } catch {
+    return null;
+  }
+}
 
 export interface CloudStoreData {
   version: number;
@@ -13,7 +21,13 @@ export interface CloudStoreData {
   conversations: Conversation[];
 }
 
-const TMP_FILE = path.join("/tmp", "omnichat_cloud_store.json");
+import {
+  DEMO_CONVERSATION_IDS,
+  DEMO_LEAD_IDS,
+  DEMO_BOOKING_IDS,
+} from "@/lib/clean-data";
+
+const TMP_FILE = "/tmp/omnichat_cloud_store.json";
 
 declare global {
   // eslint-disable-next-line no-var

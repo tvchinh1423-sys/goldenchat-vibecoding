@@ -15,7 +15,7 @@ export const PRODUCTION_MODE_KEY = "omnichat.production_mode";
 export const OLD_STAGES_KEY = "omnichat.leads.golden-palace.stages.v1";
 
 // Danh sách các ID đặc trưng của dữ liệu demo
-const DEMO_CONVERSATION_IDS = [
+export const DEMO_CONVERSATION_IDS = [
   "trang",
   "huyen",
   "anh",
@@ -27,7 +27,7 @@ const DEMO_CONVERSATION_IDS = [
   "linh",
   "chanh",
 ];
-const DEMO_LEAD_IDS = [
+export const DEMO_LEAD_IDS = [
   "menu",
   "web-c83d",
   "trang",
@@ -40,7 +40,7 @@ const DEMO_LEAD_IDS = [
   "jasmine",
   "changed-plan",
 ];
-const DEMO_BOOKING_IDS = ["demo-visit"];
+export const DEMO_BOOKING_IDS = ["demo-visit"];
 
 /**
  * Kiểm tra xem hiện tại trên trình duyệt có đang tồn tại dữ liệu demo hay không
@@ -261,6 +261,21 @@ export function clearAllDemoData(): { success: boolean; message: string } {
 
     // 4. Đặt cờ trạng thái Vận hành thật
     localStorage.setItem(PRODUCTION_MODE_KEY, "true");
+
+    // Đồng bộ tức thì lên Cloud Store để xóa dữ liệu demo trên máy chủ và mọi thiết bị
+    void fetch("/api/sync/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        replaceCrm: true,
+        replaceConversations: true,
+        crm: { leads: survivingLeads, bookings: survivingBookings },
+        conversations: survivingConversations,
+        deletedLeadIds: DEMO_LEAD_IDS,
+        deletedBookingIds: DEMO_BOOKING_IDS,
+        deletedConversationIds: DEMO_CONVERSATION_IDS,
+      }),
+    }).catch(() => {});
 
     // 5. Phát sự kiện đồng bộ toàn hệ thống
     window.dispatchEvent(new Event("omnichat-crm-change"));

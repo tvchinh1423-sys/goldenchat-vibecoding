@@ -481,10 +481,26 @@ export function ensureWidgetConversationInInbox() {
     const list = getInboxConversations();
     const hasWebConv = list.some((c) => c.channel === "web");
     if (!hasWebConv) {
+      // Kiểm tra xem khách đã từng nhắn tin trên Widget chưa
+      const widgetSessionRaw = localStorage.getItem(WIDGET_SESSION_STORAGE_KEY);
+      if (widgetSessionRaw) {
+        try {
+          const msgs = JSON.parse(widgetSessionRaw);
+          if (Array.isArray(msgs) && msgs.length > 0) {
+            syncWidgetChatToInbox(msgs);
+            return;
+          }
+        } catch {}
+      }
+
+      // Nếu đang ở chế độ vận hành thật (production mode) thì không tự tạo hội thoại mẫu
+      const isProduction = localStorage.getItem("omnichat.production_mode") === "true";
+      if (isProduction) return;
+
       const defaultWebConv = createDefaultWidgetConversation();
       saveInboxConversations([defaultWebConv, ...list]);
+      ensureWidgetDataInCRM();
     }
-    ensureWidgetDataInCRM();
   } catch (err) {
     console.error("Error ensuring widget conversation in inbox:", err);
   }

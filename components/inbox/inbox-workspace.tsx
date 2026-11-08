@@ -11,9 +11,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { autoCleanupIfDemo } from "@/lib/clean-data";
+import {
+  autoCleanupIfDemo,
+  DEMO_CONVERSATION_IDS,
+  DEMO_LEAD_IDS,
+  DEMO_BOOKING_IDS,
+} from "@/lib/clean-data";
 import { ensureWidgetConversationInInbox } from "@/lib/inbox/widget-sync";
-import { createDemoConversations, createFaqDraft } from "@/lib/inbox/demo-data";
+import { createFaqDraft } from "@/lib/inbox/demo-data";
 import { detectContact, filterConversations } from "@/lib/inbox/helpers";
 import { parseSnapshot, STORAGE_KEY } from "@/lib/inbox/storage";
 import { useVisualViewport } from "@/lib/chat/use-visual-viewport";
@@ -103,7 +108,10 @@ export function InboxWorkspace() {
       ensureWidgetConversationInInbox();
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) initialConversations = parseSnapshot(saved);
+        if (saved) {
+          const list = parseSnapshot(saved);
+          initialConversations = list.filter((c) => !DEMO_CONVERSATION_IDS.includes(c.id));
+        }
       } catch {
         initialConversations = [];
       }
@@ -205,14 +213,23 @@ export function InboxWorkspace() {
         const data = await res.json();
         if (data.modified && data.revision > cloudRevisionRef.current) {
           cloudRevisionRef.current = data.revision;
-          if (Array.isArray(data.conversations) && data.conversations.length > 0) {
-            setConversations(data.conversations);
+          if (Array.isArray(data.conversations)) {
+            const cleanConvs = data.conversations.filter(
+              (c: any) => !DEMO_CONVERSATION_IDS.includes(c.id)
+            );
+            setConversations(cleanConvs);
           }
           if (data.crm) {
             try {
+              const cleanLeads = (data.crm.leads || []).filter(
+                (l: any) => !DEMO_LEAD_IDS.includes(l.id)
+              );
+              const cleanBookings = (data.crm.bookings || []).filter(
+                (b: any) => !DEMO_BOOKING_IDS.includes(b.id)
+              );
               localStorage.setItem(
                 CRM_STORAGE_KEY,
-                JSON.stringify({ version: 1, ...data.crm }),
+                JSON.stringify({ version: 1, leads: cleanLeads, bookings: cleanBookings }),
               );
               window.dispatchEvent(new Event("omnichat-crm-change"));
             } catch {}

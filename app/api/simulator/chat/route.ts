@@ -34,9 +34,41 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    body = {};
+    try {
+      const formData = await req.formData();
+      body = Object.fromEntries(formData.entries());
+    } catch {
+      body = {};
+    }
   }
-  return processChatRequest(body);
+
+  // Kết hợp cả URL searchParams (vì Botcake webhook gọi POST kèm ?channel=facebook&message={{last_input}})
+  const { searchParams } = new URL(req.url);
+  const queryData: Record<string, string> = {};
+  searchParams.forEach((val, key) => {
+    queryData[key] = val;
+  });
+
+  const merged = {
+    ...queryData,
+    ...body,
+  };
+
+  const message =
+    body.message ||
+    body.text ||
+    body.last_input ||
+    queryData.message ||
+    queryData.text ||
+    queryData.last_input ||
+    queryData.content ||
+    queryData.q ||
+    "";
+
+  return processChatRequest({
+    ...merged,
+    message,
+  });
 }
 
 function syncExternalChatToInbox({

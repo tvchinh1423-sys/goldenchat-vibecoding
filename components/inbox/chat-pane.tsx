@@ -329,7 +329,7 @@ export function ChatPane({
 
           <label
             className="mr-1 flex items-center gap-1.5 text-xs text-muted-foreground"
-            title="Cờ AI trong bản demo; gửi tự động qua Botcake chưa được kết nối"
+            title="Bật/Tắt Trợ lý AI tự động phản hồi hội thoại"
           >
             AI
             <Switch
@@ -446,7 +446,9 @@ export function ChatPane({
               : "Hội thoại đang mở"}
         </span>
         {conversation.aiEnabled ? (
-          <span>Chỉ hiển thị trong bản demo</span>
+          <span className="font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+            🤖 Trợ lý AI đang hỗ trợ
+          </span>
         ) : (
           <span className="font-medium text-amber-700 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-full flex items-center gap-1">
             ⚡ AI đã tạm ngắt · Chuyên viên tiếp quản
