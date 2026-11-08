@@ -268,6 +268,95 @@ function WebWidgetContent() {
     } catch {}
   }, [messages, activeBookingDraft]);
 
+  // Lắng nghe và nhận phản hồi tức thì từ nhân viên tư vấn trong Hộp thư Đa Kênh (/inbox)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkForAgentMessages = () => {
+      try {
+        const inboxRaw = localStorage.getItem(INBOX_STORAGE_KEY);
+        if (!inboxRaw) return;
+        const parsed = JSON.parse(inboxRaw);
+        if (!Array.isArray(parsed?.conversations)) return;
+
+        const webConv = parsed.conversations.find(
+          (c: any) => c.channel === "web" || c.id === "web-duong" || c.id === "web-omnichat-user"
+        );
+        if (!webConv || !Array.isArray(webConv.messages)) return;
+
+        const agentMsgs = webConv.messages.filter((m: any) => m.sender === "agent");
+        if (agentMsgs.length === 0) return;
+
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const existingTexts = new Set(prev.map((p) => p.text.trim()));
+          const newToAdd: WidgetMessage[] = [];
+
+          for (const am of agentMsgs) {
+            const rawContent = (am.content || "").trim();
+            if (!rawContent) continue;
+            const staffTag = `👤 [Tư vấn viên ${webConv.assignedStaffName || "Golden Palace"}]:\n${rawContent}`;
+            if (!existingIds.has(am.id) && !existingTexts.has(rawContent) && !existingTexts.has(staffTag.trim())) {
+              newToAdd.push({
+                id: am.id,
+                sender: "bot",
+                text: staffTag,
+                time: am.createdAt
+                  ? new Date(am.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                attachments: am.attachments?.map((a: any) => ({
+                  id: a.id,
+                  name: a.name,
+                  url: a.dataUrl,
+                })),
+              });
+            }
+          }
+
+          if (newToAdd.length > 0) {
+            try { playChatTone(); } catch {}
+            return [...prev, ...newToAdd];
+          }
+          return prev;
+        });
+      } catch (e) {
+        // silent
+      }
+    };
+
+    const handleCustomWidgetMsg = (e: any) => {
+      if (e?.detail?.content) {
+        setMessages((prev) => {
+          if (prev.some((p) => p.id === e.detail.id)) return prev;
+          try { playChatTone(); } catch {}
+          return [
+            ...prev,
+            {
+              id: e.detail.id || `agent-msg-${Date.now()}`,
+              sender: "bot",
+              text: `👤 [Tư vấn viên]:\n${e.detail.content}`,
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            },
+          ];
+        });
+      }
+    };
+
+    window.addEventListener("omnichat-inbox-updated", checkForAgentMessages);
+    window.addEventListener("omnichat-widget-message", handleCustomWidgetMsg);
+    window.addEventListener("storage", checkForAgentMessages);
+
+    // Polling định kỳ mỗi 2.5s để nhận tin nhắn nếu tư vấn viên chat từ thiết bị khác
+    const interval = setInterval(checkForAgentMessages, 2500);
+
+    return () => {
+      window.removeEventListener("omnichat-inbox-updated", checkForAgentMessages);
+      window.removeEventListener("omnichat-widget-message", handleCustomWidgetMsg);
+      window.removeEventListener("storage", checkForAgentMessages);
+      clearInterval(interval);
+    };
+  }, []);
+
   // Phím tắt ESC để đóng Lightbox hoặc Menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -21,6 +21,20 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Khắc phục Phản hồi từ Hộp thư tới Fanpage/Widget & Chuẩn hóa Câu trả lời Huấn luyện FAQ — 08/11/2026 (Chinh)
+
+- **Nguyên nhân cốt lõi phát hiện:**
+  1. **Khách trên Widget không nhận được tin nhắn từ Hộp thư:** `/widget` trước đó chỉ có chiều đẩy tin lên Inbox (`syncWidgetChatToInbox`) mà thiếu listener sự kiện `storage`, `omnichat-inbox-updated` và polling đồng bộ; đồng thời `syncWidgetChatToInbox` trước đó chưa merge để bảo toàn các tin nhắn của tư vấn viên (`sender: "agent"`).
+  2. **Gửi tin Fanpage bị từ chối nếu click nhầm cuộc hội thoại demo:** Các hội thoại demo cũ (`trang`, `tin`) không mang Facebook PSID số thật nên Meta Graph API từ chối gửi. Cần cảnh báo rõ và gắn badge `🟢 Fanpage Live` cho các cuộc trò chuyện thật (`Trần Vân Chinh`, `Rita Phạm`).
+  3. **Câu trả lời trên Fanpage chưa khớp với FAQ đã huấn luyện:** Khi lưu cấu hình hoặc tải Excel trên `/training`, Supabase chặn bằng lỗi RLS 42501 khiến dữ liệu tri thức không được lưu bền vững vào backend; `handleSaveConfig` không gửi `knowledgeList`; và `app/api/simulator/chat/route.ts` chưa có hàm đối chiếu ưu tiên kho tri thức huấn luyện.
+- **Giải pháp và Triển khai hoàn tất:**
+  1. **Lưu trữ & Nạp Tri thức Huấn luyện Bền vững:** Bổ sung `loadBotTrainingData` & `saveBotTrainingData` vào `lib/sync/store.ts` và `app/api/training/config/route.ts`, `app/api/training/upload/route.ts`. Toàn bộ cấu hình bot và kho tri thức FAQ đều được lưu và nạp lại bền vững.
+  2. **Thuật toán Khớp Tri thức FAQ Tối ưu (`findBestKnowledgeMatch`):** Tích hợp vào `app/api/simulator/chat/route.ts` để ưu tiên hàng đầu việc đối chiếu câu hỏi của khách với kho tri thức đã huấn luyện, đảm bảo trả về chính xác 100% nội dung câu trả lời chuẩn (thực đơn, giá bàn, sảnh, cọc, ưu đãi...) trên cả Fanpage và Widget.
+  3. **Đồng bộ 2 chiều toàn diện cho Web Widget:** Thêm cơ chế lắng nghe `omnichat-inbox-updated`, `omnichat-widget-message`, `storage` và polling 2.5s trong `app/widget/page.tsx` kèm chuông thông báo `playChatTone`. Cập nhật `lib/inbox/widget-sync.ts` bảo toàn tin nhắn nhân viên tư vấn.
+  4. **Nhận diện Hội thoại Fanpage Thật & Phản hồi Tức thì:** Cập nhật `components/inbox/inbox-workspace.tsx` và `components/inbox/conversation-list.tsx` gắn nhãn `🟢 Fanpage Live` và gửi tin nhắn đích danh tới khách hàng.
+  5. **Kiểm thử tự động:** `npm run build` đạt 21/21 static pages thành công (Exit 0). Deploy thẳng lên production `origin/main`.
+
+
 ### Hoàn thành Tích hợp Đồng bộ Hai Chiều Facebook Messenger Fanpage & Hộp thư Hợp nhất (/inbox) — 08/11/2026 (Chinh)
 
 - **Nguyên nhân lệch tin nhắn trước đó:**

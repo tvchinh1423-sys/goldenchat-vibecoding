@@ -578,25 +578,55 @@ export function InboxWorkspace() {
 
     if (isFacebook) {
       const recipientId = active.id.replace(/^facebook-/, "");
-      try {
-        notify("Đang chuyển tin nhắn tới Facebook Messenger...");
-        const res = await fetch("/api/facebook/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientId,
-            message: content,
-            conversationId: active.id,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Lỗi gửi tin Facebook");
+      if (!/^\d+$/.test(recipientId)) {
+        notify("ℹ️ Đây là hội thoại demo mẫu. Để gửi tin nhắn thật tới Facebook Messenger, vui lòng chọn cuộc trò chuyện của khách thật (Trần Vân Chinh hoặc Rita Phạm)!");
+      } else {
+        try {
+          notify("Đang chuyển tin nhắn tới Facebook Messenger...");
+          const res = await fetch("/api/facebook/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientId,
+              message: content,
+              conversationId: active.id,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || "Lỗi gửi tin Facebook");
+          }
+          notify(`✅ Đã gửi trực tiếp tới Facebook Messenger của ${active.name}!`);
+        } catch (err: any) {
+          console.error("Lỗi gửi tin Facebook:", err);
+          notify("⚠️ Gửi tin qua Facebook chưa thành công: " + (err.message || "Kiểm tra kết nối"));
         }
-        notify("✅ Đã gửi trực tiếp tới Facebook Messenger của khách!");
-      } catch (err: any) {
-        console.error("Lỗi gửi tin Facebook:", err);
-        notify("⚠️ Gửi tin qua Facebook chưa thành công: " + (err.message || "Kiểm tra kết nối"));
+      }
+    } else if (active.channel === "web" || active.id.startsWith("web-")) {
+      try {
+        const widgetRaw = localStorage.getItem("omnichat.widget.session.v1");
+        if (widgetRaw) {
+          const parsed = JSON.parse(widgetRaw);
+          const msgs = Array.isArray(parsed?.messages) ? parsed.messages : [];
+          msgs.push({
+            id: newMsgId,
+            sender: "bot",
+            text: `👤 [Tư vấn viên ${currentUser?.name || "Ngọc Khánh"}]:\n${content}`,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          });
+          localStorage.setItem(
+            "omnichat.widget.session.v1",
+            JSON.stringify({ ...parsed, messages: msgs, lastUpdated: nowIso })
+          );
+        }
+        window.dispatchEvent(
+          new CustomEvent("omnichat-widget-message", {
+            detail: { id: newMsgId, content },
+          })
+        );
+        notify("✅ Đã gửi tin nhắn tới Web Chat Widget của khách!");
+      } catch {
+        notify("Đã thêm tin nhắn tư vấn viên.");
       }
     } else {
       notify("Đã thêm tin nhắn tư vấn viên. AI tự tắt khi tư vấn viên tiếp quản.");

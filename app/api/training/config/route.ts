@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { DEFAULT_BOT_CONFIG } from "@/lib/mock-service";
+import { DEFAULT_BOT_CONFIG, DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
+import { loadBotTrainingData, saveBotTrainingData } from "@/lib/sync/store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const storeData = loadBotTrainingData();
+
   try {
     const { data, error } = await supabase
       .from("bot_configs")
@@ -16,44 +19,52 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         config: data.config_value,
+        knowledgeBase: storeData.knowledgeBase,
       });
     }
   } catch (err) {
-    // console.warn("Supabase query error:", err);
+    // Supabase query error fallback
   }
 
-  // Fallback về default config
   return NextResponse.json({
     success: true,
-    config: DEFAULT_BOT_CONFIG,
+    config: storeData.config || DEFAULT_BOT_CONFIG,
+    knowledgeBase: storeData.knowledgeBase || DEFAULT_KNOWLEDGE_BASE,
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const configPayload = body.config || (body.businessProfile ? body : null) || body;
+    const knowledgePayload = Array.isArray(body.knowledgeBase)
+      ? body.knowledgeBase
+      : Array.isArray(configPayload?.knowledgeBase)
+      ? configPayload.knowledgeBase
+      : undefined;
 
+    // 1. Luôn lưu bền vững vào Cloud Store của hệ thống
+    const saved = saveBotTrainingData(configPayload, knowledgePayload);
+
+    // 2. Thử lưu vào Supabase (nếu có quyền)
     try {
-      const { error } = await supabase.from("bot_configs").upsert(
+      await supabase.from("bot_configs").upsert(
         {
           config_key: "main_bot_config",
-          config_value: body,
+          config_value: configPayload,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "config_key" }
       );
-
-      if (error) {
-        console.warn("Lỗi lưu Supabase:", error);
-      }
     } catch (e) {
-      // Supabase chưa kết nối
+      // Bỏ qua lỗi RLS của Supabase
     }
 
     return NextResponse.json({
       success: true,
-      message: "Đã lưu cấu hình Bot thành công!",
-      config: body,
+      message: "Đã lưu cấu hình Bot và toàn bộ Tri thức FAQ thành công!",
+      config: saved.config,
+      knowledgeBase: saved.knowledgeBase,
     });
   } catch (err: any) {
     return NextResponse.json(

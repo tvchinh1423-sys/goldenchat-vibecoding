@@ -195,6 +195,27 @@ export default function TrainingPage() {
     }
   }, [simMessages, simLoading]);
 
+  // Tự động nạp cấu hình và kho tri thức FAQ đã huấn luyện từ hệ thống
+  useEffect(() => {
+    const loadSavedTraining = async () => {
+      try {
+        const res = await fetch("/api/training/config");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.config && data.config.businessProfile) {
+            setConfig(data.config);
+          }
+          if (Array.isArray(data.knowledgeBase) && data.knowledgeBase.length > 0) {
+            setKnowledgeList(data.knowledgeBase);
+          }
+        }
+      } catch (e) {
+        console.warn("Lỗi nạp cấu hình huấn luyện:", e);
+      }
+    };
+    void loadSavedTraining();
+  }, []);
+
   // Áp dụng Preset Ngành nghề (Multi-Industry Switcher)
   const handleSelectPreset = (presetKey: string) => {
     const preset = INDUSTRY_PRESETS[presetKey];
@@ -240,7 +261,10 @@ export default function TrainingPage() {
       await fetch("/api/training/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          ...config,
+          knowledgeBase: knowledgeList,
+        }),
       });
       setSaveSuccessNotice(true);
       setTimeout(() => setSaveSuccessNotice(false), 3000);

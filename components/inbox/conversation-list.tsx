@@ -313,9 +313,14 @@ export function ConversationList({
                           Đã xong
                         </>
                       ) : conversation.channel === "web" ? (
-                        "Khách từ website"
+                        <span className="text-teal-600 font-medium">🌐 Web Chat Widget</span>
+                      ) : conversation.channel === "facebook" && /^\d+$/.test(conversation.id.replace(/^facebook-/, "")) ? (
+                        <span className="text-blue-600 font-medium flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Fanpage Live
+                        </span>
                       ) : (
-                        "Trung tâm Tiệc cưới & Sự kiện Golden Palace"
+                        "Trung tâm Tiệc cưới Golden Palace"
                       )}
                     </span>
                     {wait && (

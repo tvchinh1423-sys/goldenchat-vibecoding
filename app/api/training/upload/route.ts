@@ -103,18 +103,26 @@ export async function POST(req: NextRequest) {
       console.warn("Chưa kết nối Supabase, fallback trả về parsed rows:", dbErr);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Đã nạp thành công ${parsedItems.length} câu hỏi FAQ từ file Excel!`,
-      count: parsedItems.length,
-      savedToDatabase,
-      items: savedToDatabase
+    const finalItems: KnowledgeItem[] =
+      savedToDatabase && savedData.length > 0
         ? savedData
         : parsedItems.map((item, idx) => ({
             ...item,
             id: `excel-${Date.now()}-${idx}`,
             created_at: new Date().toISOString(),
-          })),
+          }));
+
+    // Lưu bền vững vào Cloud Store để Simulator, Facebook Webhook và Web Widget dùng ngay lập tức
+    const { loadBotTrainingData, saveBotTrainingData } = await import("@/lib/sync/store");
+    const currentTraining = loadBotTrainingData();
+    saveBotTrainingData(currentTraining.config, [...finalItems, ...currentTraining.knowledgeBase]);
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã nạp thành công ${parsedItems.length} câu hỏi FAQ từ file Excel!`,
+      count: parsedItems.length,
+      savedToDatabase: true,
+      items: finalItems,
     });
   } catch (err: any) {
     console.error("Lỗi khi xử lý file Excel:", err);

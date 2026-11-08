@@ -14,12 +14,16 @@ function getServerFs(): any {
 }
 declare const __non_webpack_require__: any;
 
+import { DEFAULT_BOT_CONFIG, DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
+
 export interface CloudStoreData {
   version: number;
   revision: number;
   lastUpdated: string;
   crm: CRMSnapshot;
   conversations: Conversation[];
+  botConfig?: any;
+  knowledgeBase?: any[];
 }
 
 import {
@@ -78,6 +82,8 @@ function getInitialStore(): CloudStoreData {
         : [],
     },
     conversations: [defaultWeb],
+    botConfig: DEFAULT_BOT_CONFIG,
+    knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
   };
 }
 
@@ -237,8 +243,17 @@ export function updateCloudStore(patch: {
   deletedConversationIds?: string[];
   replaceCrm?: boolean;
   replaceConversations?: boolean;
+  botConfig?: any;
+  knowledgeBase?: any[];
 }): CloudStoreData {
   const store = loadCloudStore();
+
+  if (patch.botConfig) {
+    store.botConfig = patch.botConfig;
+  }
+  if (Array.isArray(patch.knowledgeBase)) {
+    store.knowledgeBase = patch.knowledgeBase;
+  }
 
   if (patch.replaceCrm && patch.crm) {
     if (Array.isArray(patch.crm.leads)) {
@@ -278,4 +293,31 @@ export function updateCloudStore(patch: {
 
   saveCloudStore(store);
   return store;
+}
+
+/**
+ * Đọc cấu hình huấn luyện Bot & toàn bộ câu hỏi FAQ Knowledge Base
+ */
+export function loadBotTrainingData() {
+  const store = loadCloudStore();
+  return {
+    config: store.botConfig || DEFAULT_BOT_CONFIG,
+    knowledgeBase: Array.isArray(store.knowledgeBase) && store.knowledgeBase.length > 0
+      ? store.knowledgeBase
+      : DEFAULT_KNOWLEDGE_BASE,
+  };
+}
+
+/**
+ * Lưu cấu hình huấn luyện Bot & toàn bộ câu hỏi FAQ Knowledge Base vào Cloud Store
+ */
+export function saveBotTrainingData(config?: any, knowledgeBase?: any[]) {
+  const store = loadCloudStore();
+  if (config) store.botConfig = config;
+  if (Array.isArray(knowledgeBase)) store.knowledgeBase = knowledgeBase;
+  saveCloudStore(store);
+  return {
+    config: store.botConfig,
+    knowledgeBase: store.knowledgeBase,
+  };
 }

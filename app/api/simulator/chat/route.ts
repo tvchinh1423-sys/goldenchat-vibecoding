@@ -2,8 +2,75 @@ import { NextRequest, NextResponse } from "next/server";
 import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking-extractor";
-import { loadCloudStore, updateCloudStore } from "@/lib/sync/store";
+import { loadCloudStore, updateCloudStore, loadBotTrainingData } from "@/lib/sync/store";
 import type { Conversation, Message } from "@/lib/inbox/types";
+
+/**
+ * Tìm câu trả lời phù hợp nhất từ kho Tri thức Huấn luyện (FAQ Knowledge Base)
+ */
+function findBestKnowledgeMatch(query: string, items: any[]): any | null {
+  if (!query || !Array.isArray(items) || !items.length) return null;
+  const qClean = query.toLowerCase().replace(/[?,.!:;()"]/g, "").trim();
+
+  // 1. Khớp câu hỏi chính xác hoặc chứa câu hỏi
+  for (const item of items) {
+    if (item.is_active === false) continue;
+    const itemQ = (item.question || "").toLowerCase().replace(/[?,.!:;()"]/g, "").trim();
+    if (
+      qClean === itemQ ||
+      (itemQ.length > 5 && qClean.includes(itemQ)) ||
+      (qClean.length > 6 && itemQ.includes(qClean))
+    ) {
+      return item;
+    }
+  }
+
+  // 2. Khớp theo danh sách Tags
+  for (const item of items) {
+    if (item.is_active === false) continue;
+    if (Array.isArray(item.tags)) {
+      for (const tag of item.tags) {
+        const t = String(tag).toLowerCase().trim();
+        if (t && t.length > 2 && qClean.includes(t)) {
+          return item;
+        }
+      }
+    }
+  }
+
+  // 3. Khớp theo tổ hợp từ khóa trọng tâm
+  const STOPWORDS = new Set([
+    "không", "được", "hoặc", "trong", "nhiều", "những", "mình", "người",
+    "nhau", "cũng", "đang", "từng", "nào", "phải", "thế", "này", "kia",
+    "cho", "bên", "quý", "khách", "nhé", "ạ", "giúp", "em", "anh", "chị", "ơi"
+  ]);
+
+  let bestMatch: any | null = null;
+  let maxScore = 0;
+
+  for (const item of items) {
+    if (item.is_active === false) continue;
+    const itemWords = String(item.question || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .map((w: string) => w.replace(/[?,.!:;()"]/g, "").trim())
+      .filter((w: string) => w.length > 1 && !STOPWORDS.has(w));
+
+    let score = 0;
+    for (const w of itemWords) {
+      if (qClean.includes(w)) {
+        score += w.length > 3 ? 2 : 1;
+      }
+    }
+
+    if (score > maxScore && score >= 2) {
+      maxScore = score;
+      bestMatch = item;
+    }
+  }
+
+  return bestMatch;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -236,18 +303,27 @@ function syncExternalChatToInbox({
 
 async function processChatRequest(payload: any) {
   try {
+    const trainingData = loadBotTrainingData();
+
     const {
       channel = "facebook",
       replyOnly = false,
       isWorkingHours = true,
-      persona = "",
+      persona = trainingData.config?.persona || "",
       outOfHoursMessage = "Dạ hiện tại đã ngoài giờ làm việc. Em đã ghi nhận thông tin, tư vấn viên sẽ gọi lại vào 8h30 sáng mai nhé!",
-      guardrails = [],
-      knowledgeBase = DEFAULT_KNOWLEDGE_BASE,
-      businessProfile,
+      guardrails = trainingData.config?.guardrails || [],
+      knowledgeBase = trainingData.knowledgeBase || DEFAULT_KNOWLEDGE_BASE,
+      businessProfile = trainingData.config?.businessProfile,
       bookingDraftContext,
       attachments = [],
     } = payload;
+
+    const effectiveKnowledgeBase: any[] =
+      Array.isArray(knowledgeBase) && knowledgeBase.length > 0
+        ? knowledgeBase
+        : (Array.isArray(trainingData.knowledgeBase) && trainingData.knowledgeBase.length > 0
+            ? trainingData.knowledgeBase
+            : DEFAULT_KNOWLEDGE_BASE);
 
     const rawMsg =
       typeof payload.message === "string"
@@ -448,6 +524,22 @@ async function processChatRequest(payload: any) {
     const hasDepositInquiry =
       hasDepositKeywords &&
       (/\b(bao nhiêu|bn|thế nào|sao|như thế nào|mấy|hết bao|quy trình)\b/i.test(lower) || !hasBookingKeywords);
+
+    // 2.9. ƯU TIÊN HÀNG ĐẦU: Khớp câu hỏi với Kho Tri Thức Huấn Luyện (Trained Knowledge Base)
+    if (!isContinuingDraft && !hasExplicitBookingDetails) {
+      const kbMatch = findBestKnowledgeMatch(trimmedMsg, effectiveKnowledgeBase);
+      if (kbMatch && kbMatch.answer) {
+        return respond({
+          success: true,
+          reply: kbMatch.answer,
+          suggestedQuestions: [
+            "Thực đơn tiệc cưới bao nhiêu một bàn?",
+            "Cho tôi xem ảnh không gian sảnh tiệc",
+            "Đặt cọc giữ sảnh bao nhiêu?",
+          ],
+        });
+      }
+    }
 
     if ((hasBookingKeywords || isContinuingDraft || hasExplicitBookingDetails) && !hasDepositInquiry) {
       if (facebookReplyOnly) {

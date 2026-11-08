@@ -291,6 +291,16 @@ export function syncWidgetChatToInbox(
       customerName = existingConv.name;
     }
 
+    // Giữ lại và bảo toàn các tin nhắn do nhân viên tư vấn đã gửi từ Hộp thư
+    const agentMessages = (existingConv?.messages || []).filter((m) => m.sender === "agent");
+    const mergedMessages = [...inboxMessages];
+    for (const am of agentMessages) {
+      if (!mergedMessages.some((m) => m.id === am.id || (m.content === am.content && Math.abs(Date.parse(m.createdAt || "0") - Date.parse(am.createdAt || "0")) < 15000))) {
+        mergedMessages.push(am);
+      }
+    }
+    mergedMessages.sort((a, b) => Date.parse(a.createdAt || "0") - Date.parse(b.createdAt || "0"));
+
     const updatedConversation: Conversation = {
       ...(existingConv || {}),
       id: convId,
@@ -307,7 +317,7 @@ export function syncWidgetChatToInbox(
             bookingInfo.appointmentTime
           )}. SĐT: ${bookingInfo.phone}`
         : existingConv?.note || "Khách đang trao đổi trực tiếp trên Web Widget.",
-      messages: inboxMessages,
+      messages: mergedMessages,
       booking: bookingInfo
         ? {
             appointmentTime: bookingInfo.appointmentTime,
