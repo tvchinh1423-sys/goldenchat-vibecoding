@@ -3,15 +3,17 @@ import { createDemoConversations } from "@/lib/inbox/demo-data";
 import type { CRMSnapshot, CRMLead, CRMBooking } from "@/lib/crm/model";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
-function getServerFs() {
+/* eslint-disable */
+function getServerFs(): any {
   if (typeof window !== "undefined") return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("fs");
+    const req = typeof __non_webpack_require__ !== "undefined" ? __non_webpack_require__ : eval("require");
+    return req("fs");
   } catch {
     return null;
   }
 }
+declare const __non_webpack_require__: any;
 
 export interface CloudStoreData {
   version: number;
@@ -51,7 +53,8 @@ export function loadCloudStore(): CloudStoreData {
 
   // Thử đọc từ /tmp
   try {
-    if (fs.existsSync(TMP_FILE)) {
+    const fs = getServerFs();
+    if (fs && fs.existsSync(TMP_FILE)) {
       const raw = fs.readFileSync(TMP_FILE, "utf-8");
       const parsed = JSON.parse(raw) as CloudStoreData;
       if (parsed && parsed.version === 1 && parsed.crm && Array.isArray(parsed.conversations)) {
@@ -82,7 +85,10 @@ export function saveCloudStore(store: CloudStoreData): void {
   globalThis.__omnichat_cloud_store__ = store;
 
   try {
-    fs.writeFileSync(TMP_FILE, JSON.stringify(store), "utf-8");
+    const fs = getServerFs();
+    if (fs) {
+      fs.writeFileSync(TMP_FILE, JSON.stringify(store), "utf-8");
+    }
   } catch (e) {
     // Trong môi trường read-only nếu có, không làm crash app
     console.warn("Không ghi được cloud store vào /tmp:", e);
