@@ -272,11 +272,17 @@ function syncExternalChatToInbox({
         (c.channel === channel && c.name === displayName),
     );
 
+    const customerFullName =
+      cleanSenderName ||
+      extractedLead.fullName ||
+      bookingInfo?.fullName ||
+      (existing && !existing.name.startsWith("Khách ") ? existing.name : displayName);
+
     let targetConv: Conversation;
     if (existing) {
       targetConv = {
         ...existing,
-        name: existing.name || displayName,
+        name: customerFullName,
         status: "active",
         unread: (existing.unread || 0) + 1,
         messages: [...existing.messages, custMsg, botMsg],
@@ -284,7 +290,7 @@ function syncExternalChatToInbox({
     } else {
       targetConv = {
         id: convId,
-        name: displayName,
+        name: customerFullName,
         channel,
         avatarColor:
           channel === "facebook"
@@ -317,7 +323,7 @@ function syncExternalChatToInbox({
       targetConv.lead = {
         id: targetLeadId,
         conversation_id: targetConv.id,
-        full_name: targetConv.name,
+        full_name: customerFullName,
         phone: cleanPhone,
         email: targetConv.lead?.email || "",
         demand_notes: userMessage,
@@ -328,7 +334,7 @@ function syncExternalChatToInbox({
       leadsToUpdate.push({
         id: targetLeadId,
         inbox_reference: targetConv.id,
-        full_name: targetConv.name,
+        full_name: customerFullName,
         phone: cleanPhone,
         email: targetConv.lead?.email || "",
         notes: `Lead từ ${channel.toUpperCase()}: "${userMessage}"`,
