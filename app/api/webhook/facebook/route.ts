@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const pageAccessToken =
       process.env.FB_PAGE_ACCESS_TOKEN ||
       process.env.FACEBOOK_PAGE_ACCESS_TOKEN ||
-      "";
+      "EAAVpOzSTwMsBSz8lGvACq0KGly3h5EFVZCA9s1xRPD9lces8mKLdliDoNqtnV39eggxpMGA3PBvaBEQajKAuwuCXMx2ay05v4LfiXvwZCOlWMrSQ7RkJUoZCclY3gRAXLpJ1vXVyk0XL2ZBDoGyFyjQlboidKQZC0IvqQxY8QK93Rm4WqHrItnrv4qDsixH9TYusCZAwZDZD";
 
     // Duyệt qua tất cả entries
     for (const entry of body.entry || []) {
