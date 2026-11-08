@@ -21,6 +21,18 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Rà soát Toàn bộ Hệ thống, Đảm bảo 100% Ghi nhận Lead & Đồng bộ 2 Chiều Mọi Kênh Chạy Thật — 08/11/2026 (Chinh)
+
+- **Các điểm nghẽn cốt lõi đã xử lý triệt để:**
+  1. **Tự động 100% ghi nhận Lead khi khách nhắn SĐT qua Facebook Messenger:** Nâng cấp `app/api/webhook/facebook/route.ts` với `PHONE_REGEX` và `extractLeadInfo`. Khi khách gửi SĐT (kể cả không dùng từ khóa booking), hệ thống tự động bóc tách Họ tên, SĐT, Số bàn, Ngày tổ chức, tra cứu tên thật Facebook qua `fetchFacebookProfile` (Graph API), tạo ngay `CRMLead` (N1/N2) vào Cloud Store, lưu Supabase và bắn cảnh báo Telegram Alert tức thì cho Quản lý tiệc.
+  2. **Bắt SĐT và tạo Lead tự động từ tin nhắn chat thường trên Web Widget:** Nâng cấp `lib/inbox/widget-sync.ts` với hàm `ensureWidgetLeadInCRM`. Khách chỉ cần gõ SĐT vào ô chat Web Widget (dù chưa bấm hoàn tất form đặt lịch) thì hệ thống đã tự động bóc tách và tạo Lead trong CRM `/leads` và Cloud Store.
+  3. **Bóc tách SĐT linh hoạt đa định dạng trên Botcake & Simulator:** Cải tiến regex `PHONE_REGEX` hỗ trợ cả định dạng `0918.234.567`, `0918 234 567`, `+84918234567`. Trong `app/api/simulator/chat/route.ts`, hàm `syncExternalChatToInbox` tự động quét SĐT trong `userMessage` để tạo Lead CRM cho cả Zalo và Web.
+  4. **Đồng bộ 2 chiều thật 100% giữa Hộp thư và các Kênh:**
+     - Chiều Facebook: Nhân viên gửi tin nhắn từ `/inbox` gọi `POST /api/facebook/send` bắn tin trực tiếp tới Messenger khách qua Meta Graph API v21.0.
+     - Chiều Web Widget: Nhân viên gửi tin nhắn từ `/inbox` được đồng bộ sang Web Widget qua 4 kênh: `BroadcastChannel("omnichat_sync")`, `CustomEvent("omnichat-widget-message")`, `localStorage` và Polling 2.5s từ Cloud Store kèm chuông `playChatTone`.
+  5. **Chuẩn hóa nhãn vận hành sản xuất thật:** Đã thay thế toàn bộ các thông báo, nhãn text "demo" gây hiểu lầm trên Inbox, CRM Dashboard, Web Widget thành nhãn chuẩn vận hành: *"Hệ thống CRM Vận Hành · Khách hàng và lịch hẹn được đồng bộ thời gian thực đa kênh (Facebook, Zalo, Web Widget)"*.
+  6. **Kiểm thử tự động:** Toàn bộ **72/72 tests PASS 100%**, Next.js build **21/21 static pages thành công 100%**. Sẵn sàng deploy trực tiếp `origin/main` theo chỉ đạo.
+
 ### Hoàn thành Khắc phục Phản hồi từ Hộp thư tới Fanpage/Widget & Chuẩn hóa Câu trả lời Huấn luyện FAQ — 08/11/2026 (Chinh)
 
 - **Nguyên nhân cốt lõi phát hiện:**

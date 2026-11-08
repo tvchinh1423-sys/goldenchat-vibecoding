@@ -249,3 +249,45 @@ test("DELETE /api/crm/leads/[id] enforces UUID and session in supabase mode", as
   }
 });
 
+test("Chat API and Webhook extract phone from natural message and create Lead CRM automatically", async () => {
+  const { GET: getChat } = await import("@/app/api/simulator/chat/route");
+  const { loadCloudStore } = await import("@/lib/sync/store");
+
+  const req = new NextRequest(
+    "http://localhost:3000/api/simulator/chat?channel=web&message=Tôi%20tên%20Hoàng%20Huy,%20sđt%200977889900,%20tư%20vấn%20tiệc%20cưới%2040%20bàn"
+  );
+  const res = await getChat(req);
+  assert.equal(res.status, 200);
+
+  const store = loadCloudStore();
+  const createdLead = store.crm.leads.find((l) => l.phone === "0977889900");
+  assert.ok(createdLead, "Lead phải được tự động ghi nhận vào CRM Cloud Store");
+  assert.equal(createdLead.phone, "0977889900");
+  assert.equal(createdLead.table_count, 40);
+  assert.ok(createdLead.full_name.includes("Hoàng Huy"));
+});
+
+test("Botcake Webhook with formatted phone 0918.234.567 creates Lead in CRM", async () => {
+  const res = await postBotcakeWebhook(
+    new NextRequest("http://localhost:3000/api/webhook/botcake", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform: "facebook",
+        sender: { id: "fb-test-formatted-phone" },
+        message: { text: "Tư vấn tiệc cưới giúp mình qua số 0918.234.567 nhé" },
+      }),
+    })
+  );
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.success, true);
+
+  const { loadCloudStore } = await import("@/lib/sync/store");
+  const store = loadCloudStore();
+  const createdLead = store.crm.leads.find((l) => l.phone === "0918234567");
+  assert.ok(createdLead, "Lead với số điện thoại định dạng có dấu chấm phải được bóc tách và lưu vào CRM");
+  assert.equal(createdLead.phone, "0918234567");
+});
+
+
