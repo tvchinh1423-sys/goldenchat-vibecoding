@@ -89,8 +89,8 @@ Nguyên tắc: Chỉ câu đầu tiên mở đầu cuộc trò chuyện mới gi
       {
         id: 'gp-1',
         category: 'thuc_don',
-        question: 'Giá một mâm cỗ cưới tại Golden Palace là bao nhiêu tiền?',
-        answer: 'Dạ tại Golden Palace, thực đơn tiệc được thiết kế phong phú và linh hoạt tùy theo mùa vụ và số lượng mâm cỗ của Quý khách. Nhà hàng có công cụ tính toán tự động, Quý khách chỉ cần chọn số lượng khách là hệ thống sẽ hiển thị bảng kê chi phí trọn gói minh bạch trong 30 giây tại: https://goldenpalacenamdinh.com/du-toan-chi-phi hoặc xem đầy đủ các set thực đơn mẫu tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC ạ!',
+        question: 'Thực đơn tiệc cưới bao nhiêu một bàn? Giá một mâm cỗ tại Golden Palace thế nào?',
+        answer: 'Dạ thực đơn tiệc cưới tại Golden Palace dao động từ 2.800.000đ - 6.500.000đ/bàn 10 khách với hơn 150 món ăn Á - Âu tinh hoa phong phú, linh hoạt theo mùa vụ. Quý khách có thể tự tính dự toán chi phí trọn gói minh bạch trong 30 giây tại: https://goldenpalacenamdinh.com/du-toan-chi-phi hoặc xem đầy đủ các set thực đơn mẫu tại: https://goldenpalacenamdinh.com/thuc-don?tab=SET_TIEC ạ!',
         tags: ['thuc_don', 'gia_ban', 'menu', 'du_toan'],
         is_active: true,
       },

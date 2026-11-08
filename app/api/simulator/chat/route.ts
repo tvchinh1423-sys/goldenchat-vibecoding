@@ -5,44 +5,111 @@ import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking
 import { loadCloudStore, updateCloudStore, loadBotTrainingData } from "@/lib/sync/store";
 import type { Conversation, Message } from "@/lib/inbox/types";
 
+function normalizeVietnamese(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "d");
+}
+
+const TOPIC_PHRASES: Record<string, string[]> = {
+  thuc_don: [
+    "thuc don", "gia ban", "mam co", "mon an", "menu", "bao nhieu mot ban",
+    "bao nhieu 1 ban", "bao nhieu tien", "gia mam", "set tiec",
+  ],
+  dat_coc: [
+    "dat coc", "tien coc", "giu sanh", "quy trinh dat", "bao nhieu coc",
+    "coc bao nhieu", "coc giu cho", "dat coc bao nhieu",
+  ],
+  uu_dai: [
+    "uu dai", "khuyen mai", "giam gia", "chiet khau", "qua tang",
+  ],
+  do_xe: [
+    "do xe", "gui xe", "o to", "bai xe", "cho de xe",
+  ],
+  photobooth: [
+    "photobooth", "chup anh lay ngay", "may chup anh",
+  ],
+  mc: [
+    "thue mc", "ca si", "ban nhac", "nhac cong", "am thanh anh sang",
+  ],
+  vat: [
+    "vat", "thue", "hoa don do", "thue gia tri gia tang",
+  ],
+  thu_mon: [
+    "thu mon", "an thu", "dung thu",
+  ],
+  dia_chi: [
+    "dia chi", "o dau", "duong di", "vi tri", "dong a", "nam dinh",
+  ],
+  decor: [
+    "decor", "trang tri", "don vi ngoai",
+  ],
+};
+
 /**
  * Tìm câu trả lời phù hợp nhất từ kho Tri thức Huấn luyện (FAQ Knowledge Base)
  */
 function findBestKnowledgeMatch(query: string, items: any[]): any | null {
   if (!query || !Array.isArray(items) || !items.length) return null;
   const qClean = query.toLowerCase().replace(/[?,.!:;()"]/g, "").trim();
+  const qNorm = normalizeVietnamese(qClean);
 
-  // 1. Khớp câu hỏi chính xác hoặc chứa câu hỏi
+  // 1. Nhận diện chủ đề trọng tâm (Topic Recognition) để đối chiếu chính xác
+  for (const [topic, phrases] of Object.entries(TOPIC_PHRASES)) {
+    const isTopicMatched = phrases.some((p) => qNorm.includes(p));
+    if (isTopicMatched) {
+      const topicItem = items.find((item) => {
+        if (item.is_active === false) return false;
+        const cat = String(item.category || "").toLowerCase();
+        if (cat === topic || cat.includes(topic)) return true;
+        if (Array.isArray(item.tags) && item.tags.some((t: string) => String(t).toLowerCase().includes(topic))) {
+          return true;
+        }
+        return false;
+      });
+      if (topicItem && topicItem.answer) {
+        return topicItem;
+      }
+    }
+  }
+
+  // 2. Khớp câu hỏi chính xác hoặc chứa câu hỏi
   for (const item of items) {
     if (item.is_active === false) continue;
     const itemQ = (item.question || "").toLowerCase().replace(/[?,.!:;()"]/g, "").trim();
+    const itemQNorm = normalizeVietnamese(itemQ);
     if (
       qClean === itemQ ||
-      (itemQ.length > 5 && qClean.includes(itemQ)) ||
-      (qClean.length > 6 && itemQ.includes(qClean))
+      qNorm === itemQNorm ||
+      (itemQNorm.length > 5 && qNorm.includes(itemQNorm)) ||
+      (qNorm.length > 6 && itemQNorm.includes(qNorm))
     ) {
       return item;
     }
   }
 
-  // 2. Khớp theo danh sách Tags
+  // 3. Khớp theo danh sách Tags
   for (const item of items) {
     if (item.is_active === false) continue;
     if (Array.isArray(item.tags)) {
       for (const tag of item.tags) {
-        const t = String(tag).toLowerCase().trim();
-        if (t && t.length > 2 && qClean.includes(t)) {
+        const tNorm = normalizeVietnamese(String(tag)).trim();
+        if (tNorm && tNorm.length > 2 && qNorm.includes(tNorm)) {
           return item;
         }
       }
     }
   }
 
-  // 3. Khớp theo tổ hợp từ khóa trọng tâm
+  // 4. Khớp theo tổ hợp từ khóa trọng tâm
   const STOPWORDS = new Set([
-    "không", "được", "hoặc", "trong", "nhiều", "những", "mình", "người",
-    "nhau", "cũng", "đang", "từng", "nào", "phải", "thế", "này", "kia",
-    "cho", "bên", "quý", "khách", "nhé", "ạ", "giúp", "em", "anh", "chị", "ơi"
+    "khong", "duoc", "hoac", "trong", "nhieu", "nhung", "minh", "nguoi",
+    "nhau", "cung", "dang", "tung", "nao", "phai", "the", "nay", "kia",
+    "cho", "ben", "quy", "khach", "nhe", "a", "giup", "em", "anh", "chi", "oi",
+    "golden", "palace", "tai", "tiec", "cuoi", "bao", "nhieu", "mot", "ban"
   ]);
 
   let bestMatch: any | null = null;
@@ -50,15 +117,14 @@ function findBestKnowledgeMatch(query: string, items: any[]): any | null {
 
   for (const item of items) {
     if (item.is_active === false) continue;
-    const itemWords = String(item.question || "")
-      .toLowerCase()
+    const itemWords = normalizeVietnamese(String(item.question || ""))
       .split(/\s+/)
       .map((w: string) => w.replace(/[?,.!:;()"]/g, "").trim())
       .filter((w: string) => w.length > 1 && !STOPWORDS.has(w));
 
     let score = 0;
     for (const w of itemWords) {
-      if (qClean.includes(w)) {
+      if (qNorm.includes(w)) {
         score += w.length > 3 ? 2 : 1;
       }
     }
