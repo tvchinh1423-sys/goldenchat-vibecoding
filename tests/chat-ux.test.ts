@@ -190,3 +190,30 @@ test("API chat rejects appointment outside 8:00 - 10:30 consulting window", asyn
   assert.equal(data.autoBooked, false);
   assert.match(data.reply, /8:00 đến 10:30 sáng/);
 });
+
+test("API chat supports GET requests from Botcake and includes messages array for native dynamic text", async () => {
+  const { GET } = await import("../app/api/simulator/chat/route");
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat?message=Tôi%20muốn%20đặt%20lịch&channel=facebook", {
+    method: "GET",
+  });
+  const res = await GET(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.appointmentIntent, true);
+  assert.ok(data.reply);
+  assert.ok(Array.isArray(data.messages));
+  assert.equal(data.messages[0].text, data.reply);
+  assert.match(data.reply, /8:00 đến 10:30 sáng/);
+});
+
+test("API chat gracefully responds to empty message or raw Botcake template variable {{last_input}}", async () => {
+  const { GET } = await import("../app/api/simulator/chat/route");
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat?message={{last_input}}", {
+    method: "GET",
+  });
+  const res = await GET(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.match(data.reply, /Golden Palace xin chào Quý khách/);
+  assert.ok(data.messages[0].text);
+});

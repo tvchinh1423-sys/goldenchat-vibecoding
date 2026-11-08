@@ -3,11 +3,33 @@ import { suggestedQuestions, visitIntent } from "@/lib/chat/follow-ups";
 import { DEFAULT_KNOWLEDGE_BASE } from "@/lib/mock-service";
 import { extractBookingDetails, type BookingDraftInfo } from "@/lib/chat/booking-extractor";
 
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const message =
+    searchParams.get("message") ||
+    searchParams.get("text") ||
+    searchParams.get("content") ||
+    searchParams.get("q") ||
+    searchParams.get("last_input") ||
+    "";
+  const channel = searchParams.get("channel") || "facebook";
+  return processChatRequest({ message, channel });
+}
+
 export async function POST(req: NextRequest) {
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+  return processChatRequest(body);
+}
+
+async function processChatRequest(payload: any) {
   try {
     const {
-      message,
-      channel = "zalo",
+      channel = "facebook",
       replyOnly = false,
       isWorkingHours = true,
       persona = "",
@@ -17,32 +39,68 @@ export async function POST(req: NextRequest) {
       businessProfile,
       bookingDraftContext,
       attachments = [],
-    } = await req.json();
+    } = payload;
+
+    const rawMsg =
+      typeof payload.message === "string"
+        ? payload.message
+        : typeof payload.text === "string"
+        ? payload.text
+        : typeof payload.last_input === "string"
+        ? payload.last_input
+        : typeof payload.last_text_input === "string"
+        ? payload.last_text_input
+        : typeof payload.content === "string"
+        ? payload.content
+        : typeof payload.query === "string"
+        ? payload.query
+        : typeof payload.q === "string"
+        ? payload.q
+        : "";
 
     const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
-    const rawMsg = typeof message === "string" ? message : "";
     const trimmedMsg = rawMsg.trim();
     const facebookReplyOnly = channel === "facebook" && replyOnly === true;
+    const brandName = businessProfile?.name || "Golden Palace";
 
-    if (facebookReplyOnly && (!trimmedMsg || trimmedMsg === "{{last_text_input}}")) {
-      return NextResponse.json({
+    const respond = <T extends { success: true; reply?: string; suggestedQuestions?: string[] }>(data: T) =>
+      NextResponse.json(
+        facebookReplyOnly
+          ? {
+              success: data.success,
+              reply: data.reply || "",
+              messages: data.reply ? [{ text: data.reply }] : undefined,
+            }
+          : {
+              ...data,
+              messages: data.reply ? [{ text: data.reply }] : undefined,
+              suggestedQuestions: suggestedQuestions(
+                trimmedMsg || "ảnh đính kèm",
+                /golden palace/i.test(brandName),
+                data.suggestedQuestions,
+              ),
+            },
+      );
+
+    // Nếu tin nhắn trống hoặc là test variable "{{last_input}}" / "{{last_text_input}}" từ Botcake
+    if (
+      (!trimmedMsg && !hasAttachments) ||
+      trimmedMsg === "{{last_input}}" ||
+      trimmedMsg === "{{last_text_input}}" ||
+      trimmedMsg === "{{message}}"
+    ) {
+      return respond({
         success: true,
-        reply: "Dạ anh/chị nhắn lại câu hỏi bằng văn bản giúp em nhé. Hotline Golden Palace là 0228 659 5959 ạ.",
+        reply: `Dạ Golden Palace xin chào Quý khách! Quý khách cần thông tin cụ thể về thực đơn, giá bàn, hình ảnh sảnh tiệc hay đặt lịch ghé xem trực tiếp tại 98 Đông A ạ?`,
+        suggestedQuestions: [
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
+          "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng ở đâu?",
+        ],
       });
-    }
-
-    if (!trimmedMsg && !hasAttachments) {
-      return NextResponse.json({ success: false, error: "Tin nhắn trống" }, { status: 400 });
     }
 
     const lower = trimmedMsg.toLowerCase();
-    const brandName = businessProfile?.name || "Golden Palace";
-
-    const respond = <T extends { success: true; reply: string; suggestedQuestions?: string[] }>(data: T) =>
-      NextResponse.json(facebookReplyOnly ? { success: data.success, reply: data.reply } : {
-        ...data,
-        suggestedQuestions: suggestedQuestions(trimmedMsg || "ảnh đính kèm", /golden palace/i.test(brandName), data.suggestedQuestions),
-      });
 
     // 1. Chế độ ngoài giờ
     if (!isWorkingHours) {
