@@ -21,22 +21,24 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
-### Hoàn thành Chuẩn hóa Mục 10: Minh chứng Dùng AI Xây dựng Sản phẩm theo Đúng Đề bài — 09/11/2026 (Chinh)
+### Hoàn thành Trọn vẹn Mục 04: Minh chứng AI & Bảng Kiểm thử Thực tế (Bảng B) — 09/11/2026 (Chinh)
 
-- **Đối chiếu yêu cầu đề bài (Mục 10):**
-  1. *Giới hạn dung lượng:* Tối đa đúng **1 trang** (file cũ dài 139 dòng ~3-4 trang đã được rút gọn và chuyển bản mở rộng sang `docs/minh-chung-ung-dung-ai-chi-tiet.md`).
-  2. *Quy tắc nội dung:* Tối đa 5 ảnh / đoạn hội thoại chọn lọc.
-  3. *Quy trình bắt buộc 5 bước:* `Mục tiêu` → `Yêu cầu cho AI` → `Vấn đề phát hiện khi thử` → `Yêu cầu sửa` → `Kết quả kiểm tra lại`.
-  4. *Hai trường bắt buộc:* `<Tên tệp minh chứng hoặc liên kết>` và `<Tóm tắt một vòng thử và cải thiện>`.
-- **Nội dung 3 vòng lặp thực chiến chọn lọc:**
-  - **Vòng 1 (Nghiệp vụ Tiệc cưới & AI Guardrails):** Xử lý xung đột từ khóa "Khách đòi giảm giá 30% cho tiệc 40 mâm" (ưu tiên chính sách giá trước, tư vấn sảnh 40 mâm sau).
-  - **Vòng 2 (Logic Thời gian & Thẩm định Đặt lịch):** Chặn ngày phi lý 31/11/2026 và khung giờ ngoài ca đón tiếp (8:00 - 10:30 sáng).
-  - **Vòng 3 (Kỹ thuật Hộp thư Đa kênh & Đồng bộ Trạng thái Đã Đọc):** Chống lỗi số đỏ unread tự hồi sinh & đếm sai cuộc trò chuyện.
-- **Đóng gói & Phân phối:**
-  - Cập nhật `bài nộp cuối cùng/minh-chung-ung-dung-ai.md` và `docs/minh-chung-ung-dung-ai.md`.
-  - Tạo sẵn bản Word `bài nộp cuối cùng/10-Minh-chung-dung-AI.docx` và `bài nộp cuối cùng/Thông tin bài làm (Đầy đủ kèm Mục 10).docx`.
-  - Đóng gói cập nhật vào `OmniChat_AI_VibeCoding2026_De04.zip` và `bài nộp cuối cùng/OmniChat_AI_VibeCoding2026_De04.zip`.
-  - Bộ kiểm thử tự động đạt 78/78 tests pass 100%. Sẵn sàng nộp bài trước hạn 23:59 ngày 09/11/2026.
+- **Đáp ứng 100% Yêu cầu BTC Bảng B (Kinh tế) Đề 04:**
+  1. *Phần 1: Minh chứng dùng AI (Tối đa 1 trang + 5 ảnh):*
+     - Tuân thủ chu trình: `Mục tiêu` → `Yêu cầu cho AI` → `Vấn đề khi thử` → `Yêu cầu sửa` → `Kết quả kiểm tra lại`.
+     - 3 vòng lặp thực chiến: Vòng 1 (Guardrails chặn giảm giá 30% kết hợp 40 mâm), Vòng 2 (Chặn ngày phi lý 31/11 & ngoài giờ 8h-10h30), Vòng 3 (Read Tracking Guard chống hồi sinh badge Inbox).
+     - 5 ảnh chụp sắc nét từ Production thật (`goldenchat-vibecoding.vercel.app`) lưu trong `bài nộp cuối cùng/anh-minh-chung/`.
+  2. *Phần 2: Bảng kiểm thử thực tế (Ít nhất 3 ca theo quy chế Bảng B):*
+     - **Ca 1 (Bình thường / Happy Path):** Đặt lịch xem sảnh 12/11 lúc 09:00 từ chat tự nhiên → Trả thẻ Calendar, nút Google Calendar, lưu Lead N3 CRM, toast Inbox.
+     - **Ca 2 (Nhập sai / thiếu / Negative):** Chặn ngày không tồn tại 31/11 & thiếu SĐT → Bot từ chối lịch sự, không tạo lịch ảo, gợi ý chip nhanh.
+     - **Ca 3 (Biên / Boundary):** Khách ép giảm giá 30% kết hợp hỏi 40 mâm → Guardrails ưu tiên từ chối chiết khấu tiền mặt trước, tư vấn quà tặng và sảnh tiệc sau.
+     - **Ca 4 (Mở rộng / Security):** RBAC 3 cấp — Tài khoản Staff bị ẩn menu và chặn URL `/settings`, `/users`.
+  3. *Tài liệu & Hồ sơ nộp:*
+     - `docs/minh-chung-ung-dung-ai.md` & `bài nộp cuối cùng/minh-chung-ung-dung-ai.md`.
+     - `bài nộp cuối cùng/04-Minh-chung-AI-va-Kiem-thu.docx` & `bài nộp cuối cùng/Thông tin bài làm (Đầy đủ - Kèm Minh chứng AI & Kiểm thử).docx`.
+     - Cập nhật zip `OmniChat_AI_VibeCoding2026_De04.zip`.
+     - Bộ test 78/78 pass, Next.js build 21/21 static pages thành công. Deploy trực tiếp lên production `origin/main`.
+
 
 
 ### Hoàn thành Tối ưu Triệt để Số Đỏ Thông báo & Trạng thái Đã đọc Hội thoại — 09/11/2026 (Chinh)
