@@ -31,7 +31,7 @@ test("mobile navigation fits narrow screens and clears device insets", async ({
       name: "Thanh điều hướng di động",
     });
     const links = nav.getByRole("link");
-    await expect(links).toHaveCount(6);
+    await expect(links).toHaveCount(5);
     for (const link of await links.all()) {
       const bounds = await link.boundingBox();
       expect(bounds!.height).toBeGreaterThanOrEqual(44);

@@ -9,7 +9,6 @@ import {
   Bot,
   Users,
   Settings,
-  Download,
   UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -70,18 +69,13 @@ export function MobileBottomNav({ className }: { className?: string }) {
       icon: BarChart3,
     },
     settingsOrUsersItem,
-    {
-      name: "Tải App",
-      href: "/download",
-      icon: Download,
-    },
   ];
 
   return (
     <nav
       aria-label="Thanh điều hướng di động"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-6 items-start pt-1 border-t border-slate-200/90 bg-white/95 pl-[max(0.15rem,var(--safe-left))] pr-[max(0.15rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden",
+        "fixed inset-x-0 bottom-0 z-50 grid h-[var(--mobile-nav-height)] grid-cols-5 items-start pt-1 border-t border-slate-200/90 bg-white/95 pl-[max(0.15rem,var(--safe-left))] pr-[max(0.15rem,var(--safe-right))] pb-[var(--safe-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden",
         className
       )}
     >
@@ -117,7 +111,7 @@ export function MobileBottomNav({ className }: { className?: string }) {
               )}
             </div>
             <span
-              className={`text-[9.5px] tracking-tight mt-1 truncate max-w-full ${
+              className={`text-[10px] sm:text-[10.5px] tracking-tight mt-1 truncate max-w-full ${
                 isActive ? "text-blue-600 font-bold" : "text-slate-500"
               }`}
             >

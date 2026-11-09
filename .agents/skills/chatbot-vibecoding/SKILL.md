@@ -21,6 +21,25 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Tối ưu UI/UX Mobile & Tablet (iPad): Tinh gọn Điều hướng & Nút Mời Cài App Thông minh — 09/11/2026 (Chinh)
+
+- **Quyết định thiết kế và tối ưu UI/UX di động theo chỉ đạo của Chinh:**
+  1. **Ẩn mục Tải App khỏi thanh điều hướng Mobile (Bottom Nav):**
+     - Loại bỏ tab "Tải App" cố định ở đáy màn hình di động, giảm từ 6 cột xuống **5 cột chuẩn** (`grid-cols-5` gồm: *Tin nhắn, Trợ lý Bot, Khách hàng, Báo cáo, Cài đặt/Nhân sự*).
+     - Chiều rộng mỗi tab tăng thêm 20%, kích thước nhãn chữ và touch target rộng rãi, chống bấm nhầm ngón cái, mang lại trải nghiệm chuẩn ứng dụng native (Zalo, Messenger, Lark).
+  2. **Ẩn mục Tải App trên thanh menu Header (Desktop/Tablet/iPad):**
+     - Menu tab trên Header chỉ tập trung 100% vào các tính năng nghiệp vụ cốt lõi, không hiển thị tab "Tải App" dư thừa.
+  3. **Nút Mời Cài App Thông Minh (`InstallAppButton`) cho thiết bị chưa cài đặt:**
+     - Tạo React Context `PWAContext` và hook `usePWA()` nhận diện thiết bị chuẩn cross-platform (Android, Windows, iPhone, iPadOS MacIntel touch).
+     - **Chỉ hiển thị 1 nút "Cài App" tinh tế** trên thanh Header đối với các thiết bị **CHƯA tải về máy** (`!isStandalone`).
+     - **Khi thiết bị ĐÃ tải về máy (`isStandalone === true`):** Nút này tự động **ẩn hoàn toàn 100%**, giữ giao diện sạch tinh tươm như app gốc.
+     - **Cơ chế 1 chạm:** Kích hoạt ngay Native Install Prompt trên Android/Chrome/Desktop hoặc mở Modal 3 bước trực quan trên iOS/iPad Safari.
+  4. **Kiểm thử tự động & Triển khai trực tiếp:**
+     - Toàn bộ **72/72 unit tests PASS 100%**.
+     - Toàn bộ **7/7 Playwright browser tests PASS 100%** (mobile navigation, touch layout, PWA standalone check).
+     - Next.js build **21/21 static pages thành công 100%** (Exit code 0).
+     - Commit và deploy trực tiếp lên `origin/main` (Vercel production) theo chỉ đạo.
+
 ### Hoàn thành Rà soát Toàn bộ Hệ thống, Đảm bảo 100% Ghi nhận Lead & Đồng bộ 2 Chiều Mọi Kênh Chạy Thật — 08/11/2026 (Chinh)
 
 - **Các điểm nghẽn cốt lõi đã xử lý triệt để:**

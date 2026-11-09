@@ -47,6 +47,7 @@ import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { InstallAppButton } from "@/components/pwa/install-button";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -1027,6 +1028,8 @@ export function InboxWorkspace() {
               <span className="hidden sm:inline">Khung Chat Khách</span>
             </Link>
           </Button>
+          {/* Nút Mời Cài Đặt App - Chỉ hiện với các thiết bị chưa tải về máy */}
+          <InstallAppButton />
           <Button
             variant="outline"
             asChild

@@ -49,10 +49,14 @@ test.describe("PWA and Mobile App Features", () => {
     const manifestLink = page.locator('link[rel="manifest"]');
     await expect(manifestLink).toHaveAttribute("href", "/manifest.json");
 
-    // Check mobile bottom navigation exists and has 6 tabs
+    // Check mobile bottom navigation exists and has 5 tabs (optimized without duplicate download tab)
     const nav = page.getByRole("navigation", { name: "Thanh điều hướng di động" });
     await expect(nav).toBeVisible();
-    await expect(nav.getByRole("link")).toHaveCount(6);
+    await expect(nav.getByRole("link")).toHaveCount(5);
+
+    // Check header install button exists for uninstalled devices
+    const installBtn = page.getByRole("button", { name: "Cài đặt ứng dụng về máy" });
+    await expect(installBtn).toBeVisible();
 
     // Tap into first conversation on mobile
     const firstConv = page.locator("button").filter({ hasText: "Vũ Huyền Trang" }).first();

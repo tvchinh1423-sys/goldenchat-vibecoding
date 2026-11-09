@@ -21,6 +21,8 @@
 
 # local files and credentials
 .DS_Store
+.~*
+*.tmp
 *.pem
 .env*
 !.env.example

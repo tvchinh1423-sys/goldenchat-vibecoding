@@ -31,6 +31,34 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+export interface PWAContextType {
+  isStandalone: boolean;
+  canInstall: boolean;
+  isIOS: boolean;
+  isIPad: boolean;
+  isAppleDevice: boolean;
+  isMobileOrTablet: boolean;
+  handleInstallClick: () => void;
+  showIOSGuide: boolean;
+  setShowIOSGuide: (show: boolean) => void;
+}
+
+const PWAContext = React.createContext<PWAContextType>({
+  isStandalone: false,
+  canInstall: false,
+  isIOS: false,
+  isIPad: false,
+  isAppleDevice: false,
+  isMobileOrTablet: false,
+  handleInstallClick: () => {},
+  showIOSGuide: false,
+  setShowIOSGuide: () => {},
+});
+
+export function usePWA() {
+  return React.useContext(PWAContext);
+}
+
 export function PWAProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -40,6 +68,8 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isIPad, setIsIPad] = useState(false);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   // In-app notifications
@@ -76,15 +106,27 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     // 2. Check standalone mode (already installed)
     const isStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      window.matchMedia("(display-mode: minimal-ui)").matches ||
       // @ts-expect-error iOS Safari specific
-      window.navigator.standalone === true;
+      window.navigator.standalone === true ||
+      (typeof document !== "undefined" && document.referrer.includes("android-app://")) ||
+      localStorage.getItem("omnichat_pwa_installed") === "true";
 
     setIsStandalone(isStandaloneMode);
 
-    // 3. Detect iOS
+    // 3. Detect iOS / iPad / Mobile devices
     const ua = window.navigator.userAgent.toLowerCase();
-    const isAppleDevice = /iphone|ipad|ipod/.test(ua);
-    setIsIOS(isAppleDevice);
+    const isTouchMac = typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const isIPadDevice = /ipad/.test(ua) || isTouchMac;
+    const isIPhoneDevice = /iphone|ipod/.test(ua);
+    const isApple = isIPadDevice || isIPhoneDevice;
+    const isAndroidDevice = /android/.test(ua);
+    const isMobileOrTab = isApple || isAndroidDevice || (window.innerWidth <= 1024 && navigator.maxTouchPoints > 0);
+
+    setIsIOS(isIPhoneDevice);
+    setIsIPad(isIPadDevice);
+    setIsMobileOrTablet(isMobileOrTab);
 
     // 4. Handle Android/Chrome beforeinstallprompt
     const handleBeforeInstall = (e: Event) => {
@@ -98,13 +140,24 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+      try {
+        localStorage.setItem("omnichat_pwa_installed", "true");
+      } catch {}
+      console.log("[PWA] Ứng dụng đã được cài đặt thành công vào máy");
+    };
 
-    // If iOS and not standalone, show prompt after 4s
-    if (isAppleDevice && !isStandaloneMode) {
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    // If iOS/iPad and not standalone, show prompt after 5s
+    if (isApple && !isStandaloneMode) {
       const dismissed = sessionStorage.getItem("omnichat_pwa_dismissed");
       if (!dismissed) {
-        const timer = setTimeout(() => setShowInstallBanner(true), 4000);
+        const timer = setTimeout(() => setShowInstallBanner(true), 5000);
         return () => clearTimeout(timer);
       }
     }
@@ -124,6 +177,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -150,9 +204,9 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = useCallback(async () => {
     triggerHaptic("medium");
-    if (isIOS) {
+    if (isIOS || isIPad) {
       setShowIOSGuide(true);
       return;
     }
@@ -169,12 +223,15 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       if (outcome === "accepted") {
         setIsStandalone(true);
         setShowInstallBanner(false);
+        try {
+          localStorage.setItem("omnichat_pwa_installed", "true");
+        } catch {}
       }
       setDeferredPrompt(null);
     } catch {
       router.push("/download");
     }
-  };
+  }, [deferredPrompt, isIOS, isIPad, router]);
 
   const dismissInstallBanner = () => {
     triggerHaptic("light");
@@ -192,8 +249,20 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const contextValue: PWAContextType = {
+    isStandalone,
+    canInstall: Boolean(deferredPrompt) || isIOS || isIPad,
+    isIOS,
+    isIPad,
+    isAppleDevice: isIOS || isIPad,
+    isMobileOrTablet,
+    handleInstallClick,
+    showIOSGuide,
+    setShowIOSGuide,
+  };
+
   return (
-    <>
+    <PWAContext.Provider value={contextValue}>
       {children}
 
       {/* 1. In-App Notification Banner (iOS Dynamic Island Style) */}
@@ -366,7 +435,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
                 <p className="text-slate-700 leading-snug">
                   Bấm biểu tượng <strong>Chia sẻ</strong> (
                   <Share className="inline w-3.5 h-3.5 text-blue-600" />
-                  ) ở thanh công cụ dưới cùng của trình duyệt Safari.
+                  ) trên thanh công cụ Safari (ở dưới cùng trên iPhone hoặc góc trên trên iPad).
                 </p>
               </div>
 
@@ -400,6 +469,6 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-    </>
+    </PWAContext.Provider>
   );
 }

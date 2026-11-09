@@ -24,6 +24,7 @@ import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useInboxUnreadCount } from "@/lib/inbox/use-unread-count";
+import { InstallAppButton } from "@/components/pwa/install-button";
 
 export default function DashboardLayout({
   children,
@@ -80,12 +81,6 @@ export default function DashboardLayout({
       icon: Settings,
       visible: canAccessSettings,
       locked: !canAccessSettings,
-    },
-    {
-      name: "Tải App",
-      href: "/download",
-      icon: Smartphone,
-      visible: true,
     },
   ];
 
@@ -163,6 +158,9 @@ export default function DashboardLayout({
             <span className="hidden sm:inline">Khung Chat Khách</span>
             <span className="sm:hidden">Widget</span>
           </Link>
+
+          {/* Nút Mời Cài Đặt App - Chỉ hiện với các thiết bị chưa tải về máy */}
+          <InstallAppButton />
 
           {/* Chuông Thông Báo trên Web */}
           <NotificationBell />
