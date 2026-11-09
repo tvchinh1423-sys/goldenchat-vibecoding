@@ -21,10 +21,34 @@ function mergeLiveFacebook(
       const existing = result[idx];
       // Ghép tin nhắn deduped
       const mergedMsgs = dedupeMessages(existing.messages, fb.messages);
+
+      // Tìm các tin nhắn mới từ khách hàng mà existing chưa có
+      const existingCustomerMsgIds = new Set(
+        existing.messages
+          .filter((m) => m && m.sender === "customer")
+          .map((m) => m.id)
+      );
+      const newCustomerMsgs = fb.messages.filter(
+        (m) => m && m.sender === "customer" && !existingCustomerMsgIds.has(m.id)
+      );
+
+      // BẢO TOÀN TRẠNG THÁI ĐÃ ĐỌC (Unread Preservation Guard):
+      // Nếu nhân viên/quản trị viên trên OmniChat đã đọc tin (existing.unread === 0)
+      // và KHÔNG có tin nhắn mới nào từ khách: PHẢI GIỮ NGUYÊN unread = 0!
+      // Tuyệt đối không lấy fb.unread từ Meta Graph API để đè lên trạng thái đã đọc của CRM.
+      let resolvedUnread = 0;
+      if (typeof existing.unread === "number" && existing.unread === 0) {
+        resolvedUnread = newCustomerMsgs.length;
+      } else if (newCustomerMsgs.length > 0) {
+        resolvedUnread = Math.max(1, (existing.unread || 0) + newCustomerMsgs.length);
+      } else {
+        resolvedUnread = typeof existing.unread === "number" ? existing.unread : (fb.unread || 0);
+      }
+
       result[idx] = {
         ...existing,
         name: fb.name || existing.name,
-        unread: typeof fb.unread === "number" ? fb.unread : existing.unread,
+        unread: resolvedUnread,
         messages: mergedMsgs,
       };
     } else {

@@ -263,10 +263,13 @@ function WebWidgetContent() {
               guestsCount: activeBookingDraft.guestsCount || 2,
               notes: activeBookingDraft.notes || "",
             }
-          : undefined
+          : undefined,
+        {
+          handoff: !isAiActive,
+        }
       );
     } catch {}
-  }, [messages, activeBookingDraft]);
+  }, [messages, activeBookingDraft, isAiActive]);
 
   // Lắng nghe và nhận phản hồi tức thì từ nhân viên tư vấn trong Hộp thư Đa Kênh (/inbox)
   useEffect(() => {
@@ -697,7 +700,10 @@ function WebWidgetContent() {
             guestsCount: activeBookingDraft.guestsCount || 2,
             notes: activeBookingDraft.notes || "",
           }
-        : undefined
+        : undefined,
+      {
+        handoff: !isAiActive,
+      }
     );
 
     setInput("");
@@ -791,7 +797,12 @@ function WebWidgetContent() {
                 guestsCount: effectiveDraft.guestsCount || 2,
                 notes: effectiveDraft.notes || "",
               }
-            : undefined
+            : undefined,
+          {
+            handoff: isHandoff,
+            requiresHuman: data.requiresHuman,
+            note: isHandoff ? "⚠️ Khách hỏi câu ngoài phạm vi AI, cần tư vấn viên tiếp quản!" : undefined,
+          }
         );
       }
     } catch {
@@ -814,7 +825,11 @@ function WebWidgetContent() {
               guestsCount: activeBookingDraft.guestsCount || 2,
               notes: activeBookingDraft.notes || "",
             }
-          : undefined
+          : undefined,
+        {
+          handoff: true,
+          note: "⚠️ Kết nối AI gián đoạn, cần tư vấn viên tiếp quản!",
+        }
       );
     } finally {
       setLoading(false);

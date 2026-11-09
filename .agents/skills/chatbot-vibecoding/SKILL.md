@@ -21,6 +21,49 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Khắc phục Triệt để Lỗi Thông báo Chưa đọc Tự Hồi sinh Khi Thoát Hội thoại — 09/11/2026 (Chinh)
+
+- **Nguyên nhân cốt lõi phát hiện:**
+  1. **Facebook Graph API Polling ghi đè Unread:** Trong `app/api/sync/store/route.ts`, hàm `mergeLiveFacebook` lấy `fb.unread` từ trường `item.unread_count` của Meta Graph API. Do trên Facebook Fanpage tin nhắn chưa được đánh dấu đọc trên Meta Suite, hàm này ghi đè `unread: fb.unread` vào `existing.unread`, làm cuộc trò chuyện dù vừa được nhân viên đọc xong (`unread = 0`) lại bị biến thành chưa đọc sau mỗi lượt polling (3s).
+  2. **Race condition khi thoát màn hình chat trên Mobile:** Trong `components/inbox/inbox-workspace.tsx`, trước đó `selectConversation` không gán `unread: 0` ngay mà dựa vào `useEffect([activeId, activeUnread, chatOpen])`. Khi người dùng bấm nút Quay lại (`onBack` làm `chatOpen = false`), điều kiện `(!chatOpen && !isDesktop)` khiến `useEffect` bị bỏ qua, dẫn đến khi quay lại danh sách thì badge đỏ vẫn còn.
+  3. **Thiếu cơ chế ghi nhớ tin nhắn cuối đã đọc (Read Tracking Guard):** Dữ liệu polling từ Cloud Store khi merge về client không đối chiếu xem tin nhắn cuối cùng đã được nhân viên đọc hay chưa, dẫn đến việc snapshot cũ làm hồi sinh số badge unread.
+- **Giải pháp và Triển khai hoàn tất:**
+  1. **Bảo vệ Trạng thái Đã Đọc trên Facebook Sync (`Unread Preservation Guard`):**
+     - Nâng cấp `mergeLiveFacebook` trong `app/api/sync/store/route.ts`: Chỉ tăng số `unread` khi và chỉ khi có **tin nhắn mới từ khách hàng** (`sender: "customer"`) mà hệ thống chưa từng nhận.
+     - Nếu không có tin nhắn mới từ khách, hệ thống **bảo toàn tuyệt đối `existing.unread = 0`**, không để Meta Graph API ghi đè trạng thái đã đọc của CRM.
+  2. **Cơ chế Ghi nhớ Tin nhắn Đã Đọc (`readTrackingMap`):**
+     - Bổ sung `READ_TRACKING_KEY` (`omnichat_last_read_v1`): Tự động lưu ID tin nhắn cuối cùng mà người dùng đã đọc cho từng cuộc trò chuyện.
+     - Hàm `applyReadTracking`: Khi nạp dữ liệu ban đầu, khi polling Cloud Store hoặc khi nhận storage event, tự động đối chiếu `readMap`. Nếu tin nhắn cuối đã đọc hoặc do chính shop/bot gửi (`sender !== "customer"`), thì `unread` luôn được giữ bằng `0`.
+  3. **Đánh dấu Đã Đọc Ngay Lập Tức (Instant Mark as Read):**
+     - Trong `selectConversation`: Ngay khi người dùng chạm vào cuộc trò chuyện, hệ thống lập tức cập nhật `unread: 0` đồng bộ trong React state, lưu vào `localStorage`, bắn sự kiện `omnichat-inbox-updated` và gửi POST lên `/api/sync/store`.
+     - Trong `onBack` (thoát cuộc trò chuyện trên mobile), `updateFilters` và nút "Kênh chat": Luôn tự động gọi `markConversationAsRead(active.id)` trước khi đóng chat, đảm bảo danh sách hội thoại hiển thị sạch sẽ không còn badge đỏ.
+  4. **Chuẩn hóa Badge Tính tổng (`getInboxUnreadCount`):**
+     - Nâng cấp `lib/inbox/use-unread-count.ts`: Sử dụng `readMap` và loại trừ các tin nhắn cuối do shop/bot gửi, đảm bảo số badge trên thanh điều hướng di động (`MobileBottomNav`) và Header luôn chính xác 100%.
+  5. **Kiểm thử tự động & Triển khai trực tiếp:**
+     - Toàn bộ **77/77 tests PASS 100%** (bao gồm bộ test chuyên sâu `tests/unread-preservation.test.ts`).
+     - Next.js build **21/21 static pages thành công 100%** (Exit code 0).
+     - Commit và deploy trực tiếp lên `origin/main` (Vercel production) theo đúng chỉ đạo.
+
+### Hoàn thành Tối ưu Logic Hộp thư & Chuyển giao AI Handoff Thông minh (Chỉ đẩy về Inbox khi AI không trả lời được) — 09/11/2026 (Chinh)
+
+- **Quyết định nghiệp vụ và kiến trúc theo yêu cầu của Chinh:**
+  1. **Tách biệt rạch ròi giữa AI Tự phục vụ (Self-service) và Cần nhân viên tiếp quản (Human Handoff):**
+     - Khi AI đang trả lời trôi chảy các câu hỏi FAQ (thực đơn, giá bàn, sảnh, đặt cọc, giờ mở cửa, gửi xe...): Hội thoại ở trạng thái `status: "active"`, `aiEnabled: true`, `unread: 0`. Cuộc trò chuyện này **KHÔNG** xuất hiện ở tab **"Cần xử lý" (`pending`)**, không rung chuông quấy rầy tư vấn viên.
+     - Khi AI gặp câu hỏi ngoài phạm vi tri thức hoặc khách yêu cầu gặp người thật (*"gặp nhân viên"*, *"cho tôi gặp tư vấn viên"*):
+       - AI trả lời: *"Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!"*.
+       - Ngay lập tức kích hoạt Handoff: Cuộc trò chuyện chuyển sang `status: "pending"` (đẩy thẳng vào tab **"Cần xử lý"**), tắt `aiEnabled: false`, gán nhãn `note: "⚠️ Cần nhân viên hỗ trợ: AI gặp câu hỏi ngoài phạm vi, đã chuyển giao tư vấn viên tiếp quản!"`.
+       - Hiển thị badge nổi bật **`⚠️ Chờ tiếp quản`** kèm chấm đỏ nhấp nháy trên danh sách hội thoại Inbox.
+       - Hiển thị Banner cảnh báo `Chờ tiếp quản` trong khung chat `ChatPane` kèm nút bấm nhanh `🤖 Bật lại AI`.
+  2. **Đồng bộ 2 chiều tức thì khi nhân viên can thiệp:**
+     - Khi nhân viên tư vấn gõ câu trả lời trong Hộp thư `/inbox`, tin nhắn lập tức đẩy về màn hình khách trên Web Widget (qua BroadcastChannel, CustomEvent, localStorage và Cloud Store polling) kèm nhãn `👤 [Tư vấn viên <Tên nhân viên>]: <Nội dung>`.
+     - Cuộc trò chuyện tự động chuyển sang `status: "active"`, `unread: 0` để ghi nhận tư vấn viên đã tiếp quản.
+  3. **Lưu trữ Lead & Lịch hẹn CRM:**
+     - Tự động bóc tách SĐT từ mọi tin nhắn chat hoặc form đặt lịch trên Widget, tạo ngay bản ghi Lead trong CRM `/leads` (phân theo các cột Kanban N1, N2, N3) và Cloud Store.
+  4. **Kiểm thử tự động & Triển khai trực tiếp:**
+     - Toàn bộ **77/77 unit tests PASS 100%** (bổ sung 2 tests cho Handoff và phân tách trạng thái tự động vs tiếp quản).
+     - Next.js build **21/21 static pages thành công 100%** (Exit code 0).
+     - Commit và deploy trực tiếp lên `origin/main` (Vercel production) theo đúng chỉ đạo.
+
 ### Hoàn thành Tối ưu UI/UX Mobile & Tablet (iPad): Tinh gọn Điều hướng & Nút Mời Cài App Thông minh — 09/11/2026 (Chinh)
 
 - **Quyết định thiết kế và tối ưu UI/UX di động theo chỉ đạo của Chinh:**

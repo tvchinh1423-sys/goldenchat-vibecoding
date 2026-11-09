@@ -58,6 +58,45 @@ const DEFAULT_FILTERS: InboxFilters = {
   showArchived: false,
 };
 
+const READ_TRACKING_KEY = "omnichat_last_read_v1";
+
+function getReadTrackingMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(READ_TRACKING_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReadTracking(conversationId: string, lastMessageId?: string) {
+  if (typeof window === "undefined" || !conversationId) return;
+  try {
+    const map = getReadTrackingMap();
+    map[conversationId] = lastMessageId || "read";
+    localStorage.setItem(READ_TRACKING_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+function applyReadTracking(convs: Conversation[]): Conversation[] {
+  const map = getReadTrackingMap();
+  return convs.map((c) => {
+    const msgs = Array.isArray(c.messages) ? c.messages : [];
+    const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+
+    // Nếu tin nhắn cuối đã được lưu là đã đọc, HOẶC tin nhắn cuối do nhân viên/bot gửi:
+    const isAlreadyRead =
+      Boolean(lastMsg && map[c.id] === lastMsg.id) ||
+      Boolean(lastMsg && lastMsg.sender !== "customer");
+
+    if (isAlreadyRead && c.unread !== 0) {
+      return { ...c, unread: 0 };
+    }
+    return c;
+  });
+}
+
 export function InboxWorkspace() {
   const { currentUser, role, users, canManageUsers } = useAuth();
   const [showUserModal, setShowUserModal] = useState(false);
@@ -114,7 +153,9 @@ export function InboxWorkspace() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const list = parseSnapshot(saved);
-          initialConversations = list.filter((c) => !DEMO_CONVERSATION_IDS.includes(c.id));
+          initialConversations = applyReadTracking(
+            list.filter((c) => !DEMO_CONVERSATION_IDS.includes(c.id))
+          );
         }
       } catch {
         initialConversations = [];
@@ -203,6 +244,11 @@ export function InboxWorkspace() {
 
   // Polling Cloud Sync định kỳ mỗi 3 giây để đồng bộ dữ liệu thời gian thực giữa các thiết bị khác nhau
   const cloudRevisionRef = useRef(0);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const chatOpenRef = useRef(chatOpen);
+  chatOpenRef.current = chatOpen;
+
   useEffect(() => {
     if (!ready) return;
     let active = true;
@@ -227,6 +273,19 @@ export function InboxWorkspace() {
               const defaultWeb = createDefaultWidgetConversation();
               cleanConvs = [defaultWeb, ...cleanConvs];
             }
+
+            // Áp dụng read tracking bảo vệ trạng thái đã đọc triệt để
+            cleanConvs = applyReadTracking(cleanConvs);
+
+            // Nếu người dùng đang mở xem cuộc trò chuyện nào thì cuộc trò chuyện đó chắc chắn unread = 0
+            const currentSelected = selectedIdRef.current;
+            const currentChatOpen = chatOpenRef.current;
+            if (currentSelected && (currentChatOpen || (typeof window !== "undefined" && window.innerWidth >= 768))) {
+              cleanConvs = cleanConvs.map((c: any) =>
+                c.id === currentSelected ? { ...c, unread: 0 } : c,
+              );
+            }
+
             setConversations(cleanConvs);
             setSelectedId((prev) => {
               if (!prev && cleanConvs.length > 0) return cleanConvs[0].id;
@@ -310,7 +369,7 @@ export function InboxWorkspace() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          const list = parseSnapshot(saved);
+          const list = applyReadTracking(parseSnapshot(saved));
           if (mounted) {
             setConversations(list);
             // Nếu có tin nhắn mới từ web, đảm bảo người dùng nhìn thấy
@@ -451,23 +510,46 @@ export function InboxWorkspace() {
       }
     }
   }
+  const markConversationAsRead = useCallback((id: string) => {
+    if (!id) return;
+    setConversations((current) => {
+      const target = current.find((c) => c.id === id);
+      const msgs = target?.messages || [];
+      const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+      saveReadTracking(id, lastMsg?.id);
+
+      if (!target || target.unread === 0) return current;
+
+      const updated = current.map((c) =>
+        c.id === id ? { ...c, unread: 0 } : c,
+      );
+
+      try {
+        const nextJson = JSON.stringify({ version: 1, conversations: updated });
+        localStorage.setItem(STORAGE_KEY, nextJson);
+        window.dispatchEvent(new CustomEvent("omnichat-inbox-updated"));
+        void fetch("/api/sync/store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversations: updated }),
+          signal: AbortSignal.timeout(3000),
+        }).catch(() => {});
+      } catch {}
+
+      return updated;
+    });
+  }, []);
+
   const activeUnread = active?.unread;
   useEffect(() => {
     if (
       !ready ||
       !activeId ||
-      !activeUnread ||
       (!chatOpen && !window.matchMedia("(min-width: 768px)").matches)
     )
       return;
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === activeId
-          ? { ...conversation, unread: 0 }
-          : conversation,
-      ),
-    );
-  }, [activeId, activeUnread, ready, chatOpen]);
+    markConversationAsRead(activeId);
+  }, [activeId, activeUnread, ready, chatOpen, markConversationAsRead]);
 
   const updateConversation = (
     id: string,
@@ -533,6 +615,9 @@ export function InboxWorkspace() {
     [users, currentUser, role, notify],
   );
   const updateFilters = (patch: Partial<InboxFilters>) => {
+    if (active?.id) {
+      markConversationAsRead(active.id);
+    }
     setFilters((current) => ({ ...current, ...patch }));
     setChatOpen(false);
   };
@@ -542,6 +627,7 @@ export function InboxWorkspace() {
     const url = new URL(window.location.href);
     url.searchParams.set("conversation", id);
     window.history.replaceState(null, "", url.toString());
+    markConversationAsRead(id);
   }
   async function sendMessage(customContent?: string) {
     if (!active || active.status === "archived") return;
@@ -992,6 +1078,9 @@ export function InboxWorkspace() {
             variant="secondary"
             className="hidden border border-blue-100 text-xs md:inline-flex"
             onClick={() => {
+              if (active?.id) {
+                markConversationAsRead(active.id);
+              }
               setFilters(DEFAULT_FILTERS);
               setExpanded(false);
               setChatOpen(false);
@@ -1231,7 +1320,12 @@ export function InboxWorkspace() {
                     };
                   });
                 }}
-                onBack={() => setChatOpen(false)}
+                onBack={() => {
+                  if (active?.id) {
+                    markConversationAsRead(active.id);
+                  }
+                  setChatOpen(false);
+                }}
                 onInfo={() => setInfoOpen(true)}
                 expanded={expanded}
                 onExpand={() => setExpanded(!expanded)}

@@ -312,8 +312,20 @@ export function ConversationList({
                           <Check className="h-3 w-3" />
                           Đã xong
                         </>
+                      ) : !conversation.aiEnabled && conversation.status === "pending" ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 border border-rose-200">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                          ⚠️ Chờ tiếp quản
+                        </span>
                       ) : conversation.channel === "web" ? (
-                        <span className="text-teal-600 font-medium">🌐 Web Chat Widget</span>
+                        conversation.aiEnabled ? (
+                          <span className="text-teal-600 font-medium flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                            🤖 Web AI Auto
+                          </span>
+                        ) : (
+                          <span className="text-teal-600 font-medium">🌐 Web Chat Widget</span>
+                        )
                       ) : conversation.channel === "facebook" && /^\d+$/.test(conversation.id.replace(/^facebook-/, "")) ? (
                         <span className="text-blue-600 font-medium flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />

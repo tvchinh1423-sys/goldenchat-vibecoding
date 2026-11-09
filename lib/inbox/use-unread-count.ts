@@ -4,6 +4,7 @@ import { updateAppBadge } from "@/lib/notifications";
 
 /**
  * Tính toán tổng số tin nhắn chưa đọc thực tế từ các hội thoại đang hoạt động (không tính lưu trữ)
+ * Bảo vệ triệt để: Nếu tin nhắn cuối đã đọc hoặc do shop gửi thì không bao giờ đếm là chưa đọc.
  */
 export function getInboxUnreadCount(): number {
   if (typeof window === "undefined") return 0;
@@ -12,9 +13,23 @@ export function getInboxUnreadCount(): number {
     if (!raw) return 0;
     const parsed = JSON.parse(raw);
     const conversations = Array.isArray(parsed?.conversations) ? parsed.conversations : [];
+
+    let readMap: Record<string, string> = {};
+    try {
+      const rawMap = localStorage.getItem("omnichat_last_read_v1");
+      if (rawMap) readMap = JSON.parse(rawMap);
+    } catch {}
     
     return conversations.reduce((sum: number, c: any) => {
       if (c && c.status !== "archived") {
+        const msgs = Array.isArray(c.messages) ? c.messages : [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+
+        // Nếu tin nhắn cuối đã nằm trong danh sách đã đọc hoặc do shop/bot gửi: unread = 0
+        if (lastMsg && (readMap[c.id] === lastMsg.id || lastMsg.sender !== "customer")) {
+          return sum;
+        }
+
         const unread = typeof c.unread === "number" && c.unread > 0 ? c.unread : 0;
         return sum + unread;
       }

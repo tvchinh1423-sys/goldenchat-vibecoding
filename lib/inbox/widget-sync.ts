@@ -230,6 +230,11 @@ export function syncWidgetChatToInbox(
     eventType: string;
     guestsCount?: number;
     notes?: string;
+  },
+  options?: {
+    handoff?: boolean;
+    requiresHuman?: boolean;
+    note?: string;
   }
 ) {
   if (typeof window === "undefined" || widgetMessages.length === 0) return;
@@ -324,22 +329,61 @@ export function syncWidgetChatToInbox(
     }
     mergedMessages.sort((a, b) => Date.parse(a.createdAt || "0") - Date.parse(b.createdAt || "0"));
 
+    // Xác định xem cuộc hội thoại có đang cần con người can thiệp (Handoff / Đặt lịch) hay AI đang tự xử lý
+    const lastMsg = widgetMessages[widgetMessages.length - 1];
+    const isBotHandoffMsg =
+      lastMsg?.handoff === true ||
+      (lastMsg?.sender === "bot" &&
+        (lastMsg.text.includes("chuyển cho chuyên viên tư vấn") ||
+          lastMsg.text.includes("chuyên viên tư vấn hỗ trợ") ||
+          lastMsg.text.includes("chuyển giao")));
+
+    const isHandoff = Boolean(options?.handoff || options?.requiresHuman || isBotHandoffMsg);
+    const hasBookingConfirmation = Boolean(bookingInfo?.appointmentTime && bookingInfo?.phone);
+
+    let convStatus: "active" | "pending" = "active";
+    let aiEnabled = true;
+    let convNote = existingConv?.note || "Khách đang trao đổi trực tiếp trên Web Widget.";
+    let unreadCount = 0;
+
+    if (isHandoff) {
+      convStatus = "pending"; // Đẩy ngay vào tab "Cần xử lý"
+      aiEnabled = false;      // Tắt AI để nhân viên tiếp quản
+      unreadCount = (existingConv?.unread || 0) + 1;
+      convNote = options?.note || "⚠️ Cần nhân viên hỗ trợ: AI gặp câu hỏi ngoài phạm vi, đã chuyển giao tư vấn viên tiếp quản.";
+    } else if (bookingInfo?.appointmentTime && bookingInfo?.phone) {
+      convStatus = "pending"; // Lịch hẹn mới cần lễ tân gọi điện xác nhận
+      aiEnabled = existingConv ? existingConv.aiEnabled : true;
+      unreadCount = 1;
+      convNote = `Khách đã xác nhận đặt lịch xem sảnh ${bookingInfo?.eventType || "tư vấn"} lúc ${formatAppointment(
+        bookingInfo?.appointmentTime || ""
+      )}. SĐT: ${bookingInfo?.phone || ""}`;
+    } else if (existingConv && existingConv.status === "pending" && !existingConv.aiEnabled) {
+      // Giữ nguyên trạng thái chờ tiếp quản nếu trước đó đã chuyển giao
+      convStatus = "pending";
+      aiEnabled = false;
+      unreadCount = existingConv.unread || 1;
+      convNote = existingConv.note;
+    } else {
+      // AI đang tự phục vụ bình thường (FAQ / chào hỏi / tư vấn gói)
+      convStatus = "active";
+      aiEnabled = true;
+      unreadCount = 0;
+      convNote = "🤖 AI đang chủ động tư vấn khách hàng trên Web Widget.";
+    }
+
     const updatedConversation: Conversation = {
       ...(existingConv || {}),
       id: convId,
       name: customerName,
       channel: "web",
       avatarColor: existingConv?.avatarColor || "lavender",
-      status: "pending",
-      aiEnabled: existingConv ? existingConv.aiEnabled : true,
+      status: convStatus,
+      aiEnabled,
       assignedTo: existingConv?.assignedTo || "me",
       assignedStaffName: existingConv?.assignedStaffName || "Ngọc Khánh",
-      unread: 1,
-      note: bookingInfo
-        ? `Khách đã xác nhận đặt lịch xem sảnh ${bookingInfo.eventType} lúc ${formatAppointment(
-            bookingInfo.appointmentTime
-          )}. SĐT: ${bookingInfo.phone}`
-        : existingConv?.note || "Khách đang trao đổi trực tiếp trên Web Widget.",
+      unread: unreadCount,
+      note: convNote,
       messages: mergedMessages,
       booking: bookingInfo
         ? {

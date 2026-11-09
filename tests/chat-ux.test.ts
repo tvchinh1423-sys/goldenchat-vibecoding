@@ -217,3 +217,66 @@ test("API chat gracefully responds to empty message or raw Botcake template vari
   assert.match(data.reply, /Golden Palace xin chào Quý khách/);
   assert.ok(data.messages[0].text);
 });
+
+test("API chat triggers handoff when customer explicitly asks for human staff", async () => {
+  const { POST } = await import("../app/api/simulator/chat/route");
+  const req = new NextRequest("http://localhost:3000/api/simulator/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Cho tôi gặp nhân viên tư vấn trực tiếp" }),
+  });
+  const res = await POST(req);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.aiEnabled, false);
+  assert.equal(data.handoff, true);
+  assert.equal(data.requiresHuman, true);
+  assert.equal(data.triggeredRule, "explicit_human_request");
+  assert.match(data.reply, /chuyên viên tư vấn tiếp quản ngay/);
+});
+
+test("Widget-sync keeps conversation active during self-service and transitions to pending on handoff", async () => {
+  const { syncWidgetChatToInbox, getInboxConversations } = await import(
+    "../lib/inbox/widget-sync"
+  );
+
+  const mockStorage: Record<string, string> = {};
+  (global as any).window = {
+    localStorage: {
+      getItem: (k: string) => mockStorage[k] || null,
+      setItem: (k: string, v: string) => { mockStorage[k] = v; },
+      removeItem: (k: string) => { delete mockStorage[k]; },
+    },
+    dispatchEvent: () => true,
+  };
+  (global as any).localStorage = (global as any).window.localStorage;
+
+  // 1. AI đang tự phục vụ FAQ bình thường -> status = active, aiEnabled = true, unread = 0
+  const activeMsgs = [
+    { id: "u-1", sender: "user" as const, text: "Thực đơn bao nhiêu một mâm?", time: "09:00" },
+    { id: "b-1", sender: "bot" as const, text: "Dạ thực đơn từ 3.200.000đ/bàn ạ.", time: "09:00" },
+  ];
+  syncWidgetChatToInbox(activeMsgs);
+  let list = getInboxConversations();
+  assert.ok(list.length >= 1);
+  let webConv = list.find((c) => c.channel === "web");
+  assert.ok(webConv);
+  assert.equal(webConv.status, "active");
+  assert.equal(webConv.aiEnabled, true);
+  assert.equal(webConv.unread, 0);
+
+  // 2. Gặp câu ngoài phạm vi -> chuyển sang pending (Cần xử lý), aiEnabled = false, unread = 1
+  const handoffMsgs = [
+    ...activeMsgs,
+    { id: "u-2", sender: "user" as const, text: "Có cho thuê xe tăng không?", time: "09:01" },
+    { id: "b-2", sender: "bot" as const, text: "Dạ phần này em xin phép chuyển cho chuyên viên tư vấn hỗ trợ mình ngay nhé ạ!", time: "09:01", handoff: true },
+  ];
+  syncWidgetChatToInbox(handoffMsgs, undefined, { handoff: true });
+  list = getInboxConversations();
+  webConv = list.find((c) => c.channel === "web");
+  assert.ok(webConv);
+  assert.equal(webConv.status, "pending");
+  assert.equal(webConv.aiEnabled, false);
+  assert.equal(webConv.unread, 1);
+  assert.match(webConv.note, /tiếp quản/);
+});

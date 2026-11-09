@@ -207,6 +207,8 @@ function syncExternalChatToInbox({
   botReply,
   bookingInfo,
   customerPhone,
+  handoff,
+  requiresHuman,
 }: {
   channel: "facebook" | "zalo" | "web";
   senderId?: string;
@@ -215,6 +217,8 @@ function syncExternalChatToInbox({
   botReply: string;
   bookingInfo?: Partial<BookingDraftInfo> | null;
   customerPhone?: string;
+  handoff?: boolean;
+  requiresHuman?: boolean;
 }) {
   try {
     const store = loadCloudStore();
@@ -278,13 +282,50 @@ function syncExternalChatToInbox({
       bookingInfo?.fullName ||
       (existing && !existing.name.startsWith("Khách ") ? existing.name : displayName);
 
+    const isHandoff = Boolean(
+      handoff ||
+      requiresHuman ||
+      botReply.includes("chuyển cho chuyên viên tư vấn") ||
+      botReply.includes("chuyên viên tư vấn hỗ trợ")
+    );
+    const hasBooking = Boolean(bookingInfo?.dateTimeIso || (bookingInfo as any)?.autoBooked);
+
+    let convStatus: "active" | "pending" = "active";
+    let aiEnabled = true;
+    let convNote = `Hội thoại từ ${channel.toUpperCase()}`;
+    let unreadCount = 0;
+
+    if (isHandoff) {
+      convStatus = "pending";
+      aiEnabled = false;
+      unreadCount = (existing?.unread || 0) + 1;
+      convNote = "⚠️ Cần nhân viên hỗ trợ: AI gặp câu hỏi ngoài phạm vi, đã chuyển giao tư vấn viên tiếp quản!";
+    } else if (hasBooking) {
+      convStatus = "pending";
+      aiEnabled = existing ? existing.aiEnabled : true;
+      unreadCount = 1;
+      convNote = `Khách đặt lịch hẹn mới cần xác nhận: ${bookingInfo?.notes || ""}`;
+    } else if (existing && existing.status === "pending" && !existing.aiEnabled) {
+      convStatus = "pending";
+      aiEnabled = false;
+      unreadCount = existing.unread || 1;
+      convNote = existing.note;
+    } else {
+      convStatus = "active";
+      aiEnabled = true;
+      unreadCount = 0;
+      convNote = `🤖 AI đang chủ động tư vấn khách hàng trên ${channel.toUpperCase()}`;
+    }
+
     let targetConv: Conversation;
     if (existing) {
       targetConv = {
         ...existing,
         name: customerFullName,
-        status: "active",
-        unread: (existing.unread || 0) + 1,
+        status: convStatus,
+        aiEnabled,
+        unread: unreadCount,
+        note: convNote,
         messages: [...existing.messages, custMsg, botMsg],
       };
     } else {
@@ -298,11 +339,11 @@ function syncExternalChatToInbox({
             : channel === "zalo"
             ? "bg-sky-500"
             : "bg-emerald-600",
-        status: "active",
-        aiEnabled: true,
+        status: convStatus,
+        aiEnabled,
         assignedTo: "unassigned",
-        unread: 1,
-        note: `Hội thoại từ ${channel.toUpperCase()}`,
+        unread: unreadCount,
+        note: convNote,
         messages: [custMsg, botMsg],
       };
     }
@@ -314,7 +355,6 @@ function syncExternalChatToInbox({
       targetConv.lead?.phone ||
       "";
     const cleanPhone = phone ? phone.replace(/[\s.-]/g, "").replace(/^\+?84/, "0") : "";
-    const hasBooking = Boolean(bookingInfo?.dateTimeIso || (bookingInfo as any)?.autoBooked);
     const targetLeadId = targetConv.lead?.id || `lead-${cleanPhone || Date.now()}`;
 
     let leadsToUpdate: any[] = [];
@@ -450,7 +490,7 @@ export async function processChatRequest(payload: any) {
     const facebookReplyOnly = channel === "facebook" && replyOnly === true;
     const brandName = businessProfile?.name || "Golden Palace";
 
-    const respond = <T extends { success: true; reply?: string; suggestedQuestions?: string[]; bookingDraft?: any }>(data: T) => {
+    const respond = <T extends { success: true; reply?: string; suggestedQuestions?: string[]; bookingDraft?: any; handoff?: boolean; requiresHuman?: boolean; aiEnabled?: boolean }>(data: T) => {
       if (
         trimmedMsg &&
         trimmedMsg !== "{{last_input}}" &&
@@ -466,6 +506,8 @@ export async function processChatRequest(payload: any) {
           botReply: data.reply,
           bookingInfo: data.bookingDraft,
           customerPhone: payload.phone,
+          handoff: data.handoff,
+          requiresHuman: data.requiresHuman,
         });
       }
 
@@ -549,6 +591,25 @@ export async function processChatRequest(payload: any) {
         suggestedQuestions: [
           "Thực đơn tiệc cưới bao nhiêu một bàn?",
           "Cho tôi xem ảnh không gian sảnh tiệc",
+          "Địa chỉ nhà hàng ở đâu?",
+        ],
+      });
+    }
+
+    // 2.3. Khách chủ động yêu cầu gặp nhân viên / tư vấn viên thật
+    if (
+      /\b(gặp nhân viên|gap nhan vien|gặp tư vấn|gap tu van|gặp lễ tân|gap le tan|người thật|nguoi that|gặp người|nhân viên tư vấn|nói chuyện với nhân viên|chuyên viên tư vấn)\b/i.test(lower)
+    ) {
+      return respond({
+        success: true,
+        reply: `Dạ em xin phép chuyển cuộc trò chuyện cho chuyên viên tư vấn tiếp quản ngay nhé ạ! Chuyên viên sẽ phản hồi trực tiếp với Quý khách trong ít phút ạ.`,
+        aiEnabled: false,
+        handoff: true,
+        requiresHuman: true,
+        triggeredRule: "explicit_human_request",
+        suggestedQuestions: [
+          "Hotline tư vấn: 0228 6595 959",
+          "Thực đơn tiệc cưới bao nhiêu một bàn?",
           "Địa chỉ nhà hàng ở đâu?",
         ],
       });
