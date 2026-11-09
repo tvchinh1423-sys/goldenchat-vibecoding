@@ -133,4 +133,94 @@ describe("Unread Preservation Guard & Mark as Read", () => {
 
     assert.equal(isCustomerWaiting, false, "Tin nhắn cuối là của nhân viên, khách hàng không đợi, unread phải bằng 0");
   });
+
+  it("isConversationRead và applyReadTracking bảo vệ triệt để trạng thái đã đọc", () => {
+    const {
+      isConversationRead,
+      applyReadTracking,
+      getUnreadConversationsCount,
+    } = require("../lib/inbox/read-tracker");
+
+    const convRead: Conversation = {
+      id: "fb-chinh",
+      name: "Trần Vân Chinh",
+      channel: "facebook",
+      avatarColor: "sky",
+      status: "active",
+      unread: 51,
+      messages: [
+        {
+          id: "m-chinh-1",
+          sender: "customer",
+          content: "Tư vấn tiệc cưới giúp em",
+          createdAt: "2026-11-09T10:00:00Z",
+        },
+        {
+          id: "m-chinh-2",
+          sender: "bot",
+          content: "Dạ Golden Palace xin chào anh Chinh ạ!",
+          createdAt: "2026-11-09T10:01:00Z",
+        },
+      ],
+    };
+
+    // 1. Tin nhắn cuối do bot gửi -> Luôn là đã đọc, unread chuyển về 0
+    assert.equal(isConversationRead(convRead), true);
+    const cleaned = applyReadTracking([convRead]);
+    assert.equal(cleaned[0].unread, 0);
+
+    // 2. Tin nhắn cuối do khách gửi nhưng nhân viên đã đọc lúc 10:10:00
+    const convCustomerLast: Conversation = {
+      id: "fb-rita",
+      name: "Rita Phạm",
+      channel: "facebook",
+      avatarColor: "sky",
+      status: "active",
+      unread: 13,
+      messages: [
+        {
+          id: "m-rita-1",
+          sender: "customer",
+          content: "Cảm ơn em nhiều",
+          createdAt: "2026-11-09T10:05:00Z",
+        },
+      ],
+    };
+
+    const readMap = {
+      "fb-rita": {
+        readAt: Date.parse("2026-11-09T10:10:00Z"),
+        read: true,
+      },
+    };
+
+    assert.equal(isConversationRead(convCustomerLast, readMap), true);
+    const cleaned2 = applyReadTracking([convCustomerLast], readMap);
+    assert.equal(cleaned2[0].unread, 0);
+
+    // 3. Số đỏ chỉ đếm số lượng CUỘC TRÒ CHUYỆN chưa đọc (không tính tổng tin nhắn)
+    const convUnread: Conversation = {
+      id: "web-unseen",
+      name: "Khách mới",
+      channel: "web",
+      avatarColor: "emerald",
+      status: "active",
+      unread: 7, // 7 tin nhắn chưa đọc
+      messages: [
+        {
+          id: "m-new-1",
+          sender: "customer",
+          content: "Alo",
+          createdAt: "2026-11-09T10:15:00Z",
+        },
+      ],
+    };
+
+    const count = getUnreadConversationsCount(
+      [convRead, convCustomerLast, convUnread],
+      readMap
+    );
+    // Chỉ có 1 cuộc trò chuyện chưa đọc (web-unseen), dù nó có 7 tin nhắn
+    assert.equal(count, 1, "Số đỏ chỉ hiển thị 1 cuộc trò chuyện chưa đọc, không phải tổng 7 tin nhắn!");
+  });
 });

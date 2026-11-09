@@ -148,6 +148,12 @@ export async function fetchFacebookConversations(): Promise<Conversation[]> {
       const customerName =
         customer.name?.trim() || `Khách Facebook (${customerId.slice(-4)})`;
 
+      const lastMsg = messages.at(-1);
+      const isLastMsgFromCustomer = lastMsg && lastMsg.sender === "customer";
+      const resolvedUnread = isLastMsgFromCustomer
+        ? (typeof item.unread_count === "number" ? Math.max(1, item.unread_count) : 1)
+        : 0;
+
       conversations.push({
         id: `facebook-${customerId}`,
         name: customerName,
@@ -156,7 +162,7 @@ export async function fetchFacebookConversations(): Promise<Conversation[]> {
         status: "active",
         aiEnabled: true,
         assignedTo: "unassigned",
-        unread: typeof item.unread_count === "number" ? item.unread_count : 0,
+        unread: resolvedUnread,
         note: `Hội thoại Fanpage Messenger (Thread: ${item.id})`,
         messages,
       });

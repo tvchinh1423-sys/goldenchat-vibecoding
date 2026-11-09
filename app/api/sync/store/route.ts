@@ -33,11 +33,13 @@ function mergeLiveFacebook(
       );
 
       // BẢO TOÀN TRẠNG THÁI ĐÃ ĐỌC (Unread Preservation Guard):
-      // Nếu nhân viên/quản trị viên trên OmniChat đã đọc tin (existing.unread === 0)
-      // và KHÔNG có tin nhắn mới nào từ khách: PHẢI GIỮ NGUYÊN unread = 0!
-      // Tuyệt đối không lấy fb.unread từ Meta Graph API để đè lên trạng thái đã đọc của CRM.
+      // Nếu tin nhắn cuối cùng do Bot hoặc Nhân viên gửi: Khách hàng không đợi, unread luôn là 0!
+      // Nếu nhân viên trên OmniChat đã đọc (existing.unread === 0) và không có tin mới: unread = 0.
+      const lastMergedMsg = mergedMsgs.at(-1);
       let resolvedUnread = 0;
-      if (typeof existing.unread === "number" && existing.unread === 0) {
+      if (!lastMergedMsg || lastMergedMsg.sender !== "customer") {
+        resolvedUnread = 0;
+      } else if (typeof existing.unread === "number" && existing.unread === 0) {
         resolvedUnread = newCustomerMsgs.length;
       } else if (newCustomerMsgs.length > 0) {
         resolvedUnread = Math.max(1, (existing.unread || 0) + newCustomerMsgs.length);

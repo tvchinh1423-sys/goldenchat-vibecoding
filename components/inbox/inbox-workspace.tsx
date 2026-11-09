@@ -49,6 +49,11 @@ import { LoginDialog } from "@/components/auth/login-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { InstallAppButton } from "@/components/pwa/install-button";
 import { getPlatformShortcutLabel } from "@/lib/platform";
+import {
+  saveReadTracking,
+  applyReadTracking,
+  isConversationRead,
+} from "@/lib/inbox/read-tracker";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -58,45 +63,6 @@ const DEFAULT_FILTERS: InboxFilters = {
   hasContact: false,
   showArchived: false,
 };
-
-const READ_TRACKING_KEY = "omnichat_last_read_v1";
-
-function getReadTrackingMap(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(READ_TRACKING_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveReadTracking(conversationId: string, lastMessageId?: string) {
-  if (typeof window === "undefined" || !conversationId) return;
-  try {
-    const map = getReadTrackingMap();
-    map[conversationId] = lastMessageId || "read";
-    localStorage.setItem(READ_TRACKING_KEY, JSON.stringify(map));
-  } catch {}
-}
-
-function applyReadTracking(convs: Conversation[]): Conversation[] {
-  const map = getReadTrackingMap();
-  return convs.map((c) => {
-    const msgs = Array.isArray(c.messages) ? c.messages : [];
-    const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
-
-    // Nếu tin nhắn cuối đã được lưu là đã đọc, HOẶC tin nhắn cuối do nhân viên/bot gửi:
-    const isAlreadyRead =
-      Boolean(lastMsg && map[c.id] === lastMsg.id) ||
-      Boolean(lastMsg && lastMsg.sender !== "customer");
-
-    if (isAlreadyRead && c.unread !== 0) {
-      return { ...c, unread: 0 };
-    }
-    return c;
-  });
-}
 
 export function InboxWorkspace() {
   const { currentUser, role, users, canManageUsers } = useAuth();
@@ -209,7 +175,7 @@ export function InboxWorkspace() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          const list = parseSnapshot(saved);
+          const list = applyReadTracking(parseSnapshot(saved));
           setConversations(list);
         }
       } catch {}
@@ -518,14 +484,14 @@ export function InboxWorkspace() {
   }
   const markConversationAsRead = useCallback((id: string) => {
     if (!id) return;
+    const nowTs = Date.now();
     setConversations((current) => {
       const target = current.find((c) => c.id === id);
       const msgs = target?.messages || [];
       const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
-      saveReadTracking(id, lastMsg?.id);
+      saveReadTracking(id, lastMsg?.id, nowTs);
 
-      if (!target || target.unread === 0) return current;
-
+      // Cập nhật trạng thái unread = 0 cho hội thoại này
       const updated = current.map((c) =>
         c.id === id ? { ...c, unread: 0 } : c,
       );

@@ -119,7 +119,7 @@ export function createDefaultWidgetConversation(): Conversation {
     aiEnabled: true,
     assignedTo: "me",
     assignedStaffName: "Ngọc Khánh",
-    unread: 1,
+    unread: 0,
     note: "Khách web đặt lịch xem sảnh 35 bàn ngày 12/11. Cần chuẩn bị tài liệu bảng giá và phòng thử món chu đáo.",
     messages,
     booking: {

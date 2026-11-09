@@ -21,6 +21,25 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Tối ưu Triệt để Số Đỏ Thông báo & Trạng thái Đã đọc Hội thoại — 09/11/2026 (Chinh)
+
+- **Yêu cầu & Phản ánh từ Chinh:**
+  1. Số đỏ thông báo (badge) chỉ được phép hiển thị **số lượng CUỘC TRÒ CHUYỆN chưa đọc** (mỗi cuộc trò chuyện chưa đọc tính là 1), **tuyệt đối không cộng dồn tổng số lượng tin nhắn** (trước đây có 2 cuộc trò chuyện với 51 và 13 tin nhắn thì số đỏ hiển thị 64, gây nhầm lẫn trầm trọng).
+  2. Các cuộc hội thoại nhân viên/quản trị viên đã bấm vào đọc rồi thì **phải mất hoàn toàn số tin nhắn chưa đọc**, không được phép hồi sinh lại khi thoát khỏi cuộc trò chuyện.
+- **Nguyên nhân cốt lõi phát hiện và xử lý:**
+  1. **Lỗi đếm cộng dồn tin nhắn thay vì đếm cuộc trò chuyện:** Hàm `getInboxUnreadCount` trước đây chạy `return sum + unread;` (cộng dồn toàn bộ số lượng tin nhắn của tất cả hội thoại). Đã sửa thành `unreadConversationsCount`: mỗi hội thoại có tin nhắn mới từ khách chưa đọc chỉ cộng `1`.
+  2. **Quy tắc Vàng cho Bot/Nhân viên:** Nếu tin nhắn cuối cùng trong hội thoại do Bot hoặc Nhân viên gửi (`lastMsg.sender !== "customer"`), khách hàng không đang chờ phản hồi -> Hội thoại này **LUÔN ĐƯỢC XEM LÀ ĐÃ ĐỌC** (`unread = 0`). Điều này ngăn chặn việc Meta Graph API trả về `unread_count` (51 hoặc 13) của các hội thoại cũ mà Bot đã trả lời xong.
+  3. **Kiến trúc Read Tracking tập trung (`lib/inbox/read-tracker.ts`):**
+     - Lưu trữ `readAt` (thời điểm đọc) và `lastMsgId`.
+     - Chỉ khi khách hàng gửi tin nhắn mới có `createdAt > readAt` thì hội thoại mới được coi là chưa đọc.
+     - Hàm `applyReadTracking` được áp dụng đồng bộ trong tất cả các luồng: Khởi tạo, Polling Cloud Store, và sự kiện `omnichat-inbox-updated` (trước đây `onInboxUpdated` thiếu `applyReadTracking` làm reset lại unread từ snapshot thô).
+  4. **Loại bỏ chặn điều kiện trong `markConversationAsRead`:** Trước đây kiểm tra `if (target.unread === 0) return current;` khiến việc đồng bộ localStorage và sync POST lên server bị bỏ qua khi React state đã là 0 nhưng storage vẫn còn lưu số cũ. Đã bỏ điều kiện này, đảm bảo mỗi khi mở hoặc thoát cuộc trò chuyện đều ghi đè sạch sẽ `unread = 0`.
+- **Kết quả nghiệm thu:**
+  - `npm test`: **78/78 tests PASS 100%** (bổ sung test chuyên sâu cho `isConversationRead`, `applyReadTracking`, `getUnreadConversationsCount`).
+  - `playwright test`: **7/7 browser tests PASS 100%**.
+  - `npm run build`: **21/21 static pages thành công 100%** (Exit code 0).
+  - Deploy trực tiếp lên production `origin/main` (Vercel).
+
 ### Hoàn thành Rà soát & Tối ưu Toàn diện UI/UX trên Mọi Hệ Điều Hành (iOS, iPadOS, macOS, Windows, Android) — 09/11/2026 (Chinh)
 
 - **Mục tiêu:** Rà soát và giải quyết triệt để các vấn đề hiển thị, phím tắt, thanh cuộn, thao tác cảm ứng và tải tệp/ảnh đặc thù trên từng hệ điều hành theo quy chuẩn skill `cross-platform-sync`.
