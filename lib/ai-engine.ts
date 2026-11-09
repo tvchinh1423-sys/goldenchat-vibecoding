@@ -66,7 +66,7 @@ async function generate(params: ReplyParams, draft: boolean): Promise<string> {
   let body: object;
   let headers: Record<string, string>;
   if (provider === "gemini") {
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
     url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     headers = { "Content-Type": "application/json", "x-goog-api-key": apiKey };
     body = {
