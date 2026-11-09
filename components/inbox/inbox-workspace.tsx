@@ -48,6 +48,7 @@ import { UserManagementModal } from "@/components/users/user-management-modal";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { InstallAppButton } from "@/components/pwa/install-button";
+import { getPlatformShortcutLabel } from "@/lib/platform";
 
 const DEFAULT_FILTERS: InboxFilters = {
   query: "",
@@ -127,7 +128,12 @@ export function InboxWorkspace() {
   const [now, setNow] = useState(0);
   const [toast, setToast] = useState("");
   const [storageError, setStorageError] = useState(false);
+  const [shortcutLabel, setShortcutLabel] = useState("⌘K");
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setShortcutLabel(getPlatformShortcutLabel());
+  }, []);
   const notify = useCallback((text: string) => setToast(text), []);
 
   const effectiveFilters: InboxFilters = {
@@ -1133,13 +1139,13 @@ export function InboxWorkspace() {
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               aria-label="Tìm nhanh hội thoại"
-              placeholder="Tìm nhanh..."
+              placeholder={`Tìm nhanh... (${shortcutLabel})`}
               className="bg-[#f7f7fc] pl-9 pr-11 text-xs"
               value={filters.query}
               onChange={(event) => updateFilters({ query: event.target.value })}
             />
             <kbd className="absolute right-2 top-2.5 rounded border bg-white px-1 text-[10px] text-muted-foreground">
-              ⌘ K
+              {shortcutLabel}
             </kbd>
           </div>
           <span className="hidden h-7 w-px bg-border xl:block" />

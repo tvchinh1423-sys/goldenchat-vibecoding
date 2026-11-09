@@ -53,6 +53,7 @@ import type { Attachment, Conversation } from "@/lib/inbox/types";
 import { FormattedMessage } from "@/components/chat/formatted-message";
 import { Avatar } from "./shared";
 import { visitIntent } from "@/lib/chat/follow-ups";
+import { compressImageToJpeg } from "@/lib/chat/image-utils";
 import { googleCalendarUrl } from "@/lib/crm/appointment";
 import { triggerHaptic } from "@/lib/mobile/haptics";
 import { useSwipe } from "@/lib/hooks/use-touch-gestures";
@@ -206,33 +207,46 @@ export function ChatPane({
   };
   async function attach(file?: File) {
     if (!file) return;
-    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
-      notify("Chỉ hỗ trợ ảnh PNG, JPG, WebP hoặc GIF.");
-      return;
-    }
-    if (file.size > 700_000 || attachments.length >= 2) {
-      notify("Mỗi tin tối đa 2 ảnh, mỗi ảnh không quá 700 KB.");
+    if (attachments.length >= 4) {
+      notify("Mỗi tin tối đa 4 hình ảnh đính kèm.");
       return;
     }
     setReadingImage(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      // Nén ảnh tự động qua HTML5 Canvas: hỗ trợ HEIC từ iOS, ảnh >10MB từ Android/Windows
+      const compressed = await compressImageToJpeg(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
       });
       onAttachments([
         ...attachments,
-        { id: crypto.randomUUID(), name: file.name, dataUrl },
+        { id: compressed.id, name: compressed.name, dataUrl: compressed.dataUrl },
       ]);
+      triggerHaptic("light");
     } catch {
-      notify("Không đọc được ảnh. Vui lòng chọn lại.");
+      notify("Không thể xử lý ảnh. Vui lòng chọn ảnh khác.");
     } finally {
       setReadingImage(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
+  // Hỗ trợ dán ảnh trực tiếp từ Clipboard (Ctrl + V trên Windows / Cmd + V trên Mac)
+  const onComposerPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!event.clipboardData) return;
+    const items = Array.from(event.clipboardData.items);
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          event.preventDefault();
+          void attach(file);
+          break;
+        }
+      }
+    }
+  };
   return (
     <section
       ref={swipeSectionRef}
@@ -857,10 +871,11 @@ export function ChatPane({
             <Textarea
               ref={inputRef}
               aria-label="Nội dung tin nhắn"
-              placeholder="Nhắn tin..."
+              placeholder="Nhắn tin... (Hỗ trợ dán ảnh Ctrl+V / Cmd+V)"
               value={draft}
               onChange={(event) => onDraft(event.target.value)}
               onKeyDown={onComposerKeyDown}
+              onPaste={onComposerPaste}
               maxLength={6000}
               className="mb-3 min-h-[62px] border-0 p-1 text-base shadow-none focus-visible:ring-0 max-md:group-data-[keyboard-open]/chat:mb-1 max-md:[@media(max-height:420px)]:mb-0.5 max-md:group-data-[keyboard-open]/chat:min-h-10 max-md:[@media(max-height:420px)]:min-h-9 md:text-[13px]"
             />
@@ -916,29 +931,29 @@ export function ChatPane({
                   </div>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
+              <label
+                htmlFor="inbox-file-upload"
+                title="Đính kèm ảnh (Hỗ trợ chụp từ camera, HEIC iPhone, nén ảnh tự động)"
                 aria-label="Đính kèm ảnh"
-                title="Đính kèm ảnh, tối đa 700 KB/ảnh"
-                onClick={() => fileRef.current?.click()}
-                disabled={readingImage}
-                className="text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                className={`inline-flex items-center justify-center h-9 w-9 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition active:scale-95 ${
+                  readingImage ? "pointer-events-none opacity-50" : ""
+                }`}
               >
                 {readingImage ? (
-                  <LoaderCircle className="animate-spin" />
+                  <LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />
                 ) : (
-                  <ImagePlus />
+                  <ImagePlus className="h-5 w-5" />
                 )}
-              </Button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                className="hidden"
-                aria-label="Chọn ảnh đính kèm"
-                onChange={(event) => void attach(event.target.files?.[0])}
-              />
+                <input
+                  id="inbox-file-upload"
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*,image/heic,image/heif,.heic,.heif"
+                  className="sr-only"
+                  aria-label="Chọn ảnh đính kèm"
+                  onChange={(event) => void attach(event.target.files?.[0])}
+                />
+              </label>
               <div className="ml-auto flex items-center gap-1.5">
                 <Button
                   variant="secondary"

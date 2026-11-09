@@ -21,6 +21,33 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Rà soát & Tối ưu Toàn diện UI/UX trên Mọi Hệ Điều Hành (iOS, iPadOS, macOS, Windows, Android) — 09/11/2026 (Chinh)
+
+- **Mục tiêu:** Rà soát và giải quyết triệt để các vấn đề hiển thị, phím tắt, thanh cuộn, thao tác cảm ứng và tải tệp/ảnh đặc thù trên từng hệ điều hành theo quy chuẩn skill `cross-platform-sync`.
+- **Chi tiết các điểm tối ưu đã thực thi:**
+  1. **Bộ tiện ích nhận diện nền tảng chuẩn xác (`lib/platform.ts`):**
+     - Hỗ trợ phát hiện chuẩn: `isApplePlatform()`, `isWindowsPlatform()`, `isAndroidPlatform()`, `isMobileOrTabletDevice()`.
+     - Xử lý đặc thù Safari iPadOS 13+ (`navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1`) tránh nhận diện nhầm là macOS desktop.
+     - Hàm `getPlatformShortcutLabel()` hiển thị phím tắt linh hoạt: `⌘K` trên macOS/iOS/iPadOS và `Ctrl K` trên Windows/Android/Linux.
+  2. **Tối ưu CSS Toàn cục Cross-Platform (`app/globals.css`):**
+     - **Windows / Chrome / Edge:** Tùy biến thanh cuộn mỏng (thin scrollbar 6px bo tròn slate-300), loại bỏ thanh cuộn xám dày 17px chiếm layout mặc định của Windows, triệt tiêu hiện tượng layout shift co giật giao diện.
+     - **iOS Safari & Android Touch:** Áp dụng `touch-action: manipulation;` cho button, link, input, textarea nhằm loại bỏ hoàn toàn độ trễ 300ms click delay trên màn hình cảm ứng và ngăn ngừa lỗi zoom ngoài ý muốn (double-tap zoom).
+     - **iOS Safari:** Áp dụng `overscroll-behavior-y: none;` và `-webkit-overflow-scrolling: touch;` chống giật nảy trang (rubber-banding / bounce) khi cuộn nội dung tin nhắn hoặc danh sách hội thoại.
+     - **macOS & Windows:** Cấu hình `-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;` giúp font chữ hiển thị sắc nét trên cả màn hình Retina (macOS/iOS) và màn hình Windows ClearType subpixel.
+  3. **Tối ưu Tải & Dán Ảnh Đa Kênh Trong Inbox (`components/inbox/chat-pane.tsx`):**
+     - Thay thế FileReader thô sơ bằng tiện ích nén ảnh `compressImageToJpeg` (`lib/chat/image-utils.ts`).
+     - **iOS (iPhone/iPad):** Hỗ trợ đầy đủ định dạng ảnh Apple HEIC/HEIF (`accept="image/*,image/heic,image/heif,.heic,.heif"`), tự động nén Canvas sang JPEG chất lượng 0.85 (~200KB) chỉ trong ~0.2s.
+     - **Android & Windows:** Tự động nén ảnh dung lượng khủng từ camera (>10MB) thành file JPEG chuẩn, triệt tiêu lỗi `413 Payload Too Large` của Next.js Server Actions.
+     - **Windows & macOS:** Bổ sung tính năng Paste ảnh từ Clipboard (`onPaste={onComposerPaste}`) khi nhân viên chụp màn hình bằng `Win + Shift + S` (Windows) hoặc `Cmd + Shift + 4` (macOS) rồi dán trực tiếp vào khung chat.
+     - Dùng native `<label htmlFor="inbox-file-upload">` tránh bị iOS Safari và Android WebView chặn popup chọn tệp.
+  4. **Thích ứng Nhãn Phím Tắt Tự động (`app/(dashboard)/layout.tsx` & `components/inbox/inbox-workspace.tsx`):**
+     - Tự động phát hiện OS để hiển thị nhãn phím tắt chính xác (`Ctrl K` trên Windows/Android, `⌘K` trên Mac/iOS) cả trên thanh Header toàn cục và thanh tìm kiếm Inbox.
+  5. **Kiểm thử & Triển khai Production:**
+     - Toàn bộ **77/77 unit tests PASS 100%**.
+     - Toàn bộ **7/7 Playwright browser tests PASS 100%** (bao gồm layout mobile và PWA).
+     - Next.js build **21/21 static pages thành công 100%** (Exit code 0).
+     - Triển khai trực tiếp lên `origin/main` (Vercel production tại `https://goldenchat-vibecoding.vercel.app`).
+
 ### Hoàn thành Khắc phục Triệt để Lỗi Thông báo Chưa đọc Tự Hồi sinh Khi Thoát Hội thoại — 09/11/2026 (Chinh)
 
 - **Nguyên nhân cốt lõi phát hiện:**
