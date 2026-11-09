@@ -21,6 +21,24 @@ description: >-
 
 ## 📌 THÔNG TIN DỰ ÁN & TIẾN ĐỘ THỰC TẾ
 
+### Hoàn thành Chuẩn hóa Mục 10: Minh chứng Dùng AI Xây dựng Sản phẩm theo Đúng Đề bài — 09/11/2026 (Chinh)
+
+- **Đối chiếu yêu cầu đề bài (Mục 10):**
+  1. *Giới hạn dung lượng:* Tối đa đúng **1 trang** (file cũ dài 139 dòng ~3-4 trang đã được rút gọn và chuyển bản mở rộng sang `docs/minh-chung-ung-dung-ai-chi-tiet.md`).
+  2. *Quy tắc nội dung:* Tối đa 5 ảnh / đoạn hội thoại chọn lọc.
+  3. *Quy trình bắt buộc 5 bước:* `Mục tiêu` → `Yêu cầu cho AI` → `Vấn đề phát hiện khi thử` → `Yêu cầu sửa` → `Kết quả kiểm tra lại`.
+  4. *Hai trường bắt buộc:* `<Tên tệp minh chứng hoặc liên kết>` và `<Tóm tắt một vòng thử và cải thiện>`.
+- **Nội dung 3 vòng lặp thực chiến chọn lọc:**
+  - **Vòng 1 (Nghiệp vụ Tiệc cưới & AI Guardrails):** Xử lý xung đột từ khóa "Khách đòi giảm giá 30% cho tiệc 40 mâm" (ưu tiên chính sách giá trước, tư vấn sảnh 40 mâm sau).
+  - **Vòng 2 (Logic Thời gian & Thẩm định Đặt lịch):** Chặn ngày phi lý 31/11/2026 và khung giờ ngoài ca đón tiếp (8:00 - 10:30 sáng).
+  - **Vòng 3 (Kỹ thuật Hộp thư Đa kênh & Đồng bộ Trạng thái Đã Đọc):** Chống lỗi số đỏ unread tự hồi sinh & đếm sai cuộc trò chuyện.
+- **Đóng gói & Phân phối:**
+  - Cập nhật `bài nộp cuối cùng/minh-chung-ung-dung-ai.md` và `docs/minh-chung-ung-dung-ai.md`.
+  - Tạo sẵn bản Word `bài nộp cuối cùng/10-Minh-chung-dung-AI.docx` và `bài nộp cuối cùng/Thông tin bài làm (Đầy đủ kèm Mục 10).docx`.
+  - Đóng gói cập nhật vào `OmniChat_AI_VibeCoding2026_De04.zip` và `bài nộp cuối cùng/OmniChat_AI_VibeCoding2026_De04.zip`.
+  - Bộ kiểm thử tự động đạt 78/78 tests pass 100%. Sẵn sàng nộp bài trước hạn 23:59 ngày 09/11/2026.
+
+
 ### Hoàn thành Tối ưu Triệt để Số Đỏ Thông báo & Trạng thái Đã đọc Hội thoại — 09/11/2026 (Chinh)
 
 - **Yêu cầu & Phản ánh từ Chinh:**
